@@ -1,0 +1,92 @@
+// Local dev uses SQLite (DATABASE_URL="file:./dev.db") for zero-setup development.
+// In production, DATABASE_URL points at Postgres (Neon) and `provider` below is switched to "postgresql".
+// Enums are intentionally avoided (unsupported on SQLite) so the schema works unchanged on both.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  title       String
+  notes       String?
+  dueDate     DateTime?
+  priority    String    @default("medium") // "low" | "medium" | "high"
+  completed   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model ScheduleEvent {
+  id        String   @id @default(cuid())
+  title     String
+  date      DateTime // anchor date for one-off events; ignored (but still set) for recurring ones
+  startTime String   // "HH:mm"
+  endTime   String   // "HH:mm"
+  recurring String   @default("none") // "none" | "daily" | "weekly"
+  weekday   Int? // 0-6 when recurring = "weekly"
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model StudySession {
+  id              String    @id @default(cuid())
+  subject         String
+  startTime       DateTime
+  endTime         DateTime?
+  durationMinutes Int? // set once the session is stopped
+  notes           String?
+  createdAt       DateTime  @default(now())
+}
+
+model Habit {
+  id        String     @id @default(cuid())
+  name      String
+  frequency String     @default("daily") // "daily" | "weekly"
+  createdAt DateTime   @default(now())
+  logs      HabitLog[]
+}
+
+model HabitLog {
+  id        String   @id @default(cuid())
+  habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  habitId   String
+  date      DateTime
+  completed Boolean  @default(true)
+
+  @@unique([habitId, date])
+}
+
+model JournalEntry {
+  id        String   @id @default(cuid())
+  date      DateTime
+  content   String
+  mood      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Goal {
+  id          String      @id @default(cuid())
+  title       String
+  description String?
+  targetDate  DateTime?
+  status      String      @default("active") // "active" | "completed" | "abandoned"
+  createdAt   DateTime    @default(now())
+  milestones  Milestone[]
+}
+
+model Milestone {
+  id        String  @id @default(cuid())
+  goal      Goal    @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  goalId    String
+  title     String
+  completed Boolean @default(false)
+  order     Int     @default(0)
+}
