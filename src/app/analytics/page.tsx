@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { startOfWeek } from "@/lib/schedule";
 import SimpleBarChart from "@/components/charts/SimpleBarChart";
 
+export const dynamic = "force-dynamic";
+
 const WEEKS = 8;
 
 function weekLabel(d: Date): string {
@@ -57,42 +59,44 @@ export default async function AnalyticsPage() {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-2xl font-semibold">Analytics</h1>
+      <h1 className="font-heading text-4xl text-comic-blue" style={{ WebkitTextStroke: "1.5px var(--ink)" }}>
+        Analytics
+      </h1>
 
-      <section className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
-        <h2 className="mb-3 text-sm font-semibold text-neutral-400">
+      <section className="comic-panel p-4">
+        <h2 className="font-heading mb-3 text-lg tracking-wide text-comic-blue">
           Study hours per week (last {WEEKS} weeks)
         </h2>
         {studyHoursData.every((d) => d.hours === 0) ? (
-          <p className="text-sm text-neutral-600">No study sessions logged yet.</p>
+          <p className="text-sm text-ink/60">No study sessions logged yet.</p>
         ) : (
-          <SimpleBarChart data={studyHoursData} xKey="week" yKey="hours" color="#3987e5" unit=" hrs" />
+          <SimpleBarChart data={studyHoursData} xKey="week" yKey="hours" color="#2a78d6" unit=" hrs" />
         )}
       </section>
 
-      <section className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
-        <h2 className="mb-3 text-sm font-semibold text-neutral-400">
+      <section className="comic-panel p-4">
+        <h2 className="font-heading mb-3 text-lg tracking-wide text-comic-orange">
           Tasks completed per week (last {WEEKS} weeks)
         </h2>
         {tasksCompletedData.every((d) => d.completed === 0) ? (
-          <p className="text-sm text-neutral-600">No completed tasks in this range yet.</p>
+          <p className="text-sm text-ink/60">No completed tasks in this range yet.</p>
         ) : (
-          <SimpleBarChart data={tasksCompletedData} xKey="week" yKey="completed" color="#d95926" />
+          <SimpleBarChart data={tasksCompletedData} xKey="week" yKey="completed" color="#eb6834" />
         )}
       </section>
 
-      <section className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
-        <h2 className="mb-3 text-sm font-semibold text-neutral-400">
+      <section className="comic-panel p-4">
+        <h2 className="font-heading mb-3 text-lg tracking-wide text-comic-green">
           Habit consistency (% of last 30 days)
         </h2>
         {habitConsistencyData.length === 0 ? (
-          <p className="text-sm text-neutral-600">No habits yet.</p>
+          <p className="text-sm text-ink/60">No habits yet.</p>
         ) : (
           <SimpleBarChart
             data={habitConsistencyData}
             xKey="habit"
             yKey="percent"
-            color="#199e70"
+            color="#1baf7a"
             unit="%"
             layout="vertical"
           />

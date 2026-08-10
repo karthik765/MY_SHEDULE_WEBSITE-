@@ -15,6 +15,15 @@ interface ScheduleEvent {
 }
 
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const DAY_COLORS = [
+  "var(--comic-blue)",
+  "var(--comic-purple)",
+  "var(--comic-red)",
+  "var(--comic-orange)",
+  "var(--comic-green)",
+  "var(--comic-pink)",
+  "var(--comic-yellow)",
+];
 
 export default function SchedulePage() {
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
@@ -59,24 +68,23 @@ export default function SchedulePage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Schedule</h1>
+      <h1 className="font-heading text-4xl text-comic-purple" style={{ WebkitTextStroke: "1.5px var(--ink)" }}>
+        Schedule
+      </h1>
 
-      <form
-        onSubmit={handleAdd}
-        className="flex flex-wrap items-end gap-2 rounded-lg border border-neutral-800 bg-neutral-900 p-4"
-      >
+      <form onSubmit={handleAdd} className="comic-panel flex flex-wrap items-end gap-2 p-4">
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-neutral-500">Title</label>
+          <label className="text-xs font-bold text-ink/70">Title</label>
           <input
-            className="min-w-[160px] rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm outline-none focus:border-neutral-500"
+            className="comic-input min-w-[160px] px-3 py-2 text-sm"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-neutral-500">Repeats</label>
+          <label className="text-xs font-bold text-ink/70">Repeats</label>
           <select
-            className="rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm outline-none focus:border-neutral-500"
+            className="comic-input px-3 py-2 text-sm"
             value={recurring}
             onChange={(e) => setRecurring(e.target.value)}
           >
@@ -87,9 +95,9 @@ export default function SchedulePage() {
         </div>
         {recurring === "weekly" ? (
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-neutral-500">Weekday</label>
+            <label className="text-xs font-bold text-ink/70">Weekday</label>
             <select
-              className="rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm outline-none focus:border-neutral-500"
+              className="comic-input px-3 py-2 text-sm"
               value={weekday}
               onChange={(e) => setWeekday(Number(e.target.value))}
             >
@@ -104,63 +112,63 @@ export default function SchedulePage() {
           </div>
         ) : (
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-neutral-500">Date</label>
+            <label className="text-xs font-bold text-ink/70">Date</label>
             <input
               type="date"
-              className="rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm outline-none focus:border-neutral-500"
+              className="comic-input px-3 py-2 text-sm"
               value={date}
               onChange={(e) => setDate(e.target.value)}
             />
           </div>
         )}
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-neutral-500">Start</label>
+          <label className="text-xs font-bold text-ink/70">Start</label>
           <input
             type="time"
-            className="rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm outline-none focus:border-neutral-500"
+            className="comic-input px-3 py-2 text-sm"
             value={startTime}
             onChange={(e) => setStartTime(e.target.value)}
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-neutral-500">End</label>
+          <label className="text-xs font-bold text-ink/70">End</label>
           <input
             type="time"
-            className="rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm outline-none focus:border-neutral-500"
+            className="comic-input px-3 py-2 text-sm"
             value={endTime}
             onChange={(e) => setEndTime(e.target.value)}
           />
         </div>
-        <button
-          type="submit"
-          className="rounded-md bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-900"
-        >
+        <button type="submit" className="comic-btn bg-comic-blue px-4 py-2 text-sm">
           Add
         </button>
       </form>
 
       {loading ? (
-        <p className="text-neutral-500">Loading...</p>
+        <p className="text-ink/60">Loading...</p>
       ) : (
         <div className="grid grid-cols-1 gap-3 md:grid-cols-7">
           {weekDays.map((day, i) => {
             const dayEvents = events.filter((ev) => eventAppliesToDate(ev, day));
             return (
-              <div key={i} className="rounded-lg border border-neutral-800 bg-neutral-900 p-3">
-                <p className="mb-2 text-xs font-semibold text-neutral-400">
+              <div key={i} className="comic-panel-sm p-3">
+                <p
+                  className="font-heading mb-2 rounded px-2 py-0.5 text-xs tracking-wide text-ink"
+                  style={{ backgroundColor: DAY_COLORS[i] }}
+                >
                   {DAY_LABELS[i]} {day.getDate()}
                 </p>
                 <div className="space-y-2">
-                  {dayEvents.length === 0 && <p className="text-xs text-neutral-600">—</p>}
+                  {dayEvents.length === 0 && <p className="text-xs text-ink/40">—</p>}
                   {dayEvents.map((ev) => (
-                    <div key={ev.id} className="rounded-md bg-neutral-800 p-2 text-xs">
-                      <p className="font-medium">{ev.title}</p>
-                      <p className="text-neutral-400">
+                    <div key={ev.id} className="comic-panel-sm bg-paper p-2 text-xs">
+                      <p className="font-bold">{ev.title}</p>
+                      <p className="text-ink/60">
                         {ev.startTime}–{ev.endTime}
                       </p>
                       <button
                         onClick={() => remove(ev.id)}
-                        className="mt-1 text-neutral-500 hover:text-red-400"
+                        className="mt-1 font-bold text-comic-red hover:underline"
                       >
                         Delete
                       </button>

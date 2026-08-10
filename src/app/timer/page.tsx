@@ -76,51 +76,48 @@ export default function TimerPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Timer</h1>
+      <h1 className="font-heading text-4xl text-comic-orange" style={{ WebkitTextStroke: "1.5px var(--ink)" }}>
+        Timer
+      </h1>
 
-      <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-6 text-center">
+      <div
+        className="comic-panel p-6 text-center"
+        style={{ backgroundColor: active ? "var(--comic-orange)" : "var(--panel)" }}
+      >
         {active === undefined ? (
-          <p className="text-neutral-500">Loading...</p>
+          <p className="text-ink/60">Loading...</p>
         ) : active ? (
           <>
-            <p className="text-sm text-neutral-400">{active.subject}</p>
-            <p className="my-3 font-mono text-5xl tabular-nums">
+            <p className="text-sm font-bold text-ink/80">{active.subject}</p>
+            <p className="font-heading my-3 text-6xl tracking-wide tabular-nums">
               {formatDuration(elapsedSeconds)}
             </p>
-            <button
-              onClick={stop}
-              className="rounded-md bg-red-600 px-6 py-2 text-sm font-medium text-white hover:bg-red-500"
-            >
+            <button onClick={stop} className="comic-btn bg-comic-red px-6 py-2 text-sm">
               Stop
             </button>
           </>
         ) : (
           <form onSubmit={start} className="flex items-center justify-center gap-2">
             <input
-              className="rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm outline-none focus:border-neutral-500"
+              className="comic-input px-3 py-2 text-sm"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               placeholder="Subject"
             />
-            <button
-              type="submit"
-              className="rounded-md bg-emerald-600 px-6 py-2 text-sm font-medium text-white hover:bg-emerald-500"
-            >
+            <button type="submit" className="comic-btn bg-comic-green px-6 py-2 text-sm">
               Start
             </button>
           </form>
         )}
       </div>
 
-      <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
-        <p className="text-sm text-neutral-400">This week</p>
-        <p className="text-2xl font-semibold">
-          {(weeklyLiveMinutes / 60).toFixed(1)} hrs
-        </p>
+      <div className="comic-panel bg-comic-yellow p-4">
+        <p className="text-sm font-bold text-ink/80">This week</p>
+        <p className="font-heading text-3xl tracking-wide">{(weeklyLiveMinutes / 60).toFixed(1)} hrs</p>
       </div>
 
       <div>
-        <h2 className="mb-2 text-sm font-semibold text-neutral-400">History</h2>
+        <h2 className="font-heading mb-2 text-lg tracking-wide text-comic-purple">History</h2>
         <ul className="space-y-1">
           {sessions
             .filter((s) => s.endTime)
@@ -128,15 +125,15 @@ export default function TimerPage() {
             .map((s) => (
               <li
                 key={s.id}
-                className="flex items-center justify-between rounded-md border border-neutral-800 bg-neutral-900 px-3 py-2 text-sm"
+                className="comic-panel-sm flex items-center justify-between px-3 py-2 text-sm"
               >
-                <span>{s.subject}</span>
-                <span className="text-neutral-500">
+                <span className="font-bold">{s.subject}</span>
+                <span className="text-ink/60">
                   {new Date(s.startTime).toLocaleDateString()} · {s.durationMinutes} min
                 </span>
                 <button
                   onClick={() => remove(s.id)}
-                  className="text-xs text-neutral-500 hover:text-red-400"
+                  className="text-xs font-bold text-comic-red hover:underline"
                 >
                   Delete
                 </button>

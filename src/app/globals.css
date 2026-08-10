@@ -1,26 +1,125 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --ink: #14121a;
+  --paper: #fff4d6;
+  --panel: #ffffff;
+  --comic-red: #e63946;
+  --comic-blue: #1d75fb;
+  --comic-yellow: #ffc93c;
+  --comic-green: #2fbf71;
+  --comic-purple: #8b5cf6;
+  --comic-orange: #ff7a29;
+  --comic-pink: #ff5da2;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-ink: var(--ink);
+  --color-paper: var(--paper);
+  --color-panel: var(--panel);
+  --color-comic-red: var(--comic-red);
+  --color-comic-blue: var(--comic-blue);
+  --color-comic-yellow: var(--comic-yellow);
+  --color-comic-green: var(--comic-green);
+  --color-comic-purple: var(--comic-purple);
+  --color-comic-orange: var(--comic-orange);
+  --color-comic-pink: var(--comic-pink);
+  --font-sans: var(--font-comic-body);
+  --font-heading: var(--font-comic-heading);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-comic-body), Arial, Helvetica, sans-serif;
+  background-image: radial-gradient(circle, rgba(20, 18, 26, 0.12) 1.6px, transparent 1.6px);
+  background-size: 16px 16px;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-comic-heading), sans-serif;
+  letter-spacing: 0.03em;
+}
+
+/* Wrapped in @layer components so Tailwind utilities (e.g. bg-comic-yellow)
+   written alongside these classes in JSX can still override them — unlayered
+   rules would otherwise always beat layered utility classes regardless of
+   source order. */
+@layer components {
+  /* Hard-edged "panel" card: white background, thick ink border, offset drop shadow */
+  .comic-panel {
+    background: var(--color-panel);
+    border: 3px solid var(--color-ink);
+    border-radius: 1rem;
+    box-shadow: 5px 5px 0 0 var(--color-ink);
+  }
+
+  .comic-panel-sm {
+    background: var(--color-panel);
+    border: 2.5px solid var(--color-ink);
+    border-radius: 0.75rem;
+    box-shadow: 3px 3px 0 0 var(--color-ink);
+  }
+
+  /* Buttons: bold border + offset shadow, "presses in" on click */
+  .comic-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    background: var(--color-panel);
+    border: 3px solid var(--color-ink);
+    border-radius: 0.75rem;
+    font-weight: 700;
+    color: var(--color-ink);
+    box-shadow: 4px 4px 0 0 var(--color-ink);
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+    cursor: pointer;
+  }
+
+  .comic-btn:hover {
+    filter: brightness(1.05);
+  }
+
+  .comic-btn:active {
+    transform: translate(3px, 3px);
+    box-shadow: 1px 1px 0 0 var(--color-ink);
+  }
+
+  .comic-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  /* Form controls: bold border, no default browser chrome */
+  .comic-input {
+    border: 2.5px solid var(--color-ink);
+    border-radius: 0.6rem;
+    background: var(--color-panel);
+    color: var(--color-ink);
+    outline: none;
+  }
+
+  .comic-input:focus {
+    box-shadow: 3px 3px 0 0 var(--color-ink);
+  }
+
+  /* Small bold pill, e.g. priority/status tags */
+  .comic-badge {
+    display: inline-flex;
+    align-items: center;
+    background: var(--color-panel);
+    border: 2px solid var(--color-ink);
+    border-radius: 9999px;
+    font-weight: 700;
+    color: var(--color-ink);
+  }
+
+  /* Halftone dot texture, for accent strips / hero backgrounds */
+  .comic-halftone {
+    background-image: radial-gradient(circle, rgba(20, 18, 26, 0.35) 1.8px, transparent 1.8px);
+    background-size: 10px 10px;
+  }
 }

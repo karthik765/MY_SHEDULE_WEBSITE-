@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { eventAppliesToDate, startOfWeek } from "@/lib/schedule";
 import { computeStreak } from "@/lib/habits";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardPage() {
   const now = new Date();
   const weekStart = startOfWeek(now);
@@ -33,33 +35,36 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Dashboard</h1>
+      <h1 className="font-heading text-4xl text-comic-blue" style={{ WebkitTextStroke: "1.5px var(--ink)" }}>
+        Dashboard
+      </h1>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Study hours this week" value={`${(weeklyMinutes / 60).toFixed(1)} hrs`} />
-        <StatCard label="Tasks due" value={String(dueTodayOrOverdue.length)} />
+        <StatCard label="Study hours this week" value={`${(weeklyMinutes / 60).toFixed(1)} hrs`} color="var(--comic-blue)" />
+        <StatCard label="Tasks due" value={String(dueTodayOrOverdue.length)} color="var(--comic-red)" />
         <StatCard
           label="Timer"
           value={activeSession ? `Running: ${activeSession.subject}` : "Not running"}
+          color="var(--comic-orange)"
         />
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <section className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
+        <section className="comic-panel p-4">
           <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-neutral-400">Today&apos;s schedule</h2>
-            <Link href="/schedule" className="text-xs text-neutral-500 hover:text-neutral-300">
+            <h2 className="font-heading text-lg tracking-wide text-comic-purple">Today&apos;s schedule</h2>
+            <Link href="/schedule" className="text-xs font-bold text-comic-blue hover:underline">
               View all
             </Link>
           </div>
           {todayEvents.length === 0 ? (
-            <p className="text-sm text-neutral-600">Nothing scheduled today.</p>
+            <p className="text-sm text-ink/60">Nothing scheduled today.</p>
           ) : (
             <ul className="space-y-1">
               {todayEvents.map((e) => (
                 <li key={e.id} className="flex justify-between text-sm">
-                  <span>{e.title}</span>
-                  <span className="text-neutral-500">
+                  <span className="font-bold">{e.title}</span>
+                  <span className="text-ink/60">
                     {e.startTime}–{e.endTime}
                   </span>
                 </li>
@@ -68,21 +73,21 @@ export default async function DashboardPage() {
           )}
         </section>
 
-        <section className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
+        <section className="comic-panel p-4">
           <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-neutral-400">Tasks due</h2>
-            <Link href="/tasks" className="text-xs text-neutral-500 hover:text-neutral-300">
+            <h2 className="font-heading text-lg tracking-wide text-comic-red">Tasks due</h2>
+            <Link href="/tasks" className="text-xs font-bold text-comic-blue hover:underline">
               View all
             </Link>
           </div>
           {dueTodayOrOverdue.length === 0 ? (
-            <p className="text-sm text-neutral-600">Nothing due.</p>
+            <p className="text-sm text-ink/60">Nothing due.</p>
           ) : (
             <ul className="space-y-1">
               {dueTodayOrOverdue.slice(0, 6).map((t) => (
                 <li key={t.id} className="flex justify-between text-sm">
-                  <span>{t.title}</span>
-                  <span className="text-neutral-500">
+                  <span className="font-bold">{t.title}</span>
+                  <span className="text-ink/60">
                     {t.dueDate && new Date(t.dueDate).toLocaleDateString()}
                   </span>
                 </li>
@@ -91,24 +96,21 @@ export default async function DashboardPage() {
           )}
         </section>
 
-        <section className="rounded-lg border border-neutral-800 bg-neutral-900 p-4 md:col-span-2">
+        <section className="comic-panel p-4 md:col-span-2">
           <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-neutral-400">Habit streaks</h2>
-            <Link href="/habits" className="text-xs text-neutral-500 hover:text-neutral-300">
+            <h2 className="font-heading text-lg tracking-wide text-comic-green">Habit streaks</h2>
+            <Link href="/habits" className="text-xs font-bold text-comic-blue hover:underline">
               View all
             </Link>
           </div>
           {habits.length === 0 ? (
-            <p className="text-sm text-neutral-600">No habits yet.</p>
+            <p className="text-sm text-ink/60">No habits yet.</p>
           ) : (
             <div className="flex flex-wrap gap-3">
               {habits.map((h) => (
-                <div
-                  key={h.id}
-                  className="rounded-md border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm"
-                >
-                  <p>{h.name}</p>
-                  <p className="text-xs text-neutral-500">{computeStreak(h.logs)} day streak</p>
+                <div key={h.id} className="comic-panel-sm bg-comic-yellow px-3 py-2 text-sm">
+                  <p className="font-bold">{h.name}</p>
+                  <p className="text-xs text-ink/70">{computeStreak(h.logs)} day streak</p>
                 </div>
               ))}
             </div>
@@ -119,11 +121,11 @@ export default async function DashboardPage() {
   );
 }
 
-function StatCard({ label, value }: { label: string; value: string }) {
+function StatCard({ label, value, color }: { label: string; value: string; color: string }) {
   return (
-    <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
-      <p className="text-xs text-neutral-500">{label}</p>
-      <p className="mt-1 text-xl font-semibold">{value}</p>
+    <div className="comic-panel p-4" style={{ backgroundColor: color }}>
+      <p className="text-xs font-bold text-ink/70">{label}</p>
+      <p className="mt-1 text-xl font-bold">{value}</p>
     </div>
   );
 }

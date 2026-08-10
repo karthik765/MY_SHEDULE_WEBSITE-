@@ -48,11 +48,13 @@ export default function JournalPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Journal</h1>
+      <h1 className="font-heading text-4xl text-comic-pink" style={{ WebkitTextStroke: "1.5px var(--ink)" }}>
+        Journal
+      </h1>
 
-      <form onSubmit={handleAdd} className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
+      <form onSubmit={handleAdd} className="comic-panel space-y-3 p-4">
         <textarea
-          className="w-full rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm outline-none focus:border-neutral-500"
+          className="comic-input w-full px-3 py-2 text-sm"
           rows={4}
           placeholder="What's on your mind today?"
           value={content}
@@ -64,32 +66,28 @@ export default function JournalPage() {
               type="button"
               key={m}
               onClick={() => setMood(mood === m ? null : m)}
-              className={`rounded-md border px-2 py-1 text-lg ${
-                mood === m ? "border-neutral-400 bg-neutral-800" : "border-neutral-800"
-              }`}
+              className="comic-btn px-2 py-1 text-lg"
+              style={{ backgroundColor: mood === m ? "var(--comic-yellow)" : "var(--panel)" }}
             >
               {m}
             </button>
           ))}
-          <button
-            type="submit"
-            className="ml-auto rounded-md bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-900"
-          >
+          <button type="submit" className="comic-btn ml-auto bg-comic-blue px-4 py-2 text-sm">
             Save entry
           </button>
         </div>
       </form>
 
       {loading ? (
-        <p className="text-neutral-500">Loading...</p>
+        <p className="text-ink/60">Loading...</p>
       ) : entries.length === 0 ? (
-        <p className="text-neutral-500">No entries yet.</p>
+        <p className="text-ink/60">No entries yet.</p>
       ) : (
         <ul className="space-y-2">
           {entries.map((entry) => (
-            <li key={entry.id} className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
+            <li key={entry.id} className="comic-panel p-4">
               <div className="mb-1 flex items-center justify-between">
-                <span className="text-xs text-neutral-500">
+                <span className="text-xs font-bold text-ink/60">
                   {new Date(entry.date).toLocaleDateString(undefined, {
                     weekday: "short",
                     month: "short",
@@ -99,7 +97,7 @@ export default function JournalPage() {
                 </span>
                 <button
                   onClick={() => remove(entry.id)}
-                  className="text-xs text-neutral-500 hover:text-red-400"
+                  className="text-xs font-bold text-comic-red hover:underline"
                 >
                   Delete
                 </button>

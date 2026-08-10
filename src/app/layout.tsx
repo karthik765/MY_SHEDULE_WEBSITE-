@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Bangers, Comic_Neue } from "next/font/google";
 import "./globals.css";
-import { getSession } from "@/lib/session";
 import NavBar from "@/components/NavBar";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const comicHeading = Bangers({
+  weight: "400",
+  variable: "--font-comic-heading",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const comicBody = Comic_Neue({
+  weight: ["400", "700"],
+  variable: "--font-comic-body",
   subsets: ["latin"],
 });
 
@@ -19,16 +20,14 @@ export const metadata: Metadata = {
   description: "Personal schedule, tasks, timer, habits, journal and goals",
 };
 
-export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const session = await getSession();
-
+export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${comicHeading.variable} ${comicBody.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-neutral-950 text-neutral-100">
-        {session.loggedIn && <NavBar />}
+      <body className="min-h-full flex flex-col text-ink">
+        <NavBar />
         <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">{children}</main>
       </body>
     </html>

@@ -79,24 +79,26 @@ export default function GoalsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Goals</h1>
+      <h1 className="font-heading text-4xl text-comic-yellow" style={{ WebkitTextStroke: "1.5px var(--ink)" }}>
+        Goals
+      </h1>
 
-      <form onSubmit={handleAdd} className="flex gap-2 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
+      <form onSubmit={handleAdd} className="comic-panel flex gap-2 p-4">
         <input
-          className="flex-1 rounded-md border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm outline-none focus:border-neutral-500"
+          className="comic-input flex-1 px-3 py-2 text-sm"
           placeholder="New goal..."
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
-        <button type="submit" className="rounded-md bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-900">
+        <button type="submit" className="comic-btn bg-comic-blue px-4 py-2 text-sm">
           Add
         </button>
       </form>
 
       {loading ? (
-        <p className="text-neutral-500">Loading...</p>
+        <p className="text-ink/60">Loading...</p>
       ) : goals.length === 0 ? (
-        <p className="text-neutral-500">No goals yet.</p>
+        <p className="text-ink/60">No goals yet.</p>
       ) : (
         <ul className="space-y-4">
           {goals.map((goal) => {
@@ -104,12 +106,12 @@ export default function GoalsPage() {
             const total = goal.milestones.length;
             const progress = total > 0 ? Math.round((done / total) * 100) : 0;
             return (
-              <li key={goal.id} className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
+              <li key={goal.id} className="comic-panel p-4">
                 <div className="mb-2 flex items-center justify-between">
-                  <p className="font-medium">{goal.title}</p>
+                  <p className="font-heading text-xl tracking-wide">{goal.title}</p>
                   <button
                     onClick={() => removeGoal(goal.id)}
-                    className="text-xs text-neutral-500 hover:text-red-400"
+                    className="text-xs font-bold text-comic-red hover:underline"
                   >
                     Delete
                   </button>
@@ -117,13 +119,10 @@ export default function GoalsPage() {
 
                 {total > 0 && (
                   <div className="mb-3">
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-800">
-                      <div
-                        className="h-full bg-emerald-500"
-                        style={{ width: `${progress}%` }}
-                      />
+                    <div className="h-3 w-full overflow-hidden rounded-full border-2 border-ink bg-paper">
+                      <div className="h-full bg-comic-green" style={{ width: `${progress}%` }} />
                     </div>
-                    <p className="mt-1 text-xs text-neutral-500">
+                    <p className="mt-1 text-xs font-bold text-ink/60">
                       {done}/{total} milestones
                     </p>
                   </div>
@@ -136,14 +135,14 @@ export default function GoalsPage() {
                         type="checkbox"
                         checked={m.completed}
                         onChange={() => toggleMilestone(m.id, m.completed)}
-                        className="h-3.5 w-3.5"
+                        className="h-4 w-4 accent-[color:var(--comic-green)]"
                       />
-                      <span className={m.completed ? "text-neutral-500 line-through" : ""}>
+                      <span className={m.completed ? "text-ink/50 line-through" : "font-bold"}>
                         {m.title}
                       </span>
                       <button
                         onClick={() => removeMilestone(m.id)}
-                        className="ml-auto text-xs text-neutral-600 hover:text-red-400"
+                        className="ml-auto text-xs font-bold text-ink/40 hover:text-comic-red"
                       >
                         ×
                       </button>
@@ -153,7 +152,7 @@ export default function GoalsPage() {
 
                 <div className="mt-2 flex gap-2">
                   <input
-                    className="flex-1 rounded-md border border-neutral-800 bg-neutral-950 px-2 py-1 text-xs outline-none focus:border-neutral-600"
+                    className="comic-input flex-1 px-2 py-1 text-xs"
                     placeholder="Add milestone..."
                     value={milestoneDrafts[goal.id] ?? ""}
                     onChange={(e) =>
@@ -168,7 +167,7 @@ export default function GoalsPage() {
                   />
                   <button
                     onClick={() => addMilestone(goal.id)}
-                    className="rounded-md bg-neutral-800 px-2 py-1 text-xs"
+                    className="comic-btn bg-comic-yellow px-2 py-1 text-xs"
                   >
                     Add
                   </button>
