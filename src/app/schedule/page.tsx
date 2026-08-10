@@ -139,7 +139,7 @@ export default function SchedulePage() {
             onChange={(e) => setEndTime(e.target.value)}
           />
         </div>
-        <button type="submit" className="comic-btn bg-comic-blue px-4 py-2 text-sm">
+        <button type="submit" className="comic-btn bg-comic-blue px-4 py-2 text-sm text-chip-ink">
           Add
         </button>
       </form>
@@ -153,7 +153,7 @@ export default function SchedulePage() {
             return (
               <div key={i} className="comic-panel-sm p-3">
                 <p
-                  className="font-heading mb-2 rounded px-2 py-0.5 text-xs tracking-wide text-ink"
+                  className="font-heading mb-2 rounded px-2 py-0.5 text-xs tracking-wide text-chip-ink"
                   style={{ backgroundColor: DAY_COLORS[i] }}
                 >
                   {DAY_LABELS[i]} {day.getDate()}

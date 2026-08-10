@@ -108,9 +108,12 @@ export default async function DashboardPage() {
           ) : (
             <div className="flex flex-wrap gap-3">
               {habits.map((h) => (
-                <div key={h.id} className="comic-panel-sm bg-comic-yellow px-3 py-2 text-sm">
+                <div
+                  key={h.id}
+                  className="comic-panel-sm bg-comic-yellow px-3 py-2 text-sm text-chip-ink"
+                >
                   <p className="font-bold">{h.name}</p>
-                  <p className="text-xs text-ink/70">{computeStreak(h.logs)} day streak</p>
+                  <p className="text-xs text-chip-ink/70">{computeStreak(h.logs)} day streak</p>
                 </div>
               ))}
             </div>
@@ -123,8 +126,8 @@ export default async function DashboardPage() {
 
 function StatCard({ label, value, color }: { label: string; value: string; color: string }) {
   return (
-    <div className="comic-panel p-4" style={{ backgroundColor: color }}>
-      <p className="text-xs font-bold text-ink/70">{label}</p>
+    <div className="comic-panel p-4 text-chip-ink" style={{ backgroundColor: color }}>
+      <p className="text-xs font-bold text-chip-ink/70">{label}</p>
       <p className="mt-1 text-xl font-bold">{value}</p>
     </div>
   );

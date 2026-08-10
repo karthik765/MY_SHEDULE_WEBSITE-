@@ -1,9 +1,15 @@
 @import "tailwindcss";
 
 :root {
+  color-scheme: light;
   --ink: #14121a;
+  /* Text sitting directly on a bright comic-color fill (badges, active nav
+     tab, stat cards) always stays dark, in both themes, so it stays legible
+     against pale fills like comic-yellow — only --ink flips with the theme. */
+  --chip-ink: #14121a;
   --paper: #fff4d6;
   --panel: #ffffff;
+  --halftone-dot: rgba(20, 18, 26, 0.12);
   --comic-red: #e63946;
   --comic-blue: #1d75fb;
   --comic-yellow: #ffc93c;
@@ -13,8 +19,43 @@
   --comic-pink: #ff5da2;
 }
 
+/* System dark preference, unless the user has explicitly picked light via the toggle */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --ink: #f4efe3;
+    --paper: #1b1824;
+    --panel: #272334;
+    --halftone-dot: rgba(244, 239, 227, 0.08);
+    --comic-red: #ff5b6b;
+    --comic-blue: #4c8dff;
+    --comic-yellow: #ffd166;
+    --comic-green: #3ddc91;
+    --comic-purple: #a78bfa;
+    --comic-orange: #ff9142;
+    --comic-pink: #ff7ab8;
+  }
+}
+
+/* Explicit toggle choice wins over system preference in both directions */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ink: #f4efe3;
+  --paper: #1b1824;
+  --panel: #272334;
+  --halftone-dot: rgba(244, 239, 227, 0.08);
+  --comic-red: #ff5b6b;
+  --comic-blue: #4c8dff;
+  --comic-yellow: #ffd166;
+  --comic-green: #3ddc91;
+  --comic-purple: #a78bfa;
+  --comic-orange: #ff9142;
+  --comic-pink: #ff7ab8;
+}
+
 @theme inline {
   --color-ink: var(--ink);
+  --color-chip-ink: var(--chip-ink);
   --color-paper: var(--paper);
   --color-panel: var(--panel);
   --color-comic-red: var(--comic-red);
@@ -32,8 +73,9 @@ body {
   background-color: var(--color-paper);
   color: var(--color-ink);
   font-family: var(--font-comic-body), Arial, Helvetica, sans-serif;
-  background-image: radial-gradient(circle, rgba(20, 18, 26, 0.12) 1.6px, transparent 1.6px);
+  background-image: radial-gradient(circle, var(--halftone-dot) 1.6px, transparent 1.6px);
   background-size: 16px 16px;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 h1,
@@ -54,6 +96,7 @@ h3 {
     border: 3px solid var(--color-ink);
     border-radius: 1rem;
     box-shadow: 5px 5px 0 0 var(--color-ink);
+    transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
   }
 
   .comic-panel-sm {
@@ -61,6 +104,7 @@ h3 {
     border: 2.5px solid var(--color-ink);
     border-radius: 0.75rem;
     box-shadow: 3px 3px 0 0 var(--color-ink);
+    transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
   }
 
   /* Buttons: bold border + offset shadow, "presses in" on click */
@@ -75,7 +119,8 @@ h3 {
     font-weight: 700;
     color: var(--color-ink);
     box-shadow: 4px 4px 0 0 var(--color-ink);
-    transition: transform 0.08s ease, box-shadow 0.08s ease;
+    transition: transform 0.08s ease, box-shadow 0.08s ease, background-color 0.15s ease,
+      border-color 0.15s ease, color 0.15s ease;
     cursor: pointer;
   }
 
@@ -100,6 +145,7 @@ h3 {
     background: var(--color-panel);
     color: var(--color-ink);
     outline: none;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
   }
 
   .comic-input:focus {
@@ -119,7 +165,7 @@ h3 {
 
   /* Halftone dot texture, for accent strips / hero backgrounds */
   .comic-halftone {
-    background-image: radial-gradient(circle, rgba(20, 18, 26, 0.35) 1.8px, transparent 1.8px);
+    background-image: radial-gradient(circle, var(--halftone-dot) 1.8px, transparent 1.8px);
     background-size: 10px 10px;
   }
 }

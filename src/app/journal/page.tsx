@@ -72,7 +72,7 @@ export default function JournalPage() {
               {m}
             </button>
           ))}
-          <button type="submit" className="comic-btn ml-auto bg-comic-blue px-4 py-2 text-sm">
+          <button type="submit" className="comic-btn ml-auto bg-comic-blue px-4 py-2 text-sm text-chip-ink">
             Save entry
           </button>
         </div>

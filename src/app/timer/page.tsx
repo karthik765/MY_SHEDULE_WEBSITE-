@@ -81,18 +81,18 @@ export default function TimerPage() {
       </h1>
 
       <div
-        className="comic-panel p-6 text-center"
+        className={`comic-panel p-6 text-center ${active ? "text-chip-ink" : ""}`}
         style={{ backgroundColor: active ? "var(--comic-orange)" : "var(--panel)" }}
       >
         {active === undefined ? (
           <p className="text-ink/60">Loading...</p>
         ) : active ? (
           <>
-            <p className="text-sm font-bold text-ink/80">{active.subject}</p>
+            <p className="text-sm font-bold text-chip-ink/80">{active.subject}</p>
             <p className="font-heading my-3 text-6xl tracking-wide tabular-nums">
               {formatDuration(elapsedSeconds)}
             </p>
-            <button onClick={stop} className="comic-btn bg-comic-red px-6 py-2 text-sm">
+            <button onClick={stop} className="comic-btn bg-comic-red px-6 py-2 text-sm text-chip-ink">
               Stop
             </button>
           </>
@@ -104,15 +104,15 @@ export default function TimerPage() {
               onChange={(e) => setSubject(e.target.value)}
               placeholder="Subject"
             />
-            <button type="submit" className="comic-btn bg-comic-green px-6 py-2 text-sm">
+            <button type="submit" className="comic-btn bg-comic-green px-6 py-2 text-sm text-chip-ink">
               Start
             </button>
           </form>
         )}
       </div>
 
-      <div className="comic-panel bg-comic-yellow p-4">
-        <p className="text-sm font-bold text-ink/80">This week</p>
+      <div className="comic-panel bg-comic-yellow p-4 text-chip-ink">
+        <p className="text-sm font-bold text-chip-ink/80">This week</p>
         <p className="font-heading text-3xl tracking-wide">{(weeklyLiveMinutes / 60).toFixed(1)} hrs</p>
       </div>
 

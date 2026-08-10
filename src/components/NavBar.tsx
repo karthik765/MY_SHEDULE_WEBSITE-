@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import ThemeToggle from "./ThemeToggle";
 
 const LINKS = [
   { href: "/", label: "Dashboard", color: "var(--comic-blue)" },
@@ -32,7 +33,7 @@ export default function NavBar() {
             <Link
               key={link.href}
               href={link.href}
-              className="comic-btn px-3 py-1.5 text-sm"
+              className={`comic-btn px-3 py-1.5 text-sm ${active ? "text-chip-ink" : ""}`}
               style={{
                 backgroundColor: active ? link.color : "var(--panel)",
                 boxShadow: active ? "3px 3px 0 0 var(--ink)" : "2px 2px 0 0 var(--ink)",
@@ -42,6 +43,7 @@ export default function NavBar() {
             </Link>
           );
         })}
+        <ThemeToggle />
       </div>
     </nav>
   );

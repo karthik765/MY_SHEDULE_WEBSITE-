@@ -90,7 +90,7 @@ export default function GoalsPage() {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
-        <button type="submit" className="comic-btn bg-comic-blue px-4 py-2 text-sm">
+        <button type="submit" className="comic-btn bg-comic-blue px-4 py-2 text-sm text-chip-ink">
           Add
         </button>
       </form>
@@ -167,7 +167,7 @@ export default function GoalsPage() {
                   />
                   <button
                     onClick={() => addMilestone(goal.id)}
-                    className="comic-btn bg-comic-yellow px-2 py-1 text-xs"
+                    className="comic-btn bg-comic-yellow px-2 py-1 text-xs text-chip-ink"
                   >
                     Add
                   </button>

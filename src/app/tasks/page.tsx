@@ -94,7 +94,7 @@ export default function TasksPage() {
           <option value="medium">Medium</option>
           <option value="high">High</option>
         </select>
-        <button type="submit" className="comic-btn bg-comic-blue px-4 py-2 text-sm">
+        <button type="submit" className="comic-btn bg-comic-blue px-4 py-2 text-sm text-chip-ink">
           Add
         </button>
       </form>
@@ -129,7 +129,7 @@ export default function TasksPage() {
                 )}
               </div>
               <span
-                className={`comic-badge px-2 py-0.5 text-xs ${PRIORITY_STYLES[task.priority]}`}
+                className={`comic-badge px-2 py-0.5 text-xs text-chip-ink ${PRIORITY_STYLES[task.priority]}`}
               >
                 {task.priority}
               </span>
