@@ -16,6 +16,7 @@ export async function POST(request: NextRequest) {
       notes: body.notes || null,
       dueDate: body.dueDate ? new Date(body.dueDate) : null,
       priority: body.priority || "medium",
+      category: body.category === "monthly" ? "monthly" : "weekly",
     },
   });
   return NextResponse.json(task, { status: 201 });

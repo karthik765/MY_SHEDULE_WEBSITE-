@@ -17,6 +17,7 @@ model Task {
   notes       String?
   dueDate     DateTime?
   priority    String    @default("medium") // "low" | "medium" | "high"
+  category    String    @default("weekly") // "weekly" | "monthly"
   completed   Boolean   @default(false)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -89,4 +90,22 @@ model Milestone {
   title     String
   completed Boolean @default(false)
   order     Int     @default(0)
+}
+
+model MediaItem {
+  id          String    @id @default(cuid())
+  category    String // "movie" | "webseries" | "game"
+  title       String
+  status      String    @default("upcoming") // "upcoming" | "completed"
+  completedAt DateTime?
+  imageUrl    String? // poster/cover image: remote URL or data: URI
+  notes       String?
+  createdAt   DateTime  @default(now())
+}
+
+// Once an achievement id lands here it stays forever, even if the stats
+// that originally triggered it later drop back below the threshold.
+model UnlockedAchievement {
+  id         String   @id // achievement id from src/lib/achievements.ts
+  unlockedAt DateTime @default(now())
 }

@@ -1,6 +1,12 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import { computeStudyStreak, STUDY_STREAK_GOAL_DAYS } from "@/lib/streaks";
+
+interface StudySession {
+  startTime: string;
+  durationMinutes: number | null;
+}
 
 interface Milestone {
   id: string;
@@ -19,13 +25,15 @@ interface Goal {
 
 export default function GoalsPage() {
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [sessions, setSessions] = useState<StudySession[]>([]);
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState("");
   const [milestoneDrafts, setMilestoneDrafts] = useState<Record<string, string>>({});
 
   async function load() {
-    const res = await fetch("/api/goals");
-    setGoals(await res.json());
+    const [goalsRes, timerRes] = await Promise.all([fetch("/api/goals"), fetch("/api/timer")]);
+    setGoals(await goalsRes.json());
+    setSessions(await timerRes.json());
     setLoading(false);
   }
 
@@ -82,6 +90,36 @@ export default function GoalsPage() {
       <h1 className="font-heading text-4xl text-comic-yellow" style={{ WebkitTextStroke: "1.5px var(--ink)" }}>
         Goals
       </h1>
+
+      {(() => {
+        const streak = computeStudyStreak(sessions);
+        const capped = Math.min(streak, STUDY_STREAK_GOAL_DAYS);
+        const progress = Math.round((capped / STUDY_STREAK_GOAL_DAYS) * 100);
+        const complete = streak >= STUDY_STREAK_GOAL_DAYS;
+        return (
+          <div className="comic-panel p-4">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="font-heading text-xl tracking-wide text-comic-orange">
+                🔥 Study Streak: 10 hrs/day
+              </p>
+              <span className="comic-badge bg-comic-orange px-2 py-0.5 text-xs text-chip-ink">
+                {capped}/{STUDY_STREAK_GOAL_DAYS} days
+              </span>
+            </div>
+            <div className="h-3 w-full overflow-hidden rounded-full border-2 border-ink bg-paper">
+              <div
+                className="h-full bg-comic-orange"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <p className="mt-1 text-xs font-bold text-ink/60">
+              {complete
+                ? "Goal complete! 🎉 50-day streak reached."
+                : `Study 10+ hours in a day to keep the streak alive. ${streak} day streak so far.`}
+            </p>
+          </div>
+        );
+      })()}
 
       <form onSubmit={handleAdd} className="comic-panel flex gap-2 p-4">
         <input

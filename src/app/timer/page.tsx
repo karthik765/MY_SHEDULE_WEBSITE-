@@ -19,11 +19,15 @@ function formatDuration(totalSeconds: number): string {
   return [h, m, s].map((n) => String(n).padStart(2, "0")).join(":");
 }
 
+const BREAK_MS = 20 * 60 * 1000;
+const BREAK_STORAGE_KEY = "timer-break-ends-at";
+
 export default function TimerPage() {
   const [active, setActive] = useState<StudySession | null | undefined>(undefined);
   const [sessions, setSessions] = useState<StudySession[]>([]);
   const [subject, setSubject] = useState("Study");
   const [now, setNow] = useState(() => Date.now());
+  const [breakEndsAt, setBreakEndsAt] = useState<number | null>(null);
 
   async function load() {
     const [activeRes, listRes] = await Promise.all([
@@ -37,13 +41,21 @@ export default function TimerPage() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time fetch on mount
     load();
+    const stored = Number(localStorage.getItem(BREAK_STORAGE_KEY));
+    if (stored && stored > Date.now()) {
+      setBreakEndsAt(stored);
+    } else if (stored) {
+      localStorage.removeItem(BREAK_STORAGE_KEY);
+    }
   }, []);
 
+  const breakActive = breakEndsAt !== null && now < breakEndsAt;
+
   useEffect(() => {
-    if (!active) return;
+    if (!active && !breakActive) return;
     const interval = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(interval);
-  }, [active]);
+  }, [active, breakActive]);
 
   async function start(e: FormEvent) {
     e.preventDefault();
@@ -52,12 +64,23 @@ export default function TimerPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ subject }),
     });
-    if (res.ok) load();
+    if (res.ok) {
+      skipBreak();
+      load();
+    }
   }
 
   async function stop() {
     await fetch("/api/timer/stop", { method: "POST" });
+    const endsAt = Date.now() + BREAK_MS;
+    setBreakEndsAt(endsAt);
+    localStorage.setItem(BREAK_STORAGE_KEY, String(endsAt));
     load();
+  }
+
+  function skipBreak() {
+    setBreakEndsAt(null);
+    localStorage.removeItem(BREAK_STORAGE_KEY);
   }
 
   async function remove(id: string) {
@@ -74,6 +97,8 @@ export default function TimerPage() {
   const weeklyLiveMinutes =
     weeklyMinutes + (active && new Date(active.startTime) >= weekStart ? elapsedSeconds / 60 : 0);
 
+  const breakRemainingSeconds = breakEndsAt ? Math.max(0, (breakEndsAt - now) / 1000) : 0;
+
   return (
     <div className="space-y-6">
       <h1 className="font-heading text-4xl text-comic-orange" style={{ WebkitTextStroke: "1.5px var(--ink)" }}>
@@ -81,8 +106,8 @@ export default function TimerPage() {
       </h1>
 
       <div
-        className={`comic-panel p-6 text-center ${active ? "text-chip-ink" : ""}`}
-        style={{ backgroundColor: active ? "var(--comic-orange)" : "var(--panel)" }}
+        className={`comic-panel p-6 text-center ${active || breakActive ? "text-chip-ink" : ""}`}
+        style={{ backgroundColor: active ? "var(--comic-orange)" : breakActive ? "var(--comic-green)" : "var(--panel)" }}
       >
         {active === undefined ? (
           <p className="text-ink/60">Loading...</p>
@@ -94,6 +119,16 @@ export default function TimerPage() {
             </p>
             <button onClick={stop} className="comic-btn bg-comic-red px-6 py-2 text-sm text-chip-ink">
               Stop
+            </button>
+          </>
+        ) : breakActive ? (
+          <>
+            <p className="text-sm font-bold text-chip-ink/80">☕ Break time</p>
+            <p className="font-heading my-3 text-6xl tracking-wide tabular-nums">
+              {formatDuration(breakRemainingSeconds)}
+            </p>
+            <button onClick={skipBreak} className="comic-btn bg-panel px-6 py-2 text-sm">
+              Skip break
             </button>
           </>
         ) : (

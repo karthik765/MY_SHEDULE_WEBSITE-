@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import ThemeToggle from "./ThemeToggle";
 
 const LINKS = [
@@ -12,11 +12,21 @@ const LINKS = [
   { href: "/habits", label: "Habits", color: "var(--comic-green)" },
   { href: "/journal", label: "Journal", color: "var(--comic-pink)" },
   { href: "/goals", label: "Goals", color: "var(--comic-yellow)" },
+  { href: "/achievements", label: "Achievements", color: "var(--comic-orange)" },
   { href: "/analytics", label: "Analytics", color: "var(--comic-blue)" },
 ];
 
 export default function NavBar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  if (pathname === "/login") return null;
+
+  async function handleLogout() {
+    await fetch("/api/logout", { method: "POST" });
+    router.push("/login");
+    router.refresh();
+  }
 
   return (
     <nav className="border-b-4 border-ink bg-panel">
@@ -44,6 +54,13 @@ export default function NavBar() {
           );
         })}
         <ThemeToggle />
+        <button
+          onClick={handleLogout}
+          className="comic-btn px-3 py-1.5 text-sm"
+          style={{ boxShadow: "2px 2px 0 0 var(--ink)" }}
+        >
+          Log Out
+        </button>
       </div>
     </nav>
   );

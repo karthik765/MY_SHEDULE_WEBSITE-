@@ -10,13 +10,13 @@ export async function PATCH(
   const data: Record<string, unknown> = {};
   if (body.title !== undefined) data.title = body.title;
   if (body.notes !== undefined) data.notes = body.notes || null;
-  if (body.dueDate !== undefined) data.dueDate = body.dueDate ? new Date(body.dueDate) : null;
-  if (body.priority !== undefined) data.priority = body.priority;
-  if (body.category !== undefined) data.category = body.category === "monthly" ? "monthly" : "weekly";
-  if (body.completed !== undefined) data.completed = body.completed;
-
-  const task = await prisma.task.update({ where: { id }, data });
-  return NextResponse.json(task);
+  if (body.imageUrl !== undefined) data.imageUrl = body.imageUrl || null;
+  if (body.status !== undefined) {
+    data.status = body.status === "completed" ? "completed" : "upcoming";
+    data.completedAt = data.status === "completed" ? new Date() : null;
+  }
+  const item = await prisma.mediaItem.update({ where: { id }, data });
+  return NextResponse.json(item);
 }
 
 export async function DELETE(
@@ -24,6 +24,6 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  await prisma.task.delete({ where: { id } });
+  await prisma.mediaItem.delete({ where: { id } });
   return NextResponse.json({ ok: true });
 }
