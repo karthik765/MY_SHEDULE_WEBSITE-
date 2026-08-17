@@ -86,6 +86,35 @@ function savePlanState(state: PlanState | null) {
   }
 }
 
+// The plan isn't meant to be casually stoppable mid-focus — only a limited
+// "Force Stop" escape hatch for genuine emergencies, capped per calendar day.
+const MAX_FORCE_STOPS_PER_DAY = 2;
+const FORCE_STOP_STORAGE_KEY = "timer-force-stops";
+
+function todayKey(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+interface ForceStopState {
+  date: string;
+  count: number;
+}
+
+function loadForceStopState(): ForceStopState {
+  const raw = localStorage.getItem(FORCE_STOP_STORAGE_KEY);
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw) as ForceStopState;
+      if (parsed.date === todayKey() && typeof parsed.count === "number") {
+        return parsed;
+      }
+    } catch {
+      // fall through
+    }
+  }
+  return { date: todayKey(), count: 0 };
+}
+
 // Optional extra round on top of the regular plan: up to 3 more hours of
 // focus, as many breaks as wanted, each break capped at 10 minutes.
 const BONUS_CAP_MINUTES = 3 * 60;
@@ -136,6 +165,7 @@ export default function TimerPage() {
   const [planJustFinished, setPlanJustFinished] = useState(false);
   const [bonus, setBonus] = useState<BonusState | null>(null);
   const [bonusFinishedMinutes, setBonusFinishedMinutes] = useState<number | null>(null);
+  const [forceStops, setForceStops] = useState<ForceStopState>({ date: todayKey(), count: 0 });
 
   async function load() {
     const [activeRes, listRes] = await Promise.all([
@@ -157,6 +187,7 @@ export default function TimerPage() {
     }
     setPlan(loadPlanState());
     setBonus(loadBonusState());
+    setForceStops(loadForceStopState());
   }, []);
 
   const breakActive = breakEndsAt !== null && now < breakEndsAt;
@@ -247,13 +278,22 @@ export default function TimerPage() {
     await advancePlan(plan.blockIndex + 1);
   }
 
-  async function cancelPlan() {
+  async function forceStopPlan() {
     if (!plan) return;
+    const current = loadForceStopState();
+    if (current.count >= MAX_FORCE_STOPS_PER_DAY) return;
+    const left = MAX_FORCE_STOPS_PER_DAY - current.count;
+    if (!window.confirm(`This uses a force stop (${left} left today). Only use this for real emergencies. Continue?`)) {
+      return;
+    }
     if (plan.phase === "focus") {
       await stopActiveSession();
     }
     setPlan(null);
     savePlanState(null);
+    const next: ForceStopState = { date: current.date, count: current.count + 1 };
+    localStorage.setItem(FORCE_STOP_STORAGE_KEY, JSON.stringify(next));
+    setForceStops(next);
     load();
   }
 
@@ -445,10 +485,18 @@ export default function TimerPage() {
                 Skip break
               </button>
             )}
-            <button onClick={cancelPlan} className="comic-btn bg-comic-red px-4 py-2 text-sm text-chip-ink">
-              Cancel Plan
+            <button
+              onClick={forceStopPlan}
+              disabled={forceStops.count >= MAX_FORCE_STOPS_PER_DAY}
+              className="comic-btn bg-comic-red px-4 py-2 text-sm text-chip-ink disabled:opacity-50"
+            >
+              Force Stop ({Math.max(0, MAX_FORCE_STOPS_PER_DAY - forceStops.count)} left today)
             </button>
           </div>
+          <p className="mt-2 text-xs text-chip-ink/70">
+            No casual stopping — this plan runs the full {formatMinutes(PLAN_TOTAL_FOCUS_MINUTES)}. Force Stop is only
+            for real emergencies.
+          </p>
         </div>
       ) : bonus ? (
         <div
