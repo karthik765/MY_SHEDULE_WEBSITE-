@@ -170,6 +170,7 @@ export default function HabitsPage() {
           accentColor="var(--comic-blue)"
           emoji="🎮"
           itemNoun="Game"
+          watchedVerb="Played"
         />
       )}
     </div>

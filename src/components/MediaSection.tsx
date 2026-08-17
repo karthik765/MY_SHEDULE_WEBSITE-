@@ -108,6 +108,7 @@ function PosterGrid({
   onDelete,
   onRemoveImage,
   onMarkDone,
+  markDoneLabel,
 }: {
   items: MediaItem[];
   emoji: string;
@@ -115,6 +116,7 @@ function PosterGrid({
   onDelete: (id: string) => void;
   onRemoveImage: (id: string) => void;
   onMarkDone?: (id: string) => void;
+  markDoneLabel?: string;
 }) {
   if (items.length === 0) return <p className="text-xs text-ink/40">{emptyLabel}</p>;
 
@@ -146,7 +148,7 @@ function PosterGrid({
                 onClick={() => onMarkDone(item.id)}
                 className="comic-btn w-full bg-comic-green py-1 text-xs text-chip-ink"
               >
-                Mark watched
+                {markDoneLabel ?? "Mark watched"}
               </button>
             )}
             <button
@@ -169,6 +171,7 @@ export default function MediaSection({
   accentColor,
   emoji,
   itemNoun,
+  watchedVerb = "Watched",
 }: {
   category: "movie" | "webseries" | "game";
   monthLabel: string;
@@ -176,6 +179,7 @@ export default function MediaSection({
   accentColor: string;
   emoji: string;
   itemNoun: string;
+  watchedVerb?: string;
 }) {
   const [items, setItems] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -237,7 +241,11 @@ export default function MediaSection({
   const completedThisMonth = items.filter(
     (i) => i.status === "completed" && i.completedAt && isThisMonth(i.completedAt)
   );
+  const watchedAll = items
+    .filter((i) => i.status === "completed")
+    .sort((a, b) => new Date(b.completedAt ?? 0).getTime() - new Date(a.completedAt ?? 0).getTime());
   const upcoming = items.filter((i) => i.status === "upcoming");
+  const markDoneLabel = `I Have ${watchedVerb} the ${itemNoun}`;
 
   return (
     <div className="space-y-8">
@@ -268,6 +276,24 @@ export default function MediaSection({
       </div>
 
       <div>
+        <div className="mb-2 flex items-center gap-2">
+          <h2 className="font-heading text-lg tracking-wide" style={{ color: accentColor }}>
+            Watched It
+          </h2>
+          <span className="comic-badge px-2 py-0.5 text-xs text-chip-ink" style={{ backgroundColor: accentColor }}>
+            {watchedAll.length}
+          </span>
+        </div>
+        <PosterGrid
+          items={watchedAll}
+          emoji={emoji}
+          emptyLabel={`Nothing marked as ${watchedVerb.toLowerCase()} yet.`}
+          onDelete={remove}
+          onRemoveImage={removeImage}
+        />
+      </div>
+
+      <div>
         <h2 className="font-heading mb-2 text-lg tracking-wide" style={{ color: accentColor }}>
           {upcomingLabel}
         </h2>
@@ -286,6 +312,7 @@ export default function MediaSection({
           onDelete={remove}
           onRemoveImage={removeImage}
           onMarkDone={markDone}
+          markDoneLabel={markDoneLabel}
         />
       </div>
     </div>
