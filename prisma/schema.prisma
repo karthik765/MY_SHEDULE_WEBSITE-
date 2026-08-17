@@ -1,13 +1,12 @@
-// Local dev uses SQLite (DATABASE_URL="file:./dev.db") for zero-setup development.
-// In production, DATABASE_URL points at Postgres (Neon) and `provider` below is switched to "postgresql".
-// Enums are intentionally avoided (unsupported on SQLite) so the schema works unchanged on both.
+// DATABASE_URL points at Postgres (Neon) — same database for local dev and
+// production, so data is consistent regardless of where it's accessed from.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
