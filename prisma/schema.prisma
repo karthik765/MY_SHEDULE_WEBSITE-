@@ -82,6 +82,9 @@ model Goal {
   // until targetDate passes — a commitment device, only settable on goals
   // that have a targetDate.
   locked      Boolean     @default(false)
+  // Evidence submitted to mark the goal complete: a link, or an uploaded
+  // image as a data: URI (same convention as MediaItem.imageUrl).
+  proofUrl    String?
   createdAt   DateTime    @default(now())
   milestones  Milestone[]
 }

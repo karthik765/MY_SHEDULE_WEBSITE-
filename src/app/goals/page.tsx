@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { computeStudyStreak, STUDY_STREAK_GOAL_DAYS } from "@/lib/streaks";
 import { isGoalLocked } from "@/lib/goals";
 
@@ -22,7 +22,17 @@ interface Goal {
   targetDate: string | null;
   status: string;
   locked: boolean;
+  proofUrl: string | null;
   milestones: Milestone[];
+}
+
+function readImageAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
 }
 
 const TIMELINE_PRESETS = [
@@ -66,6 +76,10 @@ export default function GoalsPage() {
   const [timeline, setTimeline] = useState("none");
   const [customDate, setCustomDate] = useState(() => addDays(30));
   const [milestoneDrafts, setMilestoneDrafts] = useState<Record<string, string>>({});
+  const [proofPanelFor, setProofPanelFor] = useState<string | null>(null);
+  const [proofLink, setProofLink] = useState("");
+  const [proofImage, setProofImage] = useState("");
+  const [proofError, setProofError] = useState<string | null>(null);
 
   async function load() {
     const [goalsRes, timerRes] = await Promise.all([fetch("/api/goals"), fetch("/api/timer")]);
@@ -99,14 +113,51 @@ export default function GoalsPage() {
     await fetch(`/api/goals/${id}`, { method: "DELETE" });
   }
 
-  async function toggleGoalComplete(goal: Goal) {
-    const nextStatus = goal.status === "completed" ? "active" : "completed";
-    setGoals((prev) => prev.map((g) => (g.id === goal.id ? { ...g, status: nextStatus } : g)));
+  // Un-completing needs no proof — only marking a goal complete does, via
+  // the proof panel below.
+  async function uncompleteGoal(goal: Goal) {
+    setGoals((prev) => prev.map((g) => (g.id === goal.id ? { ...g, status: "active" } : g)));
     await fetch(`/api/goals/${goal.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: nextStatus }),
+      body: JSON.stringify({ status: "active" }),
     });
+    load();
+  }
+
+  function openProofPanel(goalId: string) {
+    setProofPanelFor(goalId);
+    setProofLink("");
+    setProofImage("");
+    setProofError(null);
+  }
+
+  function closeProofPanel() {
+    setProofPanelFor(null);
+    setProofLink("");
+    setProofImage("");
+    setProofError(null);
+  }
+
+  async function handleProofFile(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setProofImage(await readImageAsDataUrl(file));
+  }
+
+  async function submitProof(goal: Goal) {
+    const proofUrl = proofLink.trim() || proofImage;
+    if (!proofUrl) {
+      setProofError("Add a link or upload an image as proof first.");
+      return;
+    }
+    setGoals((prev) => prev.map((g) => (g.id === goal.id ? { ...g, status: "completed", proofUrl } : g)));
+    await fetch(`/api/goals/${goal.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "completed", proofUrl }),
+    });
+    closeProofPanel();
     load();
   }
 
@@ -250,8 +301,8 @@ export default function GoalsPage() {
                     <input
                       type="checkbox"
                       checked={completed}
-                      onChange={() => toggleGoalComplete(goal)}
-                      title="Mark goal complete"
+                      onChange={() => (completed ? uncompleteGoal(goal) : openProofPanel(goal.id))}
+                      title={completed ? "Mark goal incomplete" : "Mark goal complete (proof required)"}
                       className="h-5 w-5 accent-[color:var(--comic-green)]"
                     />
                     <p className={`font-heading text-xl tracking-wide ${completed ? "line-through" : ""}`}>
@@ -291,6 +342,54 @@ export default function GoalsPage() {
                     )}
                   </div>
                 </div>
+
+                {proofPanelFor === goal.id && (
+                  <div className="comic-panel-sm mb-3 space-y-2 bg-paper p-3">
+                    <p className="text-xs font-bold text-ink/70">
+                      Proof required to complete — a link (e.g. your YouTube video) or an uploaded image.
+                    </p>
+                    <input
+                      className="comic-input w-full px-2 py-1 text-xs"
+                      placeholder="https://..."
+                      value={proofLink}
+                      onChange={(e) => setProofLink(e.target.value)}
+                    />
+                    <div className="flex items-center gap-2">
+                      <input type="file" accept="image/*" onChange={handleProofFile} className="text-xs" />
+                      {proofImage && <span className="text-xs font-bold text-comic-green">Image attached ✓</span>}
+                    </div>
+                    {proofError && <p className="text-xs font-bold text-comic-red">{proofError}</p>}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => submitProof(goal)}
+                        className="comic-btn bg-comic-green px-3 py-1 text-xs text-chip-ink"
+                      >
+                        Submit & Complete
+                      </button>
+                      <button onClick={closeProofPanel} className="comic-btn bg-panel px-3 py-1 text-xs">
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {completed && goal.proofUrl && (
+                  <div className="mb-3 text-xs">
+                    {goal.proofUrl.startsWith("data:") ? (
+                      /* eslint-disable-next-line @next/next/no-img-element -- user-uploaded proof (data: URI), not an optimizable static asset */
+                      <img src={goal.proofUrl} alt="Proof of completion" className="h-20 rounded border-2 border-ink" />
+                    ) : (
+                      <a
+                        href={goal.proofUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-bold text-comic-blue hover:underline"
+                      >
+                        🔗 View proof
+                      </a>
+                    )}
+                  </div>
+                )}
 
                 {total > 0 && (
                   <div className="mb-3">
