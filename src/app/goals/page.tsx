@@ -23,11 +23,46 @@ interface Goal {
   milestones: Milestone[];
 }
 
+const TIMELINE_PRESETS = [
+  { value: "none", label: "No deadline", days: null as number | null },
+  { value: "7", label: "1 week", days: 7 },
+  { value: "14", label: "2 weeks", days: 14 },
+  { value: "30", label: "1 month", days: 30 },
+  { value: "50", label: "50 days", days: 50 },
+  { value: "90", label: "3 months", days: 90 },
+  { value: "180", label: "6 months", days: 180 },
+  { value: "custom", label: "Custom date...", days: null },
+];
+
+function addDays(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function countdown(targetDate: string | null, status: string): { text: string; color: string } | null {
+  if (status === "completed") return { text: "✅ Completed", color: "var(--comic-green)" };
+  if (!targetDate) return null;
+  const target = new Date(targetDate);
+  target.setHours(23, 59, 59, 999);
+  const diffDays = Math.ceil((target.getTime() - Date.now()) / 86_400_000);
+  if (diffDays < 0) {
+    return { text: `⏰ ${Math.abs(diffDays)} day${Math.abs(diffDays) === 1 ? "" : "s"} overdue`, color: "var(--comic-red)" };
+  }
+  if (diffDays === 0) return { text: "⏰ Due today", color: "var(--comic-orange)" };
+  return {
+    text: `⏳ ${diffDays} day${diffDays === 1 ? "" : "s"} left`,
+    color: diffDays <= 3 ? "var(--comic-red)" : diffDays <= 14 ? "var(--comic-orange)" : "var(--comic-blue)",
+  };
+}
+
 export default function GoalsPage() {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [sessions, setSessions] = useState<StudySession[]>([]);
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState("");
+  const [timeline, setTimeline] = useState("none");
+  const [customDate, setCustomDate] = useState(() => addDays(30));
   const [milestoneDrafts, setMilestoneDrafts] = useState<Record<string, string>>({});
 
   async function load() {
@@ -45,12 +80,15 @@ export default function GoalsPage() {
   async function handleAdd(e: FormEvent) {
     e.preventDefault();
     if (!title.trim()) return;
+    const preset = TIMELINE_PRESETS.find((p) => p.value === timeline);
+    const targetDate = timeline === "custom" ? customDate : preset?.days != null ? addDays(preset.days) : null;
     await fetch("/api/goals", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title }),
+      body: JSON.stringify({ title, targetDate }),
     });
     setTitle("");
+    setTimeline("none");
     load();
   }
 
@@ -121,13 +159,41 @@ export default function GoalsPage() {
         );
       })()}
 
-      <form onSubmit={handleAdd} className="comic-panel flex gap-2 p-4">
-        <input
-          className="comic-input flex-1 px-3 py-2 text-sm"
-          placeholder="New goal..."
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
+      <form onSubmit={handleAdd} className="comic-panel flex flex-wrap items-end gap-2 p-4">
+        <div className="flex min-w-[160px] flex-1 flex-col gap-1">
+          <label className="text-xs font-bold text-ink/70">Goal</label>
+          <input
+            className="comic-input px-3 py-2 text-sm"
+            placeholder="New goal..."
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-bold text-ink/70">Timeline</label>
+          <select
+            className="comic-input px-3 py-2 text-sm"
+            value={timeline}
+            onChange={(e) => setTimeline(e.target.value)}
+          >
+            {TIMELINE_PRESETS.map((p) => (
+              <option key={p.value} value={p.value}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        {timeline === "custom" && (
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-bold text-ink/70">Target date</label>
+            <input
+              type="date"
+              className="comic-input px-3 py-2 text-sm"
+              value={customDate}
+              onChange={(e) => setCustomDate(e.target.value)}
+            />
+          </div>
+        )}
         <button type="submit" className="comic-btn bg-comic-blue px-4 py-2 text-sm text-chip-ink">
           Add
         </button>
@@ -143,16 +209,27 @@ export default function GoalsPage() {
             const done = goal.milestones.filter((m) => m.completed).length;
             const total = goal.milestones.length;
             const progress = total > 0 ? Math.round((done / total) * 100) : 0;
+            const dueBadge = countdown(goal.targetDate, goal.status);
             return (
               <li key={goal.id} className="comic-panel p-4">
-                <div className="mb-2 flex items-center justify-between">
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                   <p className="font-heading text-xl tracking-wide">{goal.title}</p>
-                  <button
-                    onClick={() => removeGoal(goal.id)}
-                    className="text-xs font-bold text-comic-red hover:underline"
-                  >
-                    Delete
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {dueBadge && (
+                      <span
+                        className="comic-badge px-2 py-0.5 text-xs text-chip-ink"
+                        style={{ backgroundColor: dueBadge.color }}
+                      >
+                        {dueBadge.text}
+                      </span>
+                    )}
+                    <button
+                      onClick={() => removeGoal(goal.id)}
+                      className="text-xs font-bold text-comic-red hover:underline"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
 
                 {total > 0 && (
