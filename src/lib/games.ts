@@ -1,5 +1,6 @@
 export type GameKind = "minigame" | "puzzle" | "riddle";
 export type Difficulty = "easy" | "medium" | "hard";
+export type GameResult = "won" | "lost" | "draw";
 
 export interface GameDef {
   id: string;
@@ -14,6 +15,21 @@ export interface GameDef {
 export interface AnswerDef extends GameDef {
   question: string;
   answers: string[]; // accepted answers, matched case/whitespace/punctuation-insensitive
+}
+
+// Most recent Monday 00:00 (server-local) — the boundary the weekly minigame
+// cap resets on.
+export function startOfWeek(from: Date = new Date()): Date {
+  const d = new Date(from);
+  d.setHours(0, 0, 0, 0);
+  const day = d.getDay(); // 0 = Sunday
+  const diffToMonday = day === 0 ? 6 : day - 1;
+  d.setDate(d.getDate() - diffToMonday);
+  return d;
+}
+
+export function difficultyBonus(baseMinutes: number, difficulty: Difficulty): number {
+  return Math.round(baseMinutes * DIFFICULTY_BONUS_PCT[difficulty]);
 }
 
 export const MINIGAMES: GameDef[] = [
@@ -64,9 +80,31 @@ export const MINIGAMES: GameDef[] = [
   },
 ];
 
-// Daily cap on rewarded completions per minigame — replay for fun as much as
-// you want, but only this many wins per day per game count toward the timer.
-export const MINIGAME_DAILY_LIMIT = 3;
+// Minigames now use a player-chosen per-play difficulty (see GameDetailPage)
+// instead of a flat daily cap. Replay for fun as much as you want — these
+// caps only gate how many of those plays actually earn a reward.
+//
+// Daily: how many *rewarded* plays a single game allows per difficulty tier
+// per day. Harder tiers are scarcer since they're worth more.
+export const MINIGAME_DAILY_LIMIT_BY_DIFFICULTY: Record<Difficulty, number> = {
+  easy: 2,
+  medium: 1,
+  hard: 1,
+};
+
+// Weekly: total rewarded minigame plays allowed across ALL minigames
+// combined, reset every Monday. Once used up, every minigame is locked for
+// rewards until next week (you can still play, just for fun).
+export const MINIGAME_WEEKLY_CAP = 15;
+
+// Bonus added on top of a minigame's base rewardMinutes, based on the
+// difficulty tier the play was completed at. Applied once per play — never
+// stacked or doubled.
+export const DIFFICULTY_BONUS_PCT: Record<Difficulty, number> = {
+  easy: 0,
+  medium: 0.1,
+  hard: 0.3,
+};
 
 export const PUZZLES: AnswerDef[] = [
   {

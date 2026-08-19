@@ -1,8 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { Difficulty, GameResult } from "@/lib/games";
 
-const EMOJIS = ["🎯", "🚀", "🎨", "🎮", "🧩", "⭐"];
+const EMOJIS = ["🎯", "🚀", "🎨", "🎮", "🧩", "⭐", "🍕", "🐙"];
+
+// Fewer pairs (and a shorter memorization window) for Easy, more for Hard.
+const PAIRS: Record<Difficulty, number> = { easy: 4, medium: 6, hard: 8 };
 
 interface CardT {
   id: number;
@@ -10,8 +14,9 @@ interface CardT {
   matched: boolean;
 }
 
-function shuffledDeck(): CardT[] {
-  const deck = [...EMOJIS, ...EMOJIS].map((emoji, i) => ({ id: i, emoji, matched: false }));
+function shuffledDeck(pairs: number): CardT[] {
+  const chosen = EMOJIS.slice(0, pairs);
+  const deck = [...chosen, ...chosen].map((emoji, i) => ({ id: i, emoji, matched: false }));
   for (let i = deck.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [deck[i], deck[j]] = [deck[j], deck[i]];
@@ -19,8 +24,15 @@ function shuffledDeck(): CardT[] {
   return deck;
 }
 
-export default function Memory({ onWin }: { onWin: () => void }) {
-  const [deck, setDeck] = useState<CardT[]>(() => shuffledDeck());
+export default function Memory({
+  difficulty,
+  onEnd,
+}: {
+  difficulty: Difficulty;
+  onEnd: (result: GameResult) => void;
+}) {
+  const pairs = PAIRS[difficulty];
+  const [deck, setDeck] = useState<CardT[]>(() => shuffledDeck(pairs));
   const [flipped, setFlipped] = useState<number[]>([]);
   const [moves, setMoves] = useState(0);
   const reportedRef = useRef(false);
@@ -30,9 +42,9 @@ export default function Memory({ onWin }: { onWin: () => void }) {
   useEffect(() => {
     if (allMatched && !reportedRef.current) {
       reportedRef.current = true;
-      onWin();
+      onEnd("won");
     }
-  }, [allMatched, onWin]);
+  }, [allMatched, onEnd]);
 
   useEffect(() => {
     if (flipped.length !== 2) return;
@@ -57,7 +69,7 @@ export default function Memory({ onWin }: { onWin: () => void }) {
   }
 
   function reset() {
-    setDeck(shuffledDeck());
+    setDeck(shuffledDeck(pairs));
     setFlipped([]);
     setMoves(0);
     reportedRef.current = false;

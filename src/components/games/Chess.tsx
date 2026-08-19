@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { Difficulty, GameResult } from "@/lib/games";
 
 type PieceType = "p" | "n" | "b" | "r" | "q" | "k";
 type Color = "w" | "b";
@@ -108,26 +109,108 @@ function applyMove(board: BoardT, from: Pos, to: Pos): BoardT {
   return next;
 }
 
-function cpuChooseMove(board: BoardT): { from: Pos; to: Pos } | null {
-  const candidates: { from: Pos; to: Pos; score: number }[] = [];
+interface MoveOption {
+  from: Pos;
+  to: Pos;
+  captured: Piece | null;
+}
+
+function allMoves(board: BoardT, color: Color): MoveOption[] {
+  const moves: MoveOption[] = [];
   for (let r = 0; r < 8; r++) {
     for (let c = 0; c < 8; c++) {
       const piece = board[r][c];
-      if (piece?.color === "b") {
+      if (piece?.color === color) {
         for (const to of pieceMoves(board, r, c)) {
-          const target = board[to[0]][to[1]];
-          candidates.push({ from: [r, c], to, score: target ? VALUE[target.type] : 0 });
+          moves.push({ from: [r, c], to, captured: board[to[0]][to[1]] });
         }
       }
     }
   }
+  return moves;
+}
+
+function materialValue(piece: Piece | null): number {
+  return piece ? VALUE[piece.type] : 0;
+}
+
+function totalMaterial(board: BoardT, color: Color): number {
+  let total = 0;
+  for (const row of board) for (const p of row) if (p?.color === color) total += VALUE[p.type];
+  return total;
+}
+
+// Easy: grab the best immediate capture (or shuffle randomly if nothing to
+// take) — no thought for what happens after. This is the original CPU.
+function cpuChooseMoveEasy(board: BoardT): { from: Pos; to: Pos } | null {
+  const candidates = allMoves(board, "b");
   if (candidates.length === 0) return null;
-  const best = Math.max(...candidates.map((c) => c.score));
-  const bestCandidates = best > 0 ? candidates.filter((c) => c.score === best) : candidates;
+  const best = Math.max(...candidates.map((c) => materialValue(c.captured)));
+  const bestCandidates = best > 0 ? candidates.filter((c) => materialValue(c.captured) === best) : candidates;
   return bestCandidates[Math.floor(Math.random() * bestCandidates.length)];
 }
 
-export default function Chess({ onWin }: { onWin: () => void }) {
+// Medium: still greedy about captures, but subtracts what White could grab
+// right back next turn — so it stops hanging pieces for no reason.
+function cpuChooseMoveMedium(board: BoardT): { from: Pos; to: Pos } | null {
+  const candidates = allMoves(board, "b");
+  if (candidates.length === 0) return null;
+  const scored = candidates.map((m) => {
+    if (m.captured?.type === "k") return { ...m, score: Infinity };
+    const afterMove = applyMove(board, m.from, m.to);
+    const exposure = Math.max(0, ...allMoves(afterMove, "w").map((wm) => materialValue(wm.captured)), 0);
+    return { ...m, score: materialValue(m.captured) - exposure };
+  });
+  const best = Math.max(...scored.map((c) => c.score));
+  const bestCandidates = scored.filter((c) => c.score === best);
+  return bestCandidates[Math.floor(Math.random() * bestCandidates.length)];
+}
+
+// Hard: 2-ply minimax — for every candidate move, assume White replies with
+// its own best material swing, and pick the Black move that holds up best
+// against that. Genuinely plans a move ahead instead of just grabbing.
+function cpuChooseMoveHard(board: BoardT): { from: Pos; to: Pos } | null {
+  const blackMoves = allMoves(board, "b");
+  if (blackMoves.length === 0) return null;
+
+  let bestScore = -Infinity;
+  let bestMoves: { from: Pos; to: Pos }[] = [];
+
+  for (const bm of blackMoves) {
+    if (bm.captured?.type === "k") return { from: bm.from, to: bm.to };
+
+    const afterBlack = applyMove(board, bm.from, bm.to);
+    const whiteReplies = allMoves(afterBlack, "w");
+    let worstForBlack = totalMaterial(afterBlack, "b") - totalMaterial(afterBlack, "w");
+    for (const wm of whiteReplies) {
+      const afterWhite = applyMove(afterBlack, wm.from, wm.to);
+      const evalScore = totalMaterial(afterWhite, "b") - totalMaterial(afterWhite, "w");
+      worstForBlack = Math.min(worstForBlack, evalScore);
+    }
+
+    if (worstForBlack > bestScore) {
+      bestScore = worstForBlack;
+      bestMoves = [{ from: bm.from, to: bm.to }];
+    } else if (worstForBlack === bestScore) {
+      bestMoves.push({ from: bm.from, to: bm.to });
+    }
+  }
+  return bestMoves[Math.floor(Math.random() * bestMoves.length)];
+}
+
+function cpuChooseMove(board: BoardT, difficulty: Difficulty): { from: Pos; to: Pos } | null {
+  if (difficulty === "easy") return cpuChooseMoveEasy(board);
+  if (difficulty === "hard") return cpuChooseMoveHard(board);
+  return cpuChooseMoveMedium(board);
+}
+
+export default function Chess({
+  difficulty,
+  onEnd,
+}: {
+  difficulty: Difficulty;
+  onEnd: (result: GameResult) => void;
+}) {
   const [board, setBoard] = useState<BoardT>(() => initialBoard());
   const [selected, setSelected] = useState<Pos | null>(null);
   const [turn, setTurn] = useState<Color>("w");
@@ -138,22 +221,23 @@ export default function Chess({ onWin }: { onWin: () => void }) {
   useEffect(() => {
     if (status !== "playing" || turn !== "b") return;
     const timeout = setTimeout(() => {
-      const cpuMove = cpuChooseMove(board);
+      const cpuMove = cpuChooseMove(board, difficulty);
       if (!cpuMove) {
         setStatus("won");
-        onWin();
+        onEnd("won");
         return;
       }
       const target = board[cpuMove.to[0]][cpuMove.to[1]];
       setBoard(applyMove(board, cpuMove.from, cpuMove.to));
       if (target?.type === "k") {
         setStatus("lost");
+        onEnd("lost");
       } else {
         setTurn("w");
       }
     }, 500);
     return () => clearTimeout(timeout);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- onWin is stable for the game's lifetime
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- onEnd is stable for the game's lifetime
   }, [turn, status, board]);
 
   function handleClick(r: number, c: number) {
@@ -168,7 +252,7 @@ export default function Chess({ onWin }: { onWin: () => void }) {
         setSelected(null);
         if (target?.type === "k") {
           setStatus("won");
-          onWin();
+          onEnd("won");
         } else {
           setTurn("b");
         }

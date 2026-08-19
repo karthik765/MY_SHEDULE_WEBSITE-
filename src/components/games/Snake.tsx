@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { Difficulty, GameResult } from "@/lib/games";
 
 const GRID = 15;
-const TICK_MS = 150;
-const WIN_SCORE = 5;
+
+const TICK_MS: Record<Difficulty, number> = { easy: 220, medium: 150, hard: 95 };
+const WIN_SCORE: Record<Difficulty, number> = { easy: 4, medium: 5, hard: 7 };
 
 interface Pt {
   x: number;
@@ -25,7 +27,15 @@ function randomFood(snake: Pt[]): Pt {
   return p;
 }
 
-export default function Snake({ onWin }: { onWin: (score: number) => void }) {
+export default function Snake({
+  difficulty,
+  onEnd,
+}: {
+  difficulty: Difficulty;
+  onEnd: (result: GameResult, score: number) => void;
+}) {
+  const winScore = WIN_SCORE[difficulty];
+  const tickMs = TICK_MS[difficulty];
   const [snake, setSnake] = useState<Pt[]>(INITIAL_SNAKE);
   const [food, setFood] = useState<Pt>(() => randomFood(INITIAL_SNAKE));
   const [gameOver, setGameOver] = useState(false);
@@ -82,16 +92,16 @@ export default function Snake({ onWin }: { onWin: (score: number) => void }) {
         }
         return newSnake;
       });
-    }, TICK_MS);
+    }, tickMs);
     return () => clearInterval(interval);
-  }, [started, gameOver]);
+  }, [started, gameOver, tickMs]);
 
   useEffect(() => {
-    if (gameOver && score >= WIN_SCORE && !reportedRef.current) {
+    if (gameOver && !reportedRef.current) {
       reportedRef.current = true;
-      onWin(score);
+      onEnd(score >= winScore ? "won" : "lost", score);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- onWin is stable for the game's lifetime
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- onEnd is stable for the game's lifetime
   }, [gameOver, score]);
 
   function start() {
@@ -111,9 +121,9 @@ export default function Snake({ onWin }: { onWin: (score: number) => void }) {
     <div className="comic-panel flex flex-col items-center gap-4 p-6">
       <p className="text-sm font-bold text-ink/70">
         {!started
-          ? `Arrow keys / WASD to move — reach ${WIN_SCORE} apples to win`
+          ? `Arrow keys / WASD to move — reach ${winScore} apples to win`
           : gameOver
-            ? `Game over — score ${score}${score < WIN_SCORE ? ` (need ${WIN_SCORE} to win)` : ""}`
+            ? `Game over — score ${score}${score < winScore ? ` (need ${winScore} to win)` : ""}`
             : `Score: ${score}`}
       </p>
       <div

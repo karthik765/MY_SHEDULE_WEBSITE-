@@ -1,19 +1,22 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { Difficulty, GameResult } from "@/lib/games";
 
-const SIZE = 4;
+// Smaller board = less room to maneuver = harder to reach 2048.
+const SIZE_BY_DIFFICULTY: Record<Difficulty, number> = { easy: 5, medium: 4, hard: 3 };
 const WIN_TILE = 2048;
 
 type Grid = number[][];
 
-function emptyGrid(): Grid {
-  return Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
+function emptyGrid(size: number): Grid {
+  return Array.from({ length: size }, () => Array(size).fill(0));
 }
 
 function emptyCells(grid: Grid): [number, number][] {
+  const size = grid.length;
   const cells: [number, number][] = [];
-  for (let y = 0; y < SIZE; y++) for (let x = 0; x < SIZE; x++) if (grid[y][x] === 0) cells.push([y, x]);
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) if (grid[y][x] === 0) cells.push([y, x]);
   return cells;
 }
 
@@ -45,12 +48,13 @@ function slideLine(line: number[]): { line: number[]; gained: number } {
 }
 
 function move(grid: Grid, dir: "left" | "right" | "up" | "down"): { grid: Grid; gained: number; changed: boolean } {
-  const next = emptyGrid();
+  const size = grid.length;
+  const next = emptyGrid(size);
   let gained = 0;
   let changed = false;
 
   if (dir === "left" || dir === "right") {
-    for (let y = 0; y < SIZE; y++) {
+    for (let y = 0; y < size; y++) {
       const row = dir === "left" ? grid[y] : [...grid[y]].reverse();
       const { line, gained: g } = slideLine(row);
       const finalLine = dir === "left" ? line : [...line].reverse();
@@ -59,13 +63,13 @@ function move(grid: Grid, dir: "left" | "right" | "up" | "down"): { grid: Grid; 
       if (finalLine.some((v, x) => v !== grid[y][x])) changed = true;
     }
   } else {
-    for (let x = 0; x < SIZE; x++) {
-      const col = [0, 1, 2, 3].map((y) => grid[y][x]);
+    for (let x = 0; x < size; x++) {
+      const col = Array.from({ length: size }, (_, y) => grid[y][x]);
       const oriented = dir === "up" ? col : [...col].reverse();
       const { line, gained: g } = slideLine(oriented);
       const finalCol = dir === "up" ? line : [...line].reverse();
       gained += g;
-      for (let y = 0; y < SIZE; y++) {
+      for (let y = 0; y < size; y++) {
         next[y][x] = finalCol[y];
         if (finalCol[y] !== grid[y][x]) changed = true;
       }
@@ -77,11 +81,12 @@ function move(grid: Grid, dir: "left" | "right" | "up" | "down"): { grid: Grid; 
 
 function hasMoves(grid: Grid): boolean {
   if (emptyCells(grid).length > 0) return true;
-  for (let y = 0; y < SIZE; y++) {
-    for (let x = 0; x < SIZE; x++) {
+  const size = grid.length;
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
       const v = grid[y][x];
-      if (x < SIZE - 1 && grid[y][x + 1] === v) return true;
-      if (y < SIZE - 1 && grid[y + 1][x] === v) return true;
+      if (x < size - 1 && grid[y][x + 1] === v) return true;
+      if (y < size - 1 && grid[y + 1][x] === v) return true;
     }
   }
   return false;
@@ -101,8 +106,15 @@ const TILE_COLORS: Record<number, string> = {
   2048: "var(--comic-green)",
 };
 
-export default function Merge2048({ onWin }: { onWin: (score: number) => void }) {
-  const [grid, setGrid] = useState<Grid>(() => spawnTile(spawnTile(emptyGrid())));
+export default function Merge2048({
+  difficulty,
+  onEnd,
+}: {
+  difficulty: Difficulty;
+  onEnd: (result: GameResult, score: number) => void;
+}) {
+  const size = SIZE_BY_DIFFICULTY[difficulty];
+  const [grid, setGrid] = useState<Grid>(() => spawnTile(spawnTile(emptyGrid(size))));
   const [score, setScore] = useState(0);
   const [status, setStatus] = useState<"playing" | "won" | "over">("playing");
   const reportedRef = useRef(false);
@@ -131,20 +143,24 @@ export default function Merge2048({ onWin }: { onWin: (score: number) => void })
         if (result.grid.some((row) => row.some((v) => v >= WIN_TILE)) && !reportedRef.current) {
           reportedRef.current = true;
           setStatus("won");
-          onWin(score + result.gained);
+          onEnd("won", score + result.gained);
         } else if (!hasMoves(withNewTile)) {
           setStatus("over");
+          if (!reportedRef.current) {
+            reportedRef.current = true;
+            onEnd("lost", score + result.gained);
+          }
         }
         return withNewTile;
       });
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- score/onWin read via closure are fine here; effect keys off status only
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- score/onEnd read via closure are fine here; effect keys off status only
   }, [status]);
 
   function reset() {
-    setGrid(spawnTile(spawnTile(emptyGrid())));
+    setGrid(spawnTile(spawnTile(emptyGrid(size))));
     setScore(0);
     setStatus("playing");
     reportedRef.current = false;
@@ -160,13 +176,13 @@ export default function Merge2048({ onWin }: { onWin: (score: number) => void })
       </p>
       <div
         className="comic-panel-sm grid gap-1.5 p-1.5"
-        style={{ gridTemplateColumns: `repeat(${SIZE}, 1fr)`, width: 280, height: 280, backgroundColor: "var(--paper)" }}
+        style={{ gridTemplateColumns: `repeat(${size}, 1fr)`, width: 280, height: 280, backgroundColor: "var(--paper)" }}
       >
         {grid.flatMap((row, y) =>
           row.map((v, x) => (
             <div
               key={`${y}-${x}`}
-              className="font-heading flex items-center justify-center rounded text-lg"
+              className={`font-heading flex items-center justify-center rounded ${size >= 5 ? "text-sm" : "text-lg"}`}
               style={{ backgroundColor: v === 0 ? "var(--panel)" : (TILE_COLORS[v] ?? "var(--comic-green)") }}
             >
               {v !== 0 && v}

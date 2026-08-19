@@ -18,6 +18,9 @@ model Task {
   priority    String    @default("medium") // "low" | "medium" | "high"
   category    String    @default("weekly") // "weekly" | "monthly"
   completed   Boolean   @default(false)
+  // Set once, the first time dueDate passes while still incomplete — gates
+  // the one-time focus-point penalty so it never fires twice for one task.
+  failedAt    DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
@@ -85,6 +88,10 @@ model Goal {
   // Evidence submitted to mark the goal complete: a link, or an uploaded
   // image as a data: URI (same convention as MediaItem.imageUrl).
   proofUrl    String?
+  // Set once, the first time targetDate passes while status is still
+  // "active" — gates the one-time focus-point penalty (status also flips to
+  // "abandoned" at that point) so it never fires twice for one goal.
+  failedAt    DateTime?
   createdAt   DateTime    @default(now())
   milestones  Milestone[]
 }
@@ -131,4 +138,47 @@ model GameRecord {
   completionsToday   Int      @default(0)
   lastCompletionDate String? // "YYYY-MM-DD", local to the server
   updatedAt          DateTime @updatedAt
+}
+
+// One row per finished minigame session, win or not — separate from
+// GamePlay (which only logs *rewarded* plays). Backs "games played" /
+// "games won" stats without being limited by the daily/weekly reward caps.
+model GameAttempt {
+  id       String   @id @default(cuid())
+  game     String
+  result   String // "won" | "lost" | "draw"
+  playedAt DateTime @default(now())
+
+  @@index([game, playedAt])
+  @@index([playedAt])
+}
+
+// One row per rewarded minigame play (kind = "minigame" only — puzzles and
+// riddles stay one-shot via GameRecord.solved). Backs the per-difficulty
+// daily caps and the combined weekly cap: rows are only written when a play
+// actually earns a reward, so counting rows *is* counting chances used.
+model GamePlay {
+  id             String   @id @default(cuid())
+  game           String
+  difficulty     String // "easy" | "medium" | "hard"
+  awardedMinutes Int
+  bonusPoints    Int      @default(0)
+  playedAt       DateTime @default(now())
+
+  @@index([game, difficulty, playedAt])
+  @@index([playedAt])
+}
+
+// Ledger of focus-point bonuses/penalties that are NOT real logged study
+// time — minigame/puzzle/riddle rewards, and task/goal/habit failure
+// penalties. Focus Points = sum(StudySession.durationMinutes) + sum(amount)
+// here, so this can move the Focus Points total up or down without ever
+// touching the StudySession history that the Focus stats/streak read from.
+model FocusPointAdjustment {
+  id        String   @id @default(cuid())
+  amount    Int // positive = bonus, negative = penalty
+  reason    String // e.g. "minigame:chess:hard", "task-failed:<id>", "habit-missed:<id>:<day>"
+  createdAt DateTime @default(now())
+
+  @@index([reason])
 }

@@ -235,7 +235,7 @@ export default function FocusPage() {
   const [bonus, setBonus] = useState<BonusState | null>(null);
   const [bonusFinishedMinutes, setBonusFinishedMinutes] = useState<number | null>(null);
   const [forceStops, setForceStops] = useState<ForceStopState>({ date: todayKey(), count: 0 });
-  const [unit, setUnit] = useState<DisplayUnit>("minutes");
+  const [unit, setUnit] = useState<DisplayUnit>("hours");
   const [historyView, setHistoryView] = useState<"daily" | "weekly">("daily");
   const audioCtxRef = useRef<AudioContext | null>(null);
 

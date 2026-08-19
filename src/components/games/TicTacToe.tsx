@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { Difficulty, GameResult } from "@/lib/games";
 
 type Cell = "X" | "O" | null;
 
@@ -22,8 +23,17 @@ function winner(board: Cell[]): Cell {
   return null;
 }
 
-function cpuMove(board: Cell[]): number {
-  const empty = board.map((c, i) => (c ? -1 : i)).filter((i) => i >= 0);
+function emptyIndices(board: Cell[]): number[] {
+  return board.map((c, i) => (c ? -1 : i)).filter((i) => i >= 0);
+}
+
+function cpuMoveEasy(board: Cell[]): number {
+  const empty = emptyIndices(board);
+  return empty[Math.floor(Math.random() * empty.length)];
+}
+
+function cpuMoveMedium(board: Cell[]): number {
+  const empty = emptyIndices(board);
 
   // 1. Win if possible.
   for (const i of empty) {
@@ -44,7 +54,43 @@ function cpuMove(board: Cell[]): number {
   return empty[Math.floor(Math.random() * empty.length)];
 }
 
-export default function TicTacToe({ onWin }: { onWin: () => void }) {
+// Full minimax over the (tiny) 3x3 game tree — CPU never loses.
+function minimax(board: Cell[], player: "X" | "O", depth: number): { score: number; index: number } {
+  const w = winner(board);
+  if (w === "O") return { score: 10 - depth, index: -1 };
+  if (w === "X") return { score: depth - 10, index: -1 };
+  const empty = emptyIndices(board);
+  if (empty.length === 0) return { score: 0, index: -1 };
+
+  let best: { score: number; index: number } | null = null;
+  for (const i of empty) {
+    const next = [...board];
+    next[i] = player;
+    const result = minimax(next, player === "O" ? "X" : "O", depth + 1);
+    const better =
+      !best || (player === "O" ? result.score > best.score : result.score < best.score);
+    if (better) best = { score: result.score, index: i };
+  }
+  return best!;
+}
+
+function cpuMoveHard(board: Cell[]): number {
+  return minimax(board, "O", 0).index;
+}
+
+function cpuMove(board: Cell[], difficulty: Difficulty): number {
+  if (difficulty === "easy") return cpuMoveEasy(board);
+  if (difficulty === "hard") return cpuMoveHard(board);
+  return cpuMoveMedium(board);
+}
+
+export default function TicTacToe({
+  difficulty,
+  onEnd,
+}: {
+  difficulty: Difficulty;
+  onEnd: (result: GameResult) => void;
+}) {
   const [board, setBoard] = useState<Cell[]>(Array(9).fill(null));
   const reportedRef = useRef(false);
 
@@ -53,11 +99,11 @@ export default function TicTacToe({ onWin }: { onWin: () => void }) {
     w === "X" ? "won" : w === "O" ? "lost" : board.every((c) => c !== null) ? "draw" : "playing";
 
   useEffect(() => {
-    if (status === "won" && !reportedRef.current) {
+    if (status !== "playing" && !reportedRef.current) {
       reportedRef.current = true;
-      onWin();
+      onEnd(status);
     }
-  }, [status, onWin]);
+  }, [status, onEnd]);
 
   function play(i: number) {
     if (status !== "playing" || board[i] !== null) return;
@@ -65,7 +111,7 @@ export default function TicTacToe({ onWin }: { onWin: () => void }) {
     next[i] = "X";
     const w = winner(next);
     if (!w && !next.every((c) => c !== null)) {
-      const cpuIdx = cpuMove(next);
+      const cpuIdx = cpuMove(next, difficulty);
       next[cpuIdx] = "O";
     }
     setBoard(next);
