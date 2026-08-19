@@ -887,7 +887,7 @@ export default function TimerPage() {
                     </span>
                     {minutes > 0 && (
                       <span
-                        className="text-xs font-bold leading-none"
+                        className="text-sm font-extrabold leading-none sm:text-base"
                         style={{ color: opacity >= 0.55 ? "var(--chip-ink)" : "var(--ink)" }}
                       >
                         {formatCompactByUnit(minutes, unit)}
