@@ -48,16 +48,23 @@ interface GameRecordRow {
   solved: boolean;
 }
 
+interface UnlockInfo {
+  unlocked: boolean;
+  requirement: string | null;
+}
+
 function GameRow({
   title,
   color,
   games,
   records,
+  unlocks,
 }: {
   title: string;
   color: string;
   games: GameDef[];
   records: Map<string, GameRecordRow>;
+  unlocks: Record<string, UnlockInfo>;
 }) {
   return (
     <div>
@@ -68,6 +75,23 @@ function GameRow({
         {games.map((g) => {
           const record = records.get(g.id);
           const done = g.kind === "minigame" ? (record?.timesCompleted ?? 0) > 0 : (record?.solved ?? false);
+          const unlock = unlocks[g.id];
+          const locked = unlock ? !unlock.unlocked : false;
+
+          if (locked) {
+            return (
+              <div
+                key={g.id}
+                title={unlock.requirement ?? undefined}
+                className="comic-panel-sm flex flex-col items-center gap-1 p-3 text-center opacity-50"
+              >
+                <span className="text-3xl grayscale">🔒</span>
+                <span className="text-sm font-bold">{g.title}</span>
+                <span className="text-[11px] leading-tight text-ink/60">{unlock.requirement}</span>
+              </div>
+            );
+          }
+
           return (
             <Link
               key={g.id}
@@ -99,6 +123,7 @@ function GameRow({
 export default function MinigamesPage() {
   const [records, setRecords] = useState<GameRecordRow[]>([]);
   const [limits, setLimits] = useState<LimitsResponse | null>(null);
+  const [unlocks, setUnlocks] = useState<Record<string, UnlockInfo>>({});
   const [tab, setTab] = useState<Tab>("minigames");
 
   useEffect(() => {
@@ -108,6 +133,9 @@ export default function MinigamesPage() {
     fetch("/api/games/limits")
       .then((r) => r.json())
       .then(setLimits);
+    fetch("/api/games/unlocks")
+      .then((r) => r.json())
+      .then(setUnlocks);
   }, []);
 
   const recordMap = new Map(records.map((r) => [r.game, r]));
@@ -140,9 +168,15 @@ export default function MinigamesPage() {
         ))}
       </div>
 
-      {tab === "minigames" && <GameRow title="🎮 Minigames" color="var(--comic-blue)" games={MINIGAMES} records={recordMap} />}
-      {tab === "puzzles" && <GameRow title="🧩 Brain Puzzles" color="var(--comic-orange)" games={PUZZLES} records={recordMap} />}
-      {tab === "riddles" && <GameRow title="🔍 Mystery Riddles" color="var(--comic-purple)" games={RIDDLES} records={recordMap} />}
+      {tab === "minigames" && (
+        <GameRow title="🎮 Minigames" color="var(--comic-blue)" games={MINIGAMES} records={recordMap} unlocks={unlocks} />
+      )}
+      {tab === "puzzles" && (
+        <GameRow title="🧩 Brain Puzzles" color="var(--comic-orange)" games={PUZZLES} records={recordMap} unlocks={unlocks} />
+      )}
+      {tab === "riddles" && (
+        <GameRow title="🔍 Mystery Riddles" color="var(--comic-purple)" games={RIDDLES} records={recordMap} unlocks={unlocks} />
+      )}
 
       {tab === "stats" && (
         <div className="space-y-3">

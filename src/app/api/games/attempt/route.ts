@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { findGameDef } from "@/lib/games";
+import { getUnlockStats, isUnlocked } from "@/lib/unlocks";
 
 // Logs every finished minigame session (win, loss, or draw) — separate from
 // /api/games/complete, which only fires (and only rewards) on a win. This is
@@ -12,6 +14,17 @@ export async function POST(request: NextRequest) {
 
   if (!game || (result !== "won" && result !== "lost" && result !== "draw")) {
     return NextResponse.json({ error: "Invalid attempt" }, { status: 400 });
+  }
+
+  const def = findGameDef(game);
+  if (!def) {
+    return NextResponse.json({ error: "Unknown game" }, { status: 400 });
+  }
+  if (def.unlock) {
+    const stats = await getUnlockStats();
+    if (!isUnlocked(def, stats)) {
+      return NextResponse.json({ error: "Game is locked" }, { status: 403 });
+    }
   }
 
   await prisma.gameAttempt.create({ data: { game, result } });

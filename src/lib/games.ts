@@ -2,6 +2,19 @@ export type GameKind = "minigame" | "puzzle" | "riddle";
 export type Difficulty = "easy" | "medium" | "hard";
 export type GameResult = "won" | "lost" | "draw";
 
+// Everything a new piece of content can be gated behind. Omitting `unlock`
+// entirely (the original 5 minigames + 12 puzzles/riddles) means always
+// available, exactly as today.
+export type UnlockCondition =
+  | { type: "date"; after: string; label: string } // ISO "YYYY-MM-DD"; label is the human release-wave name ("next week" etc.)
+  | { type: "trophies"; tier: "bronze" | "silver" | "gold" | "any"; count: number }
+  | { type: "achievement"; id: string } // a specific achievement id from src/lib/achievements.ts
+  | { type: "habitCheckIns"; count: number }
+  | { type: "goalsCompleted"; count: number }
+  | { type: "tasksCompleted"; count: number }
+  | { type: "focusHours"; count: number }
+  | { type: "gamesCompleted"; ids: string[] }; // must have beaten/solved every id listed
+
 export interface GameDef {
   id: string;
   kind: GameKind;
@@ -10,6 +23,7 @@ export interface GameDef {
   difficulty: Difficulty;
   rewardMinutes: number;
   description: string;
+  unlock?: UnlockCondition;
 }
 
 export interface AnswerDef extends GameDef {
@@ -77,6 +91,56 @@ export const MINIGAMES: GameDef[] = [
     difficulty: "hard",
     rewardMinutes: 15,
     description: "Capture the CPU's king.",
+  },
+  {
+    id: "rps",
+    kind: "minigame",
+    title: "Rock-Paper-Scissors Blitz",
+    emoji: "✊",
+    difficulty: "easy",
+    rewardMinutes: 6,
+    description: "Best of 5 against the CPU.",
+    unlock: { type: "date", after: "2026-08-26", label: "Next week" },
+  },
+  {
+    id: "simon-says",
+    kind: "minigame",
+    title: "Simon Says",
+    emoji: "🎵",
+    difficulty: "medium",
+    rewardMinutes: 9,
+    description: "Repeat the growing color sequence.",
+    unlock: { type: "tasksCompleted", count: 10 },
+  },
+  {
+    id: "whack-a-mole",
+    kind: "minigame",
+    title: "Whack-a-Mole",
+    emoji: "🔨",
+    difficulty: "medium",
+    rewardMinutes: 9,
+    description: "Tap moles before they duck back down.",
+    unlock: { type: "focusHours", count: 10 },
+  },
+  {
+    id: "word-scramble",
+    kind: "minigame",
+    title: "Word Scramble",
+    emoji: "🔤",
+    difficulty: "medium",
+    rewardMinutes: 9,
+    description: "Unscramble the word before time runs out.",
+    unlock: { type: "habitCheckIns", count: 20 },
+  },
+  {
+    id: "connect-four",
+    kind: "minigame",
+    title: "Connect Four",
+    emoji: "🔴",
+    difficulty: "hard",
+    rewardMinutes: 16,
+    description: "Get four in a row against the CPU.",
+    unlock: { type: "gamesCompleted", ids: ["chess", "2048"] },
   },
 ];
 
@@ -175,6 +239,161 @@ export const PUZZLES: AnswerDef[] = [
       "A man looks at a photo and says: \"Brothers and sisters, I have none. But that man's father is my father's son.\" Who is in the photo? (one word)",
     answers: ["son", "his son"],
   },
+  {
+    id: "puzzle-bridge",
+    kind: "puzzle",
+    title: "The Bridge Crossing",
+    emoji: "🌉",
+    difficulty: "hard",
+    rewardMinutes: 18,
+    description: "A classic timing/logistics puzzle.",
+    question:
+      "Four people must cross a rickety bridge at night with one flashlight. At most 2 can cross at once, and every crossing needs the flashlight (someone must carry it back). Their solo crossing times are 1, 2, 5, and 10 minutes; a pair moves at the slower person's pace. What's the fastest total time (in minutes) to get everyone across?",
+    answers: ["17"],
+    unlock: { type: "date", after: "2026-09-19", label: "Next month" },
+  },
+  {
+    id: "puzzle-wolf-goat-cabbage",
+    kind: "puzzle",
+    title: "Wolf, Goat, and Cabbage",
+    emoji: "🐐",
+    difficulty: "medium",
+    rewardMinutes: 11,
+    description: "A classic river-crossing puzzle.",
+    question:
+      "A farmer must ferry a wolf, a goat, and a cabbage across a river one at a time, but can never leave the wolf alone with the goat, or the goat alone with the cabbage. What's the minimum number of river crossings (trips across, either direction) needed?",
+    answers: ["7"],
+    unlock: { type: "trophies", tier: "any", count: 5 },
+  },
+  {
+    id: "puzzle-twelve-balls",
+    kind: "puzzle",
+    title: "The Twelve Balls",
+    emoji: "⚖️",
+    difficulty: "hard",
+    rewardMinutes: 20,
+    description: "A classic balance-scale puzzle.",
+    question:
+      "You have 12 balls, identical except one is either heavier or lighter than the rest. Using only a balance scale, what's the minimum number of weighings needed to always find the odd ball out?",
+    answers: ["3"],
+    unlock: { type: "date", after: "2027-08-19", label: "Next year" },
+  },
+  {
+    id: "puzzle-camel-bananas",
+    kind: "puzzle",
+    title: "The Camel and Bananas",
+    emoji: "🐪",
+    difficulty: "hard",
+    rewardMinutes: 20,
+    description: "A classic optimization puzzle.",
+    question:
+      "A camel must carry 3000 bananas 1000 miles to market. It can carry at most 1000 bananas at once, and eats 1 banana per mile walked (in either direction). What's the maximum number of bananas that can reach the market?",
+    answers: ["533"],
+    unlock: { type: "gamesCompleted", ids: ["2048"] },
+  },
+  {
+    id: "puzzle-josephus",
+    kind: "puzzle",
+    title: "The Josephus Circle",
+    emoji: "🔄",
+    difficulty: "hard",
+    rewardMinutes: 18,
+    description: "A classic elimination puzzle.",
+    question:
+      "10 people stand in a circle, numbered 1 to 10. Starting at person 1, you skip one person and eliminate the next, continuing around and around until only one remains. What number is the survivor?",
+    answers: ["5"],
+    unlock: { type: "focusHours", count: 50 },
+  },
+  {
+    id: "puzzle-monty-hall",
+    kind: "puzzle",
+    title: "The Monty Hall Problem",
+    emoji: "🚪",
+    difficulty: "medium",
+    rewardMinutes: 11,
+    description: "A classic probability puzzle.",
+    question:
+      "3 doors: a car behind one, goats behind the other two. You pick a door, the host (who knows what's behind each) opens a different door revealing a goat, then offers you the chance to switch. As a simplified fraction, what's your win probability if you always switch?",
+    answers: ["2/3", "two thirds"],
+    unlock: { type: "tasksCompleted", count: 20 },
+  },
+  {
+    id: "puzzle-counterfeit-coin",
+    kind: "puzzle",
+    title: "The Counterfeit Coin",
+    emoji: "🪙",
+    difficulty: "medium",
+    rewardMinutes: 10,
+    description: "A classic balance-scale puzzle.",
+    question:
+      "You have 9 coins, identical except one is fake and heavier. Using a balance scale, what's the minimum number of weighings needed to always find the fake?",
+    answers: ["2"],
+    unlock: { type: "habitCheckIns", count: 40 },
+  },
+  {
+    id: "puzzle-rope-earth",
+    kind: "puzzle",
+    title: "The Rope Around the Earth",
+    emoji: "🌍",
+    difficulty: "medium",
+    rewardMinutes: 12,
+    description: "A classic geometry puzzle.",
+    question:
+      "A rope is wrapped snugly around the Earth's equator. You add exactly 1 extra meter of rope and lift it evenly all the way around so the gap above the ground is the same everywhere. Rounded to the nearest whole centimeter, how big is the gap?",
+    answers: ["16", "16cm", "16 cm"],
+    unlock: { type: "date", after: "2026-08-26", label: "Next week" },
+  },
+  {
+    id: "puzzle-handshakes",
+    kind: "puzzle",
+    title: "The Handshake Problem",
+    emoji: "🤝",
+    difficulty: "easy",
+    rewardMinutes: 6,
+    description: "A classic combinatorics puzzle.",
+    question: "At a party of 10 people, everyone shakes hands with everyone else exactly once. How many handshakes happen in total?",
+    answers: ["45"],
+    unlock: { type: "trophies", tier: "gold", count: 1 },
+  },
+  {
+    id: "puzzle-lockers",
+    kind: "puzzle",
+    title: "The Locker Problem",
+    emoji: "🔐",
+    difficulty: "hard",
+    rewardMinutes: 20,
+    description: "A classic number-theory puzzle.",
+    question:
+      "100 lockers stand closed in a row, numbered 1 to 100. 100 students walk past in turn: student i toggles (opens if closed, closes if open) every i-th locker. After all 100 students pass, how many lockers are open?",
+    answers: ["10"],
+    unlock: { type: "achievement", id: "tasks-25" },
+  },
+  {
+    id: "puzzle-four-color-map",
+    kind: "puzzle",
+    title: "The Four-Color Map",
+    emoji: "🗺️",
+    difficulty: "easy",
+    rewardMinutes: 5,
+    description: "A famous theorem, turned into a question.",
+    question:
+      "What is the minimum number of colors needed to color any map so that no two regions sharing a border have the same color (the Four Color Theorem)?",
+    answers: ["4", "four"],
+    unlock: { type: "goalsCompleted", count: 2 },
+  },
+  {
+    id: "puzzle-trains-bird",
+    kind: "puzzle",
+    title: "The Two Trains and a Bird",
+    emoji: "🚂",
+    difficulty: "easy",
+    rewardMinutes: 6,
+    description: "A classic instant-answer puzzle.",
+    question:
+      "Two trains 60 miles apart race toward each other, one at 20 mph, the other at 40 mph. A bird starts at one train and flies back and forth between them at 60 mph until they collide. How many total miles does the bird fly?",
+    answers: ["60"],
+    unlock: { type: "goalsCompleted", count: 1 },
+  },
 ];
 
 export const RIDDLES: AnswerDef[] = [
@@ -245,6 +464,150 @@ export const RIDDLES: AnswerDef[] = [
     question:
       "I am not alive, but I grow. I don't have lungs, but I need air. I don't have a mouth, and water kills me. What am I?",
     answers: ["fire", "a flame", "flame"],
+  },
+  {
+    id: "riddle-map",
+    kind: "riddle",
+    title: "Cities, No Houses",
+    emoji: "🗺️",
+    difficulty: "easy",
+    rewardMinutes: 6,
+    description: "A classic riddle.",
+    question: "I have cities, but no houses. I have mountains, but no trees. I have water, but no fish. What am I?",
+    answers: ["map", "a map"],
+    unlock: { type: "date", after: "2026-08-26", label: "Next week" },
+  },
+  {
+    id: "riddle-hole",
+    kind: "riddle",
+    title: "The Bigger I Get",
+    emoji: "🕳️",
+    difficulty: "easy",
+    rewardMinutes: 6,
+    description: "A classic riddle.",
+    question: "The more you take away from me, the bigger I become. What am I?",
+    answers: ["hole", "a hole"],
+    unlock: { type: "tasksCompleted", count: 5 },
+  },
+  {
+    id: "riddle-bank",
+    kind: "riddle",
+    title: "Branches, No Leaves",
+    emoji: "🏦",
+    difficulty: "medium",
+    rewardMinutes: 10,
+    description: "A classic riddle.",
+    question: "I have branches, but no fruit, trunk, or leaves. What am I?",
+    answers: ["bank", "a bank"],
+    unlock: { type: "gamesCompleted", ids: ["chess"] },
+  },
+  {
+    id: "riddle-stamp",
+    kind: "riddle",
+    title: "Traveling in a Corner",
+    emoji: "📮",
+    difficulty: "medium",
+    rewardMinutes: 10,
+    description: "A classic riddle.",
+    question: "What can travel all around the world while staying stuck in a corner?",
+    answers: ["stamp", "a stamp", "postage stamp"],
+    unlock: { type: "focusHours", count: 20 },
+  },
+  {
+    id: "riddle-future",
+    kind: "riddle",
+    title: "Always Ahead",
+    emoji: "⏳",
+    difficulty: "medium",
+    rewardMinutes: 11,
+    description: "A classic riddle.",
+    question: "I am always in front of you, yet I can never be seen. What am I?",
+    answers: ["future", "the future"],
+    unlock: { type: "habitCheckIns", count: 10 },
+  },
+  {
+    id: "riddle-bottle",
+    kind: "riddle",
+    title: "Neck, No Head",
+    emoji: "🍾",
+    difficulty: "easy",
+    rewardMinutes: 6,
+    description: "A classic riddle.",
+    question: "What has a neck but no head?",
+    answers: ["bottle", "a bottle"],
+    unlock: { type: "date", after: "2026-09-19", label: "Next month" },
+  },
+  {
+    id: "riddle-age",
+    kind: "riddle",
+    title: "Never Comes Down",
+    emoji: "🎂",
+    difficulty: "medium",
+    rewardMinutes: 10,
+    description: "A classic riddle.",
+    question: "What goes up but never comes down?",
+    answers: ["age", "your age"],
+    unlock: { type: "trophies", tier: "silver", count: 2 },
+  },
+  {
+    id: "riddle-needle",
+    kind: "riddle",
+    title: "One Eye, No Sight",
+    emoji: "🪡",
+    difficulty: "medium",
+    rewardMinutes: 11,
+    description: "A classic riddle.",
+    question: "What has one eye but cannot see?",
+    answers: ["needle", "a needle"],
+    unlock: { type: "goalsCompleted", count: 5 },
+  },
+  {
+    id: "riddle-cold",
+    kind: "riddle",
+    title: "Catch, Don't Throw",
+    emoji: "🤧",
+    difficulty: "easy",
+    rewardMinutes: 6,
+    description: "A classic riddle.",
+    question: "What can you catch but not throw?",
+    answers: ["cold", "a cold"],
+    unlock: { type: "date", after: "2027-08-19", label: "Next year" },
+  },
+  {
+    id: "riddle-piano",
+    kind: "riddle",
+    title: "Many Keys, No Locks",
+    emoji: "🎹",
+    difficulty: "hard",
+    rewardMinutes: 18,
+    description: "A classic riddle.",
+    question: "What has many keys but can't open a single lock?",
+    answers: ["piano", "a piano"],
+    unlock: { type: "gamesCompleted", ids: ["tic-tac-toe", "chess"] },
+  },
+  {
+    id: "riddle-river",
+    kind: "riddle",
+    title: "Runs, Never Walks",
+    emoji: "🏞️",
+    difficulty: "hard",
+    rewardMinutes: 18,
+    description: "A classic riddle.",
+    question: "What runs but never walks, has a mouth but never talks, has a bed but never sleeps?",
+    answers: ["river", "a river"],
+    unlock: { type: "achievement", id: "study-streak-7" },
+  },
+  {
+    id: "riddle-glove",
+    kind: "riddle",
+    title: "Thumb and Four Fingers",
+    emoji: "🧤",
+    difficulty: "hard",
+    rewardMinutes: 20,
+    description: "A classic riddle.",
+    question: "I have a thumb and four fingers, but I am not alive. What am I?",
+    answers: ["glove", "a glove"],
+    unlock: { type: "trophies", tier: "any", count: 10 },
   },
 ];
 

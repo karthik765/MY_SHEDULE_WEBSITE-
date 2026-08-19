@@ -9,6 +9,11 @@ import Snake from "@/components/games/Snake";
 import Memory from "@/components/games/Memory";
 import Merge2048 from "@/components/games/Merge2048";
 import Chess from "@/components/games/Chess";
+import RockPaperScissors from "@/components/games/RockPaperScissors";
+import SimonSays from "@/components/games/SimonSays";
+import WhackAMole from "@/components/games/WhackAMole";
+import WordScramble from "@/components/games/WordScramble";
+import ConnectFour from "@/components/games/ConnectFour";
 import AnswerGame from "@/components/games/AnswerGame";
 
 interface GameRecordRow {
@@ -23,6 +28,11 @@ interface LimitsResponse {
   }[];
 }
 
+interface UnlockInfo {
+  unlocked: boolean;
+  requirement: string | null;
+}
+
 const DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard"];
 const DIFFICULTY_LABEL: Record<Difficulty, string> = { easy: "Easy", medium: "Medium", hard: "Hard" };
 
@@ -34,6 +44,14 @@ export default function GameDetailPage() {
   const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   const [started, setStarted] = useState(false);
   const [gameLimits, setGameLimits] = useState<LimitsResponse["games"][number] | null>(null);
+  const [unlockInfo, setUnlockInfo] = useState<UnlockInfo | null>(null);
+
+  useEffect(() => {
+    if (!def) return;
+    fetch("/api/games/unlocks")
+      .then((r) => r.json())
+      .then((data: Record<string, UnlockInfo>) => setUnlockInfo(data[def.id] ?? null));
+  }, [def]);
 
   useEffect(() => {
     if (!def || def.kind === "minigame") return;
@@ -79,6 +97,21 @@ export default function GameDetailPage() {
       <div className="comic-panel p-6 text-center">
         <p className="font-bold">Game not found.</p>
         <Link href="/minigames" className="comic-btn mt-3 inline-block bg-comic-blue px-4 py-2 text-chip-ink">
+          Back to Minigames
+        </Link>
+      </div>
+    );
+  }
+
+  if (unlockInfo && !unlockInfo.unlocked) {
+    return (
+      <div className="comic-panel space-y-3 p-6 text-center">
+        <p className="text-5xl">🔒</p>
+        <h1 className="font-heading text-2xl">
+          {def.emoji} {def.title}
+        </h1>
+        <p className="text-sm font-bold text-ink/70">{unlockInfo.requirement}</p>
+        <Link href="/minigames" className="comic-btn mt-2 inline-block bg-comic-blue px-4 py-2 text-chip-ink">
           Back to Minigames
         </Link>
       </div>
@@ -155,6 +188,11 @@ export default function GameDetailPage() {
           {def.id === "memory" && <Memory difficulty={difficulty} onEnd={handleEnd} />}
           {def.id === "2048" && <Merge2048 difficulty={difficulty} onEnd={handleEnd} />}
           {def.id === "chess" && <Chess difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "rps" && <RockPaperScissors difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "simon-says" && <SimonSays difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "whack-a-mole" && <WhackAMole difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "word-scramble" && <WordScramble difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "connect-four" && <ConnectFour difficulty={difficulty} onEnd={handleEnd} />}
           <button onClick={() => setStarted(false)} className="comic-btn bg-panel px-4 py-1.5 text-sm">
             ← Change difficulty
           </button>

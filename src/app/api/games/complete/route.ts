@@ -8,6 +8,7 @@ import {
   MINIGAME_WEEKLY_CAP,
   type Difficulty,
 } from "@/lib/games";
+import { getUnlockStats, isUnlocked } from "@/lib/unlocks";
 
 function todayKey(): string {
   return new Date().toISOString().slice(0, 10);
@@ -26,6 +27,13 @@ export async function POST(request: NextRequest) {
   const def = gameId ? findGameDef(gameId) : undefined;
   if (!def) {
     return NextResponse.json({ error: "Unknown game" }, { status: 400 });
+  }
+
+  if (def.unlock) {
+    const stats = await getUnlockStats();
+    if (!isUnlocked(def, stats)) {
+      return NextResponse.json({ error: "Game is locked" }, { status: 403 });
+    }
   }
 
   const existing = await prisma.gameRecord.findUnique({ where: { game: def.id } });
