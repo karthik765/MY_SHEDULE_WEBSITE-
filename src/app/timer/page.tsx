@@ -871,7 +871,7 @@ export default function TimerPage() {
                   <div
                     key={key}
                     title={`${formatDayLabel(date, key, todayLocalKey)}: ${formatByUnit(minutes, unit)}`}
-                    className="comic-panel-sm flex aspect-square flex-col items-center justify-center gap-0.5 p-0.5"
+                    className="comic-panel-sm flex aspect-square flex-col items-center justify-center gap-0.5 p-1"
                     style={{
                       backgroundColor: opacity > 0 ? color : "var(--panel)",
                       opacity: opacity > 0 ? opacity : 1,
@@ -880,14 +880,14 @@ export default function TimerPage() {
                     }}
                   >
                     <span
-                      className="text-[10px] font-bold leading-none"
+                      className="text-sm font-bold leading-none sm:text-base"
                       style={{ color: opacity >= 0.55 ? "var(--chip-ink)" : "var(--ink)" }}
                     >
                       {date.getDate()}
                     </span>
                     {minutes > 0 && (
                       <span
-                        className="text-[9px] font-bold leading-none"
+                        className="text-xs font-bold leading-none"
                         style={{ color: opacity >= 0.55 ? "var(--chip-ink)" : "var(--ink)" }}
                       >
                         {formatCompactByUnit(minutes, unit)}
