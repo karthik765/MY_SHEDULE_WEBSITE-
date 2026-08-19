@@ -97,6 +97,17 @@ export default function GoalsPage() {
     await fetch(`/api/goals/${id}`, { method: "DELETE" });
   }
 
+  async function toggleGoalComplete(goal: Goal) {
+    const nextStatus = goal.status === "completed" ? "active" : "completed";
+    setGoals((prev) => prev.map((g) => (g.id === goal.id ? { ...g, status: nextStatus } : g)));
+    await fetch(`/api/goals/${goal.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: nextStatus }),
+    });
+    load();
+  }
+
   async function addMilestone(goalId: string) {
     const text = milestoneDrafts[goalId];
     if (!text?.trim()) return;
@@ -210,10 +221,22 @@ export default function GoalsPage() {
             const total = goal.milestones.length;
             const progress = total > 0 ? Math.round((done / total) * 100) : 0;
             const dueBadge = countdown(goal.targetDate, goal.status);
+            const completed = goal.status === "completed";
             return (
-              <li key={goal.id} className="comic-panel p-4">
+              <li key={goal.id} className={`comic-panel p-4 ${completed ? "opacity-60" : ""}`}>
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                  <p className="font-heading text-xl tracking-wide">{goal.title}</p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={completed}
+                      onChange={() => toggleGoalComplete(goal)}
+                      title="Mark goal complete"
+                      className="h-5 w-5 accent-[color:var(--comic-green)]"
+                    />
+                    <p className={`font-heading text-xl tracking-wide ${completed ? "line-through" : ""}`}>
+                      {goal.title}
+                    </p>
+                  </div>
                   <div className="flex items-center gap-2">
                     {dueBadge && (
                       <span
