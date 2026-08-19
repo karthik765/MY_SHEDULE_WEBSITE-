@@ -6,10 +6,9 @@ import ThemeToggle from "./ThemeToggle";
 
 const LINKS = [
   { href: "/", label: "Dashboard", color: "var(--comic-blue)" },
+  { href: "/focus", label: "Focus", color: "var(--comic-orange)" },
   { href: "/schedule", label: "Schedule", color: "var(--comic-purple)" },
-  { href: "/timer", label: "Timer", color: "var(--comic-orange)" },
   { href: "/habits", label: "Habits", color: "var(--comic-green)" },
-  { href: "/journal", label: "Journal", color: "var(--comic-pink)" },
   { href: "/goals", label: "Goals", color: "var(--comic-yellow)" },
   { href: "/minigames", label: "Minigames", color: "var(--comic-pink)" },
   { href: "/achievements", label: "Achievements", color: "var(--comic-orange)" },

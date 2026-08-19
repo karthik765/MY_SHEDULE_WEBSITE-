@@ -43,7 +43,7 @@ export default async function DashboardPage() {
         <StatCard label="Study hours this week" value={`${(weeklyMinutes / 60).toFixed(1)} hrs`} color="var(--comic-blue)" />
         <StatCard label="Tasks due" value={String(dueTodayOrOverdue.length)} color="var(--comic-red)" />
         <StatCard
-          label="Timer"
+          label="Focus"
           value={activeSession ? `Running: ${activeSession.subject}` : "Not running"}
           color="var(--comic-orange)"
         />

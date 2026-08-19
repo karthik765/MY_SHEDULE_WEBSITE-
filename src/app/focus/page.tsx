@@ -260,7 +260,7 @@ function playChime(ctx: AudioContext, frequencies: number[], noteMs: number) {
   }
 }
 
-export default function TimerPage() {
+export default function FocusPage() {
   const [active, setActive] = useState<StudySession | null | undefined>(undefined);
   const [sessions, setSessions] = useState<StudySession[]>([]);
   const [subject, setSubject] = useState("Study");
@@ -611,7 +611,7 @@ export default function TimerPage() {
   return (
     <div className="space-y-6">
       <h1 className="font-heading text-4xl text-comic-orange" style={{ WebkitTextStroke: "1.5px var(--ink)" }}>
-        Timer
+        Focus
       </h1>
 
       {plan ? (

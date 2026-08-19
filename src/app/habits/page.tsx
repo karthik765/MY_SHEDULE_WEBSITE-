@@ -3,6 +3,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { computeStreak } from "@/lib/habits";
 import MediaSection from "@/components/MediaSection";
+import JournalSection from "@/components/JournalSection";
 
 interface HabitLog {
   id: string;
@@ -21,6 +22,7 @@ const todayKey = () => new Date().toISOString().slice(0, 10);
 
 const TABS = [
   { value: "habits", label: "Habits", color: "var(--comic-green)" },
+  { value: "journal", label: "Journal", color: "var(--comic-pink)" },
   { value: "movies", label: "Movies", color: "var(--comic-red)" },
   { value: "webseries", label: "Web Series", color: "var(--comic-purple)" },
   { value: "games", label: "Games", color: "var(--comic-blue)" },
@@ -139,6 +141,8 @@ export default function HabitsPage() {
           )}
         </>
       )}
+
+      {tab === "journal" && <JournalSection />}
 
       {tab === "movies" && (
         <MediaSection

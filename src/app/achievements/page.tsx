@@ -13,7 +13,7 @@ interface AchievementRow {
 }
 
 const CATEGORY_META: Record<AchievementCategory, { label: string; color: string }> = {
-  timer: { label: "Timer", color: "var(--comic-orange)" },
+  timer: { label: "Focus", color: "var(--comic-orange)" },
   habits: { label: "Habits", color: "var(--comic-green)" },
   tasks: { label: "Tasks", color: "var(--comic-red)" },
   goals: { label: "Goals", color: "var(--comic-yellow)" },

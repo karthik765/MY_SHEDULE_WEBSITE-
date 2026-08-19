@@ -84,7 +84,7 @@ export default function MinigamesPage() {
         Minigames
       </h1>
       <p className="text-sm text-ink/60">
-        Play, solve, and earn bonus focus time credited straight to your Timer stats. Minigames reward up to{" "}
+        Play, solve, and earn bonus focus time credited straight to your Focus stats. Minigames reward up to{" "}
         {MINIGAME_DAILY_LIMIT} wins per game per day; puzzles and mystery riddles reward once, the first time you
         solve them.
       </p>

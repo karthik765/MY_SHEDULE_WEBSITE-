@@ -68,7 +68,7 @@ export default function GameDetailPage() {
         <div className="comic-panel-sm bg-comic-yellow p-3 text-center text-chip-ink">
           <p className="text-sm font-bold">
             {reward > 0
-              ? `🎉 +${reward} min of focus time added to your Timer stats!`
+              ? `🎉 +${reward} min of focus time added to your Focus stats!`
               : "Nice work — no bonus this time (already solved, or today's reward limit for this game is used up)."}
           </p>
         </div>
