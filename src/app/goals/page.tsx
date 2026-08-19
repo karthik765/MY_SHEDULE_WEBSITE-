@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { computeStudyStreak, STUDY_STREAK_GOAL_DAYS } from "@/lib/streaks";
+import { isGoalLocked } from "@/lib/goals";
 
 interface StudySession {
   startTime: string;
@@ -20,6 +21,7 @@ interface Goal {
   description: string | null;
   targetDate: string | null;
   status: string;
+  locked: boolean;
   milestones: Milestone[];
 }
 
@@ -104,6 +106,24 @@ export default function GoalsPage() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: nextStatus }),
+    });
+    load();
+  }
+
+  async function finalizeGoal(goal: Goal) {
+    if (!goal.targetDate) return;
+    if (
+      !window.confirm(
+        "Finalize this goal? It'll be locked — no deleting it or changing its milestones — until the target date."
+      )
+    ) {
+      return;
+    }
+    setGoals((prev) => prev.map((g) => (g.id === goal.id ? { ...g, locked: true } : g)));
+    await fetch(`/api/goals/${goal.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ locked: true }),
     });
     load();
   }
@@ -222,6 +242,7 @@ export default function GoalsPage() {
             const progress = total > 0 ? Math.round((done / total) * 100) : 0;
             const dueBadge = countdown(goal.targetDate, goal.status);
             const completed = goal.status === "completed";
+            const locked = isGoalLocked(goal);
             return (
               <li key={goal.id} className={`comic-panel p-4 ${completed ? "opacity-60" : ""}`}>
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
@@ -246,12 +267,28 @@ export default function GoalsPage() {
                         {dueBadge.text}
                       </span>
                     )}
-                    <button
-                      onClick={() => removeGoal(goal.id)}
-                      className="text-xs font-bold text-comic-red hover:underline"
-                    >
-                      Delete
-                    </button>
+                    {locked ? (
+                      <span className="comic-badge bg-panel px-2 py-0.5 text-xs" title="Locked until the target date">
+                        🔒 Locked
+                      </span>
+                    ) : (
+                      <>
+                        {goal.targetDate && !goal.locked && (
+                          <button
+                            onClick={() => finalizeGoal(goal)}
+                            className="comic-btn bg-comic-purple px-2 py-1 text-xs text-chip-ink"
+                          >
+                            Finalize
+                          </button>
+                        )}
+                        <button
+                          onClick={() => removeGoal(goal.id)}
+                          className="text-xs font-bold text-comic-red hover:underline"
+                        >
+                          Delete
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -278,38 +315,46 @@ export default function GoalsPage() {
                       <span className={m.completed ? "text-ink/50 line-through" : "font-bold"}>
                         {m.title}
                       </span>
-                      <button
-                        onClick={() => removeMilestone(m.id)}
-                        className="ml-auto text-xs font-bold text-ink/40 hover:text-comic-red"
-                      >
-                        ×
-                      </button>
+                      {!locked && (
+                        <button
+                          onClick={() => removeMilestone(m.id)}
+                          className="ml-auto text-xs font-bold text-ink/40 hover:text-comic-red"
+                        >
+                          ×
+                        </button>
+                      )}
                     </li>
                   ))}
                 </ul>
 
-                <div className="mt-2 flex gap-2">
-                  <input
-                    className="comic-input flex-1 px-2 py-1 text-xs"
-                    placeholder="Add milestone..."
-                    value={milestoneDrafts[goal.id] ?? ""}
-                    onChange={(e) =>
-                      setMilestoneDrafts((prev) => ({ ...prev, [goal.id]: e.target.value }))
-                    }
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addMilestone(goal.id);
+                {locked ? (
+                  <p className="mt-2 text-xs text-ink/40">
+                    🔒 Finalized — no adding or removing milestones until this unlocks.
+                  </p>
+                ) : (
+                  <div className="mt-2 flex gap-2">
+                    <input
+                      className="comic-input flex-1 px-2 py-1 text-xs"
+                      placeholder="Add milestone..."
+                      value={milestoneDrafts[goal.id] ?? ""}
+                      onChange={(e) =>
+                        setMilestoneDrafts((prev) => ({ ...prev, [goal.id]: e.target.value }))
                       }
-                    }}
-                  />
-                  <button
-                    onClick={() => addMilestone(goal.id)}
-                    className="comic-btn bg-comic-yellow px-2 py-1 text-xs text-chip-ink"
-                  >
-                    Add
-                  </button>
-                </div>
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          addMilestone(goal.id);
+                        }
+                      }}
+                    />
+                    <button
+                      onClick={() => addMilestone(goal.id)}
+                      className="comic-btn bg-comic-yellow px-2 py-1 text-xs text-chip-ink"
+                    >
+                      Add
+                    </button>
+                  </div>
+                )}
               </li>
             );
           })}

@@ -78,6 +78,10 @@ model Goal {
   description String?
   targetDate  DateTime?
   status      String      @default("active") // "active" | "completed" | "abandoned"
+  // Once finalized, the goal can't be deleted or have milestones added/removed
+  // until targetDate passes — a commitment device, only settable on goals
+  // that have a targetDate.
+  locked      Boolean     @default(false)
   createdAt   DateTime    @default(now())
   milestones  Milestone[]
 }

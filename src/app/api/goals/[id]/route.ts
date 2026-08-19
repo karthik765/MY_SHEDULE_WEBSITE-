@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { isGoalLocked } from "@/lib/goals";
 
 export async function PATCH(
   request: NextRequest,
@@ -7,12 +8,28 @@ export async function PATCH(
 ) {
   const { id } = await params;
   const body = await request.json();
+
+  const current = await prisma.goal.findUnique({ where: { id } });
+  if (!current) {
+    return NextResponse.json({ error: "Goal not found" }, { status: 404 });
+  }
+
+  const changingLockedFields = body.title !== undefined || body.description !== undefined || body.targetDate !== undefined;
+  if (changingLockedFields && isGoalLocked(current)) {
+    return NextResponse.json(
+      { error: "This goal is finalized and locked until its target date." },
+      { status: 403 }
+    );
+  }
+
   const data: Record<string, unknown> = {};
   if (body.title !== undefined) data.title = body.title;
   if (body.description !== undefined) data.description = body.description || null;
   if (body.targetDate !== undefined)
     data.targetDate = body.targetDate ? new Date(body.targetDate) : null;
   if (body.status !== undefined) data.status = body.status;
+  if (body.locked !== undefined) data.locked = body.locked;
+
   const goal = await prisma.goal.update({
     where: { id },
     data,
@@ -26,6 +43,18 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+
+  const current = await prisma.goal.findUnique({ where: { id } });
+  if (!current) {
+    return NextResponse.json({ error: "Goal not found" }, { status: 404 });
+  }
+  if (isGoalLocked(current)) {
+    return NextResponse.json(
+      { error: "This goal is finalized and locked until its target date." },
+      { status: 403 }
+    );
+  }
+
   await prisma.goal.delete({ where: { id } });
   return NextResponse.json({ ok: true });
 }
