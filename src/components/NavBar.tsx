@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import ThemeToggle from "./ThemeToggle";
@@ -34,10 +34,6 @@ interface TrophyCounts {
 }
 
 const TIER_EMOJI: Record<Tier, string> = { bronze: "🥉", silver: "🥈", gold: "🥇" };
-
-function dimStyle(owned: boolean): CSSProperties {
-  return { filter: owned ? "none" : "grayscale(1)", opacity: owned ? 1 : 0.3 };
-}
 
 export default function NavBar() {
   const pathname = usePathname();
@@ -106,41 +102,32 @@ export default function NavBar() {
           </Link>
 
           <div className="flex flex-wrap items-center gap-2">
-            {(focusPoints !== null || trophies) && (
-              <div className="comic-panel-sm flex items-stretch overflow-hidden">
-                {focusPoints !== null && (
-                  <Link
-                    href="/focus"
-                    className="flex items-center gap-1.5 bg-comic-orange px-3 py-1.5 text-sm font-bold text-chip-ink"
-                    title="All-time Focus Points (1 minute of focus = 1 point)"
-                  >
-                    <span>⏱️</span>
-                    <span>{focusPoints}</span>
-                  </Link>
-                )}
-                {trophies && (
-                  <Link
-                    href="/trophies"
-                    className="flex items-center gap-2 border-l-2 border-ink/15 px-3 py-1.5 text-sm font-bold"
-                    title="Trophies"
-                  >
-                    <span style={dimStyle(trophies.gold > 0)}>{TIER_EMOJI.gold} {trophies.gold}</span>
-                    <span style={dimStyle(trophies.silver > 0)}>{TIER_EMOJI.silver} {trophies.silver}</span>
-                    <span style={dimStyle(trophies.bronze > 0)}>{TIER_EMOJI.bronze} {trophies.bronze}</span>
-                    <span style={dimStyle(trophies.platinum)}>🏆</span>
-                  </Link>
-                )}
-              </div>
-            )}
-            <div className="comic-panel-sm flex items-stretch overflow-hidden">
-              <ThemeToggle />
-              <button
-                onClick={handleLogout}
-                className="border-l-2 border-ink/15 px-3 py-1.5 text-sm font-bold"
+            {focusPoints !== null && (
+              <Link
+                href="/focus"
+                className="comic-badge gap-1.5 bg-comic-orange px-3 py-1.5 text-sm text-chip-ink"
+                title="All-time Focus Points (1 minute of focus = 1 point)"
               >
-                Log Out
-              </button>
-            </div>
+                🔥 {focusPoints} Focus Points
+              </Link>
+            )}
+            {trophies && (
+              <Link
+                href="/trophies"
+                className="comic-badge gap-1.5 bg-panel px-3 py-1.5 text-sm"
+                title="Trophies"
+              >
+                🏆 {trophies.bronze + trophies.silver + trophies.gold} Trophies
+              </Link>
+            )}
+            <ThemeToggle />
+            <button
+              onClick={handleLogout}
+              className="comic-btn px-3 py-1.5 text-sm"
+              style={{ boxShadow: "2px 2px 0 0 var(--ink)" }}
+            >
+              Log Out
+            </button>
           </div>
         </div>
 
