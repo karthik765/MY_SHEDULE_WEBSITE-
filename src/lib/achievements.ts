@@ -1,7 +1,7 @@
 // PlayStation-style trophy case, computed live from current stats — nothing
 // is stored separately, so "unlocked" always reflects the current data.
 
-import { PUZZLES, RIDDLES } from "./games";
+import { MINIGAMES, PUZZLES, RIDDLES } from "./games";
 
 export interface AchievementStats {
   studyStreak: number;
@@ -18,6 +18,9 @@ export interface AchievementStats {
   minigamesWon: number;
   puzzlesSolved: number;
   riddlesSolved: number;
+  distinctMinigamesWon: number; // how many DIFFERENT minigames have at least one win, not total wins
+  hardDifficultyWins: number; // rewarded minigame wins completed on Hard
+  minigameWinsById: Record<string, number>; // per-game win counts, for "beat this specific new game" trophies
 }
 
 export type AchievementCategory = "timer" | "habits" | "tasks" | "goals" | "media" | "minigames";
@@ -276,6 +279,209 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     tier: "gold",
     category: "minigames",
     check: (s) => s.puzzlesSolved >= PUZZLES.length && s.riddlesSolved >= RIDDLES.length,
+  },
+
+  // More minigames/puzzles/riddles unlocked over time — these track progress
+  // through that larger library.
+  {
+    id: "puzzle-solve-5",
+    title: "Puzzle Enthusiast",
+    description: "Solve 5 brain puzzles.",
+    tier: "bronze",
+    category: "minigames",
+    check: (s) => s.puzzlesSolved >= 5,
+  },
+  {
+    id: "puzzle-solve-20",
+    title: "Puzzle Pro",
+    description: "Solve 20 brain puzzles.",
+    tier: "silver",
+    category: "minigames",
+    check: (s) => s.puzzlesSolved >= 20,
+  },
+  {
+    id: "puzzle-solve-40",
+    title: "Puzzle Grandmaster",
+    description: "Solve 40 brain puzzles.",
+    tier: "gold",
+    category: "minigames",
+    check: (s) => s.puzzlesSolved >= 40,
+  },
+  {
+    id: "riddle-solve-5",
+    title: "Riddle Enthusiast",
+    description: "Solve 5 mystery riddles.",
+    tier: "bronze",
+    category: "minigames",
+    check: (s) => s.riddlesSolved >= 5,
+  },
+  {
+    id: "riddle-solve-20",
+    title: "Riddle Pro",
+    description: "Solve 20 mystery riddles.",
+    tier: "silver",
+    category: "minigames",
+    check: (s) => s.riddlesSolved >= 20,
+  },
+  {
+    id: "riddle-solve-40",
+    title: "Riddle Grandmaster",
+    description: "Solve 40 mystery riddles.",
+    tier: "gold",
+    category: "minigames",
+    check: (s) => s.riddlesSolved >= 40,
+  },
+  {
+    id: "minigame-win-50",
+    title: "Arcade Regular",
+    description: "Win minigames 50 times total.",
+    tier: "bronze",
+    category: "minigames",
+    check: (s) => s.minigamesWon >= 50,
+  },
+  {
+    id: "minigame-win-100",
+    title: "Arcade Veteran",
+    description: "Win minigames 100 times total.",
+    tier: "silver",
+    category: "minigames",
+    check: (s) => s.minigamesWon >= 100,
+  },
+  {
+    id: "minigame-win-200",
+    title: "Arcade Icon",
+    description: "Win minigames 200 times total.",
+    tier: "gold",
+    category: "minigames",
+    check: (s) => s.minigamesWon >= 200,
+  },
+  {
+    id: "minigame-variety-8",
+    title: "Jack of All Games",
+    description: "Win at least 8 different minigames (any difficulty).",
+    tier: "silver",
+    category: "minigames",
+    check: (s) => s.distinctMinigamesWon >= 8,
+  },
+  {
+    id: "minigame-variety-all",
+    title: "Master of All Games",
+    description: "Win every minigame at least once.",
+    tier: "gold",
+    category: "minigames",
+    check: (s) => s.distinctMinigamesWon >= MINIGAMES.length,
+  },
+  {
+    id: "hard-mode-1",
+    title: "Hard Mode",
+    description: "Win a minigame on Hard difficulty.",
+    tier: "bronze",
+    category: "minigames",
+    check: (s) => s.hardDifficultyWins >= 1,
+  },
+  {
+    id: "hard-mode-10",
+    title: "Glutton for Punishment",
+    description: "Win 10 minigames on Hard difficulty.",
+    tier: "silver",
+    category: "minigames",
+    check: (s) => s.hardDifficultyWins >= 10,
+  },
+  {
+    id: "hard-mode-30",
+    title: "Difficulty Deity",
+    description: "Win 30 minigames on Hard difficulty.",
+    tier: "gold",
+    category: "minigames",
+    check: (s) => s.hardDifficultyWins >= 30,
+  },
+  {
+    id: "win-rps",
+    title: "Rock Solid",
+    description: "Win a round of Rock-Paper-Scissors Blitz.",
+    tier: "bronze",
+    category: "minigames",
+    check: (s) => (s.minigameWinsById["rps"] ?? 0) >= 1,
+  },
+  {
+    id: "win-simon-says",
+    title: "Simon Says Win",
+    description: "Beat Simon Says.",
+    tier: "bronze",
+    category: "minigames",
+    check: (s) => (s.minigameWinsById["simon-says"] ?? 0) >= 1,
+  },
+  {
+    id: "win-whack-a-mole",
+    title: "Mole Whacker",
+    description: "Beat Whack-a-Mole.",
+    tier: "bronze",
+    category: "minigames",
+    check: (s) => (s.minigameWinsById["whack-a-mole"] ?? 0) >= 1,
+  },
+  {
+    id: "win-word-scramble",
+    title: "Word Wizard",
+    description: "Beat Word Scramble.",
+    tier: "bronze",
+    category: "minigames",
+    check: (s) => (s.minigameWinsById["word-scramble"] ?? 0) >= 1,
+  },
+  {
+    id: "win-connect-four",
+    title: "Connect the Dots",
+    description: "Beat Connect Four.",
+    tier: "bronze",
+    category: "minigames",
+    check: (s) => (s.minigameWinsById["connect-four"] ?? 0) >= 1,
+  },
+  {
+    id: "win-speed-math",
+    title: "Mental Math",
+    description: "Beat Speed Math.",
+    tier: "bronze",
+    category: "minigames",
+    check: (s) => (s.minigameWinsById["speed-math"] ?? 0) >= 1,
+  },
+  {
+    id: "win-higher-lower",
+    title: "Lucky Guesser",
+    description: "Beat Higher or Lower.",
+    tier: "bronze",
+    category: "minigames",
+    check: (s) => (s.minigameWinsById["higher-lower"] ?? 0) >= 1,
+  },
+  {
+    id: "win-color-match",
+    title: "Quick Eye",
+    description: "Beat Color Match.",
+    tier: "bronze",
+    category: "minigames",
+    check: (s) => (s.minigameWinsById["color-match"] ?? 0) >= 1,
+  },
+  {
+    id: "win-slide-puzzle",
+    title: "Tile Slider",
+    description: "Beat Slide Puzzle.",
+    tier: "bronze",
+    category: "minigames",
+    check: (s) => (s.minigameWinsById["slide-puzzle"] ?? 0) >= 1,
+  },
+  {
+    id: "win-minesweeper",
+    title: "Bomb Defused",
+    description: "Beat Minesweeper Mini.",
+    tier: "bronze",
+    category: "minigames",
+    check: (s) => (s.minigameWinsById["minesweeper"] ?? 0) >= 1,
+  },
+  {
+    id: "win-typing-challenge",
+    title: "Fast Fingers",
+    description: "Beat Typing Challenge.",
+    tier: "bronze",
+    category: "minigames",
+    check: (s) => (s.minigameWinsById["typing-challenge"] ?? 0) >= 1,
   },
 ];
 

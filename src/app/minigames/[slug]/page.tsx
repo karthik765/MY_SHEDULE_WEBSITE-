@@ -14,6 +14,12 @@ import SimonSays from "@/components/games/SimonSays";
 import WhackAMole from "@/components/games/WhackAMole";
 import WordScramble from "@/components/games/WordScramble";
 import ConnectFour from "@/components/games/ConnectFour";
+import SpeedMath from "@/components/games/SpeedMath";
+import HigherOrLower from "@/components/games/HigherOrLower";
+import ColorMatch from "@/components/games/ColorMatch";
+import SlidePuzzle from "@/components/games/SlidePuzzle";
+import Minesweeper from "@/components/games/Minesweeper";
+import TypingChallenge from "@/components/games/TypingChallenge";
 import AnswerGame from "@/components/games/AnswerGame";
 
 interface GameRecordRow {
@@ -193,6 +199,12 @@ export default function GameDetailPage() {
           {def.id === "whack-a-mole" && <WhackAMole difficulty={difficulty} onEnd={handleEnd} />}
           {def.id === "word-scramble" && <WordScramble difficulty={difficulty} onEnd={handleEnd} />}
           {def.id === "connect-four" && <ConnectFour difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "speed-math" && <SpeedMath difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "higher-lower" && <HigherOrLower difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "color-match" && <ColorMatch difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "slide-puzzle" && <SlidePuzzle difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "minesweeper" && <Minesweeper difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "typing-challenge" && <TypingChallenge difficulty={difficulty} onEnd={handleEnd} />}
           <button onClick={() => setStarted(false)} className="comic-btn bg-panel px-4 py-1.5 text-sm">
             ← Change difficulty
           </button>

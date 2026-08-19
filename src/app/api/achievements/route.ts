@@ -5,7 +5,7 @@ import { computeStudyStreak } from "@/lib/streaks";
 import { computeUnlocked, trophyCounts, type AchievementStats } from "@/lib/achievements";
 
 export async function GET() {
-  const [sessions, habits, tasksCompleted, goals, milestonesCompleted, media, games] = await Promise.all([
+  const [sessions, habits, tasksCompleted, goals, milestonesCompleted, media, games, hardWins] = await Promise.all([
     prisma.studySession.findMany({ orderBy: { startTime: "desc" } }),
     prisma.habit.findMany({ include: { logs: true } }),
     prisma.task.count({ where: { completed: true } }),
@@ -13,6 +13,7 @@ export async function GET() {
     prisma.milestone.count({ where: { completed: true } }),
     prisma.mediaItem.findMany({ where: { status: "completed" }, select: { category: true } }),
     prisma.gameRecord.findMany(),
+    prisma.gamePlay.count({ where: { difficulty: "hard" } }),
   ]);
 
   const totalStudyMinutes = sessions.reduce((sum, s) => sum + (s.durationMinutes ?? 0), 0);
@@ -39,6 +40,11 @@ export async function GET() {
       .reduce((sum, g) => sum + g.timesCompleted, 0),
     puzzlesSolved: games.filter((g) => g.kind === "puzzle" && g.solved).length,
     riddlesSolved: games.filter((g) => g.kind === "riddle" && g.solved).length,
+    distinctMinigamesWon: games.filter((g) => g.kind === "minigame" && g.timesCompleted > 0).length,
+    hardDifficultyWins: hardWins,
+    minigameWinsById: Object.fromEntries(
+      games.filter((g) => g.kind === "minigame").map((g) => [g.game, g.timesCompleted])
+    ),
   };
 
   const computed = computeUnlocked(stats);
