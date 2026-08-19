@@ -7,7 +7,6 @@ import ThemeToggle from "./ThemeToggle";
 const LINKS = [
   { href: "/", label: "Dashboard", color: "var(--comic-blue)" },
   { href: "/schedule", label: "Schedule", color: "var(--comic-purple)" },
-  { href: "/tasks", label: "Tasks", color: "var(--comic-red)" },
   { href: "/timer", label: "Timer", color: "var(--comic-orange)" },
   { href: "/habits", label: "Habits", color: "var(--comic-green)" },
   { href: "/journal", label: "Journal", color: "var(--comic-pink)" },

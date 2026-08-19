@@ -23,7 +23,7 @@ const CATEGORIES = [
   { value: "monthly", label: "Monthly Tasks", color: "var(--comic-purple)" },
 ];
 
-export default function TasksPage() {
+export default function TasksSection() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState("");
@@ -75,10 +75,6 @@ export default function TasksPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="font-heading text-4xl text-comic-red" style={{ WebkitTextStroke: "1.5px var(--ink)" }}>
-        Tasks
-      </h1>
-
       <form onSubmit={handleAdd} className="comic-panel flex flex-wrap gap-2 p-4">
         <input
           className="comic-input min-w-[200px] flex-1 px-3 py-2 text-sm"

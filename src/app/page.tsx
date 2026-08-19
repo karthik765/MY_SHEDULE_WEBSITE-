@@ -76,7 +76,7 @@ export default async function DashboardPage() {
         <section className="comic-panel p-4">
           <div className="mb-2 flex items-center justify-between">
             <h2 className="font-heading text-lg tracking-wide text-comic-red">Tasks due</h2>
-            <Link href="/tasks" className="text-xs font-bold text-comic-blue hover:underline">
+            <Link href="/schedule?tab=tasks" className="text-xs font-bold text-comic-blue hover:underline">
               View all
             </Link>
           </div>
