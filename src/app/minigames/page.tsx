@@ -7,7 +7,10 @@ import {
   PUZZLES,
   RIDDLES,
   DIFFICULTY_COLOR,
+  currentContentWeek,
+  weekUnlockDate,
   type GameDef,
+  type AnswerDef,
 } from "@/lib/games";
 
 interface LimitsResponse {
@@ -28,6 +31,18 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "riddles", label: "🔍 Riddles" },
   { id: "stats", label: "📊 Stats" },
 ];
+
+function NewThisWeekBanner({ kind, item }: { kind: "puzzle" | "riddle"; item: AnswerDef | undefined }) {
+  if (!item) return null;
+  return (
+    <div className="comic-panel-sm flex items-center gap-3 bg-comic-yellow p-3 text-chip-ink">
+      <span className="text-2xl">🆕</span>
+      <p className="text-sm font-bold">
+        New {kind === "puzzle" ? "Puzzle" : "Riddle"} of the Week: {item.emoji} {item.title}
+      </p>
+    </div>
+  );
+}
 
 function StatTile({ label, value, color }: { label: string; value: string | number; color: string }) {
   return (
@@ -165,6 +180,10 @@ export default function MinigamesPage() {
 
   const recordMap = new Map(records.map((r) => [r.game, r]));
 
+  const thisWeekDate = weekUnlockDate(currentContentWeek());
+  const thisWeekPuzzle = PUZZLES.find((p) => p.unlock?.type === "date" && p.unlock.after === thisWeekDate);
+  const thisWeekRiddle = RIDDLES.find((r) => r.unlock?.type === "date" && r.unlock.after === thisWeekDate);
+
   return (
     <div className="space-y-6">
       <h1 className="font-heading text-4xl text-comic-pink" style={{ WebkitTextStroke: "1.5px var(--ink)" }}>
@@ -197,10 +216,16 @@ export default function MinigamesPage() {
         <GameRow title="🎮 Minigames" color="var(--comic-blue)" games={MINIGAMES} records={recordMap} unlocks={unlocks} />
       )}
       {tab === "puzzles" && (
-        <GameRow title="🧩 Brain Puzzles" color="var(--comic-orange)" games={PUZZLES} records={recordMap} unlocks={unlocks} />
+        <div className="space-y-3">
+          <NewThisWeekBanner kind="puzzle" item={thisWeekPuzzle} />
+          <GameRow title="🧩 Brain Puzzles" color="var(--comic-orange)" games={PUZZLES} records={recordMap} unlocks={unlocks} />
+        </div>
       )}
       {tab === "riddles" && (
-        <GameRow title="🔍 Mystery Riddles" color="var(--comic-purple)" games={RIDDLES} records={recordMap} unlocks={unlocks} />
+        <div className="space-y-3">
+          <NewThisWeekBanner kind="riddle" item={thisWeekRiddle} />
+          <GameRow title="🔍 Mystery Riddles" color="var(--comic-purple)" games={RIDDLES} records={recordMap} unlocks={unlocks} />
+        </div>
       )}
 
       {tab === "stats" && (
