@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { startOfWeek } from "@/lib/schedule";
+import { getAudioContext, playChime } from "@/lib/sound";
 
 interface StudySession {
   id: string;
@@ -223,43 +224,6 @@ function saveBonusState(state: BonusState | null) {
   }
 }
 
-// Synthesized chimes (no audio files needed) — a calm rising tone for "focus
-// block done", a brisker one for "break's over". AudioContext must be
-// created/resumed from a real click for browser autoplay rules to allow it
-// later playback from a setTimeout callback, hence the ref pattern.
-function getAudioContext(ref: React.MutableRefObject<AudioContext | null>): AudioContext | null {
-  if (typeof window === "undefined") return null;
-  const AudioCtxClass =
-    window.AudioContext ||
-    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-  if (!AudioCtxClass) return null;
-  if (!ref.current) {
-    ref.current = new AudioCtxClass();
-  }
-  if (ref.current.state === "suspended") {
-    ref.current.resume();
-  }
-  return ref.current;
-}
-
-function playChime(ctx: AudioContext, frequencies: number[], noteMs: number) {
-  let t = ctx.currentTime;
-  for (const freq of frequencies) {
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = "sine";
-    osc.frequency.value = freq;
-    gain.gain.setValueAtTime(0.0001, t);
-    gain.gain.exponentialRampToValueAtTime(0.25, t + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, t + noteMs / 1000);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(t);
-    osc.stop(t + noteMs / 1000 + 0.05);
-    t += noteMs / 1000 + 0.05;
-  }
-}
-
 export default function FocusPage() {
   const [active, setActive] = useState<StudySession | null | undefined>(undefined);
   const [sessions, setSessions] = useState<StudySession[]>([]);
@@ -271,7 +235,7 @@ export default function FocusPage() {
   const [bonus, setBonus] = useState<BonusState | null>(null);
   const [bonusFinishedMinutes, setBonusFinishedMinutes] = useState<number | null>(null);
   const [forceStops, setForceStops] = useState<ForceStopState>({ date: todayKey(), count: 0 });
-  const [unit, setUnit] = useState<DisplayUnit>("hours");
+  const [unit, setUnit] = useState<DisplayUnit>("minutes");
   const [historyView, setHistoryView] = useState<"daily" | "weekly">("daily");
   const audioCtxRef = useRef<AudioContext | null>(null);
 

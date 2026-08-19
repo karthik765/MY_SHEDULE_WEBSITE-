@@ -36,7 +36,7 @@ const TIER_META: Record<AchievementTier, { emoji: string; label: string; color: 
   gold: { emoji: "🥇", label: "Gold", color: "#ffd166" },
 };
 
-export default function AchievementsPage() {
+export default function TrophiesPage() {
   const [achievements, setAchievements] = useState<AchievementRow[]>([]);
   const [trophies, setTrophies] = useState<Trophies>({ bronze: 0, silver: 0, gold: 0, platinum: false });
   const [loading, setLoading] = useState(true);
@@ -57,7 +57,7 @@ export default function AchievementsPage() {
   return (
     <div className="space-y-6">
       <h1 className="font-heading text-4xl text-comic-blue" style={{ WebkitTextStroke: "1.5px var(--ink)" }}>
-        Achievements
+        Trophies
       </h1>
 
       <div className="comic-panel bg-comic-blue p-4 text-chip-ink">
