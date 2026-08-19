@@ -27,6 +27,39 @@ function formatMinutes(minutes: number): string {
   return `${h}h${m}m`;
 }
 
+type DisplayUnit = "hours" | "minutes";
+
+function formatByUnit(minutes: number, unit: DisplayUnit): string {
+  return unit === "minutes" ? `${Math.round(minutes)} min` : `${(minutes / 60).toFixed(1)} hrs`;
+}
+
+// Day/week grouping uses local calendar days (not UTC) so "Today" matches
+// the user's own clock.
+function localDayKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function parseDayKey(key: string): Date {
+  const [y, m, d] = key.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function formatDayLabel(date: Date, key: string, todayLocalKey: string): string {
+  if (key === todayLocalKey) return "Today";
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (key === localDayKey(yesterday)) return "Yesterday";
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+function formatWeekLabel(weekKey: string): string {
+  const start = parseDayKey(weekKey);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  const fmt = (d: Date) => d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return `${fmt(start)} – ${fmt(end)}`;
+}
+
 const BREAK_MS = 20 * 60 * 1000;
 const BREAK_STORAGE_KEY = "timer-break-ends-at";
 
@@ -203,6 +236,8 @@ export default function TimerPage() {
   const [bonus, setBonus] = useState<BonusState | null>(null);
   const [bonusFinishedMinutes, setBonusFinishedMinutes] = useState<number | null>(null);
   const [forceStops, setForceStops] = useState<ForceStopState>({ date: todayKey(), count: 0 });
+  const [unit, setUnit] = useState<DisplayUnit>("hours");
+  const [historyView, setHistoryView] = useState<"daily" | "weekly">("daily");
   const audioCtxRef = useRef<AudioContext | null>(null);
 
   function playFocusEndSound() {
@@ -500,6 +535,37 @@ export default function TimerPage() {
   const weeklyLiveMinutes =
     weeklyMinutes + (active && new Date(active.startTime) >= weekStart ? elapsedSeconds / 60 : 0);
 
+  const todayLocalKey = localDayKey(new Date());
+  const dailyTotals = new Map<string, number>();
+  for (const s of sessions) {
+    if (s.durationMinutes == null) continue;
+    const key = localDayKey(new Date(s.startTime));
+    dailyTotals.set(key, (dailyTotals.get(key) ?? 0) + s.durationMinutes);
+  }
+  if (active) {
+    const key = localDayKey(new Date(active.startTime));
+    dailyTotals.set(key, (dailyTotals.get(key) ?? 0) + elapsedSeconds / 60);
+  }
+  const todayMinutes = dailyTotals.get(todayLocalKey) ?? 0;
+  const totalLoggedMinutes = [...dailyTotals.values()].reduce((sum, m) => sum + m, 0);
+  const dailyAverageMinutes = dailyTotals.size > 0 ? totalLoggedMinutes / dailyTotals.size : 0;
+
+  const last10Days = Array.from({ length: 10 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const key = localDayKey(d);
+    return { key, date: d, minutes: dailyTotals.get(key) ?? 0 };
+  });
+
+  const weeklyTotals = new Map<string, number>();
+  for (const [key, minutes] of dailyTotals.entries()) {
+    const weekKey = localDayKey(startOfWeek(parseDayKey(key)));
+    weeklyTotals.set(weekKey, (weeklyTotals.get(weekKey) ?? 0) + minutes);
+  }
+  const weeklyBreakdown = [...weeklyTotals.entries()]
+    .sort((a, b) => (a[0] < b[0] ? 1 : -1))
+    .slice(0, 12);
+
   const breakRemainingSeconds = breakEndsAt ? Math.max(0, (breakEndsAt - now) / 1000) : 0;
   const planPhaseRemainingSeconds = plan ? Math.max(0, (plan.phaseEndsAt - now) / 1000) : 0;
   const bonusPhaseRemainingSeconds = bonus ? Math.max(0, (bonus.phaseEndsAt - now) / 1000) : 0;
@@ -684,12 +750,97 @@ export default function TimerPage() {
       )}
 
       <div className="comic-panel bg-comic-yellow p-4 text-chip-ink">
-        <p className="text-sm font-bold text-chip-ink/80">This week</p>
-        <p className="font-heading text-3xl tracking-wide">{(weeklyLiveMinutes / 60).toFixed(1)} hrs</p>
+        <div className="mb-3 flex items-center justify-between">
+          <p className="text-sm font-bold text-chip-ink/80">Your Focus</p>
+          <div className="flex overflow-hidden rounded-lg border-2 border-ink">
+            <button
+              onClick={() => setUnit("hours")}
+              className="px-2 py-1 text-xs font-bold"
+              style={{
+                backgroundColor: unit === "hours" ? "var(--ink)" : "transparent",
+                color: unit === "hours" ? "var(--paper)" : "var(--chip-ink)",
+              }}
+            >
+              Hours
+            </button>
+            <button
+              onClick={() => setUnit("minutes")}
+              className="px-2 py-1 text-xs font-bold"
+              style={{
+                backgroundColor: unit === "minutes" ? "var(--ink)" : "transparent",
+                color: unit === "minutes" ? "var(--paper)" : "var(--chip-ink)",
+              }}
+            >
+              Minutes
+            </button>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <div>
+            <p className="text-xs font-bold text-chip-ink/70">Today</p>
+            <p className="font-heading text-2xl tracking-wide">{formatByUnit(todayMinutes, unit)}</p>
+          </div>
+          <div>
+            <p className="text-xs font-bold text-chip-ink/70">This Week</p>
+            <p className="font-heading text-2xl tracking-wide">{formatByUnit(weeklyLiveMinutes, unit)}</p>
+          </div>
+          <div>
+            <p className="text-xs font-bold text-chip-ink/70">Daily Average</p>
+            <p className="font-heading text-2xl tracking-wide">{formatByUnit(dailyAverageMinutes, unit)}</p>
+          </div>
+        </div>
       </div>
 
       <div>
-        <h2 className="font-heading mb-2 text-lg tracking-wide text-comic-purple">History</h2>
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="font-heading text-lg tracking-wide text-comic-purple">History</h2>
+          <div className="flex overflow-hidden rounded-lg border-2 border-ink">
+            <button
+              onClick={() => setHistoryView("daily")}
+              className="px-2 py-1 text-xs font-bold"
+              style={{
+                backgroundColor: historyView === "daily" ? "var(--comic-purple)" : "transparent",
+                color: historyView === "daily" ? "var(--chip-ink)" : "var(--ink)",
+              }}
+            >
+              Daily
+            </button>
+            <button
+              onClick={() => setHistoryView("weekly")}
+              className="px-2 py-1 text-xs font-bold"
+              style={{
+                backgroundColor: historyView === "weekly" ? "var(--comic-purple)" : "transparent",
+                color: historyView === "weekly" ? "var(--chip-ink)" : "var(--ink)",
+              }}
+            >
+              Weekly
+            </button>
+          </div>
+        </div>
+
+        {historyView === "daily" ? (
+          <ul className="space-y-1">
+            {last10Days.map(({ key, date, minutes }) => (
+              <li key={key} className="comic-panel-sm flex items-center justify-between px-3 py-2 text-sm">
+                <span className="font-bold">{formatDayLabel(date, key, todayLocalKey)}</span>
+                <span className="text-ink/60">{formatByUnit(minutes, unit)}</span>
+              </li>
+            ))}
+          </ul>
+        ) : weeklyBreakdown.length === 0 ? (
+          <p className="text-xs text-ink/40">No weeks logged yet.</p>
+        ) : (
+          <ul className="space-y-1">
+            {weeklyBreakdown.map(([weekKey, minutes]) => (
+              <li key={weekKey} className="comic-panel-sm flex items-center justify-between px-3 py-2 text-sm">
+                <span className="font-bold">{formatWeekLabel(weekKey)}</span>
+                <span className="text-ink/60">{formatByUnit(minutes, unit)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <h3 className="font-heading mb-2 mt-6 text-sm tracking-wide text-ink/60">Session Log</h3>
         <ul className="space-y-1">
           {sessions
             .filter((s) => s.endTime)
