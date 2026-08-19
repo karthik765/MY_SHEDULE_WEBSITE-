@@ -66,15 +66,26 @@ function GameRow({
   records: Map<string, GameRecordRow>;
   unlocks: Record<string, UnlockInfo>;
 }) {
+  // Puzzles/riddles are one-shot (same question forever), so once solved
+  // they're pushed to the end of the list and can't be replayed — replaying
+  // for a question you already have the answer to isn't a real game. Minigames
+  // stay replayable and keep their original order regardless of win count.
+  const sorted = [...games].sort((a, b) => {
+    const aSolved = a.kind !== "minigame" && (records.get(a.id)?.solved ?? false);
+    const bSolved = b.kind !== "minigame" && (records.get(b.id)?.solved ?? false);
+    return Number(aSolved) - Number(bSolved);
+  });
+
   return (
     <div>
       <h2 className="font-heading mb-2 text-lg tracking-wide" style={{ color }}>
         {title}
       </h2>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
-        {games.map((g) => {
+        {sorted.map((g) => {
           const record = records.get(g.id);
           const done = g.kind === "minigame" ? (record?.timesCompleted ?? 0) > 0 : (record?.solved ?? false);
+          const solvedOneShot = done && g.kind !== "minigame";
           const unlock = unlocks[g.id];
           const locked = unlock ? !unlock.unlocked : false;
 
@@ -88,6 +99,20 @@ function GameRow({
                 <span className="text-3xl grayscale">🔒</span>
                 <span className="text-sm font-bold">{g.title}</span>
                 <span className="text-[11px] leading-tight text-ink/60">{unlock.requirement}</span>
+              </div>
+            );
+          }
+
+          if (solvedOneShot) {
+            return (
+              <div
+                key={g.id}
+                title="Already solved — no replay for a question you already know the answer to."
+                className="comic-panel-sm flex flex-col items-center gap-1 p-3 text-center opacity-45"
+              >
+                <span className="text-3xl grayscale">{g.emoji}</span>
+                <span className="text-sm font-bold">{g.title}</span>
+                <span className="text-xs font-bold text-comic-green">✓ Solved</span>
               </div>
             );
           }
@@ -109,7 +134,7 @@ function GameRow({
               <span className="text-xs text-ink/50">+{g.rewardMinutes}m focus</span>
               {done && (
                 <span className="text-xs font-bold text-comic-green">
-                  ✓ {g.kind === "minigame" ? `${record?.timesCompleted} win${record?.timesCompleted === 1 ? "" : "s"}` : "Solved"}
+                  ✓ {record?.timesCompleted} win{record?.timesCompleted === 1 ? "" : "s"}
                 </span>
               )}
             </Link>
