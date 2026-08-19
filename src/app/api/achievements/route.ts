@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { computeStreak } from "@/lib/habits";
 import { computeStudyStreak } from "@/lib/streaks";
-import { computeUnlocked, pointsForUnlocked, type AchievementStats } from "@/lib/achievements";
+import { computeUnlocked, trophyCounts, type AchievementStats } from "@/lib/achievements";
 
 export async function GET() {
   const [sessions, habits, tasksCompleted, goals, milestonesCompleted, media, games] = await Promise.all([
@@ -62,7 +62,7 @@ export async function GET() {
 
   return NextResponse.json({
     achievements,
-    points: pointsForUnlocked(unlockedIds),
+    trophies: trophyCounts(unlockedIds),
     stats,
   });
 }
