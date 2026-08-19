@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { startOfWeek } from "@/lib/schedule";
 
 interface StudySession {
@@ -155,6 +155,43 @@ function saveBonusState(state: BonusState | null) {
   }
 }
 
+// Synthesized chimes (no audio files needed) — a calm rising tone for "focus
+// block done", a brisker one for "break's over". AudioContext must be
+// created/resumed from a real click for browser autoplay rules to allow it
+// later playback from a setTimeout callback, hence the ref pattern.
+function getAudioContext(ref: React.MutableRefObject<AudioContext | null>): AudioContext | null {
+  if (typeof window === "undefined") return null;
+  const AudioCtxClass =
+    window.AudioContext ||
+    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!AudioCtxClass) return null;
+  if (!ref.current) {
+    ref.current = new AudioCtxClass();
+  }
+  if (ref.current.state === "suspended") {
+    ref.current.resume();
+  }
+  return ref.current;
+}
+
+function playChime(ctx: AudioContext, frequencies: number[], noteMs: number) {
+  let t = ctx.currentTime;
+  for (const freq of frequencies) {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(0.25, t + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + noteMs / 1000);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + noteMs / 1000 + 0.05);
+    t += noteMs / 1000 + 0.05;
+  }
+}
+
 export default function TimerPage() {
   const [active, setActive] = useState<StudySession | null | undefined>(undefined);
   const [sessions, setSessions] = useState<StudySession[]>([]);
@@ -166,6 +203,17 @@ export default function TimerPage() {
   const [bonus, setBonus] = useState<BonusState | null>(null);
   const [bonusFinishedMinutes, setBonusFinishedMinutes] = useState<number | null>(null);
   const [forceStops, setForceStops] = useState<ForceStopState>({ date: todayKey(), count: 0 });
+  const audioCtxRef = useRef<AudioContext | null>(null);
+
+  function playFocusEndSound() {
+    const ctx = getAudioContext(audioCtxRef);
+    if (ctx) playChime(ctx, [880, 1174.66], 220); // rising two-note "well done, rest now"
+  }
+
+  function playBreakEndSound() {
+    const ctx = getAudioContext(audioCtxRef);
+    if (ctx) playChime(ctx, [659.25, 523.25, 659.25], 150); // brisker three-note "back to it"
+  }
 
   async function load() {
     const [activeRes, listRes] = await Promise.all([
@@ -207,12 +255,29 @@ export default function TimerPage() {
     await fetch("/api/timer/stop", { method: "POST" });
   }
 
-  async function startPlanFocus(blockIndex: number) {
-    const res = await fetch("/api/timer/start", {
+  // POSTs /api/timer/start, and if the server reports a session is already
+  // running (a stray one left over from an earlier failed transition), clears
+  // it and retries once instead of silently giving up — that stray-session
+  // deadlock is what made "Skip break" appear to do nothing.
+  async function startSessionWithRecovery(subject: string): Promise<Response> {
+    let res = await fetch("/api/timer/start", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ subject: planLabel(blockIndex) }),
+      body: JSON.stringify({ subject }),
     });
+    if (res.status === 409) {
+      await stopActiveSession();
+      res = await fetch("/api/timer/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subject }),
+      });
+    }
+    return res;
+  }
+
+  async function startPlanFocus(blockIndex: number) {
+    const res = await startSessionWithRecovery(planLabel(blockIndex));
     if (!res.ok) return;
     const next: PlanState = {
       blockIndex,
@@ -244,6 +309,7 @@ export default function TimerPage() {
   async function transitionPlan(current: PlanState) {
     const block = STUDY_PLAN[current.blockIndex];
     if (current.phase === "focus") {
+      playFocusEndSound();
       await stopActiveSession();
       if (block.breakMinutes != null) {
         const next: PlanState = {
@@ -258,6 +324,7 @@ export default function TimerPage() {
         await advancePlan(current.blockIndex + 1);
       }
     } else {
+      playBreakEndSound();
       await advancePlan(current.blockIndex + 1);
     }
   }
@@ -275,6 +342,7 @@ export default function TimerPage() {
 
   async function skipPlanBreak() {
     if (!plan || plan.phase !== "break") return;
+    playBreakEndSound();
     await advancePlan(plan.blockIndex + 1);
   }
 
@@ -310,11 +378,7 @@ export default function TimerPage() {
       load();
       return;
     }
-    const res = await fetch("/api/timer/start", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ subject: `${subject.trim() || "Study"} (Bonus Focus)` }),
-    });
+    const res = await startSessionWithRecovery(`${subject.trim() || "Study"} (Bonus Focus)`);
     if (!res.ok) return;
     const next: BonusState = {
       phase: "focus",
