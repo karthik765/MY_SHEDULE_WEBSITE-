@@ -3,7 +3,22 @@
 import { useEffect, useRef, useState } from "react";
 import type { Difficulty, GameResult } from "@/lib/games";
 
-const EMOJIS = ["🎯", "🚀", "🎨", "🎮", "🧩", "⭐", "🍕", "🐙"];
+// Keyed by game id so the same engine can power themed "packs" that unlock
+// on their own weekly schedule — a different emoji set, not a different game.
+// Each pack needs exactly 8 emojis to support Hard's 8 pairs.
+export const MEMORY_PACKS: Record<string, string[]> = {
+  memory: ["🎯", "🚀", "🎨", "🎮", "🧩", "⭐", "🍕", "🐙"],
+  "memory-animals": ["🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼"],
+  "memory-food": ["🍕", "🍔", "🍟", "🌭", "🍿", "🍩", "🍪", "🍫"],
+  "memory-space": ["🚀", "🌙", "⭐", "☄️", "🪐", "🛸", "👽", "🌍"],
+  "memory-sports": ["⚽", "🏀", "🏈", "⚾", "🎾", "🏐", "🏓", "🏸"],
+  "memory-ocean": ["🐳", "🐬", "🐟", "🐙", "🦀", "🐠", "🦈", "🐡"],
+  "memory-weather": ["☀️", "🌧️", "⛈️", "❄️", "🌈", "☁️", "⚡", "🌪️"],
+  "memory-fantasy": ["🧙", "🐉", "🏰", "⚔️", "🔮", "🦄", "🧝", "👑"],
+  "memory-vehicles": ["🚗", "🚕", "🚌", "🚓", "🚑", "🚒", "🚜", "🏍️"],
+  "memory-instruments": ["🎸", "🎹", "🥁", "🎺", "🎻", "🪕", "🎷", "🪗"],
+  "memory-dinosaurs": ["🦖", "🦕", "🥚", "🌋", "🦴", "🌿", "🪨", "☄️"],
+};
 
 // Fewer pairs (and a shorter memorization window) for Easy, more for Hard.
 const PAIRS: Record<Difficulty, number> = { easy: 4, medium: 6, hard: 8 };
@@ -14,8 +29,8 @@ interface CardT {
   matched: boolean;
 }
 
-function shuffledDeck(pairs: number): CardT[] {
-  const chosen = EMOJIS.slice(0, pairs);
+function shuffledDeck(emojis: string[], pairs: number): CardT[] {
+  const chosen = emojis.slice(0, pairs);
   const deck = [...chosen, ...chosen].map((emoji, i) => ({ id: i, emoji, matched: false }));
   for (let i = deck.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -25,14 +40,17 @@ function shuffledDeck(pairs: number): CardT[] {
 }
 
 export default function Memory({
+  gameId,
   difficulty,
   onEnd,
 }: {
+  gameId: string;
   difficulty: Difficulty;
   onEnd: (result: GameResult) => void;
 }) {
+  const emojis = MEMORY_PACKS[gameId] ?? MEMORY_PACKS["memory"];
   const pairs = PAIRS[difficulty];
-  const [deck, setDeck] = useState<CardT[]>(() => shuffledDeck(pairs));
+  const [deck, setDeck] = useState<CardT[]>(() => shuffledDeck(emojis, pairs));
   const [flipped, setFlipped] = useState<number[]>([]);
   const [moves, setMoves] = useState(0);
   const reportedRef = useRef(false);
@@ -69,7 +87,7 @@ export default function Memory({
   }
 
   function reset() {
-    setDeck(shuffledDeck(pairs));
+    setDeck(shuffledDeck(emojis, pairs));
     setFlipped([]);
     setMoves(0);
     reportedRef.current = false;

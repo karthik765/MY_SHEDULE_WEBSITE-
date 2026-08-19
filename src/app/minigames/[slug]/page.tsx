@@ -20,6 +20,12 @@ import ColorMatch from "@/components/games/ColorMatch";
 import SlidePuzzle from "@/components/games/SlidePuzzle";
 import Minesweeper from "@/components/games/Minesweeper";
 import TypingChallenge from "@/components/games/TypingChallenge";
+import TwentyFourGame from "@/components/games/TwentyFourGame";
+import ReactionTest from "@/components/games/ReactionTest";
+import PatternMemory from "@/components/games/PatternMemory";
+import MiniSudoku from "@/components/games/MiniSudoku";
+import OddOneOut from "@/components/games/OddOneOut";
+import TriviaBlitz from "@/components/games/TriviaBlitz";
 import AnswerGame from "@/components/games/AnswerGame";
 
 interface GameRecordRow {
@@ -191,20 +197,28 @@ export default function GameDetailPage() {
         <>
           {def.id === "tic-tac-toe" && <TicTacToe difficulty={difficulty} onEnd={handleEnd} />}
           {def.id === "snake" && <Snake difficulty={difficulty} onEnd={handleEnd} />}
-          {def.id === "memory" && <Memory difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id.startsWith("memory") && <Memory gameId={def.id} difficulty={difficulty} onEnd={handleEnd} />}
           {def.id === "2048" && <Merge2048 difficulty={difficulty} onEnd={handleEnd} />}
           {def.id === "chess" && <Chess difficulty={difficulty} onEnd={handleEnd} />}
           {def.id === "rps" && <RockPaperScissors difficulty={difficulty} onEnd={handleEnd} />}
           {def.id === "simon-says" && <SimonSays difficulty={difficulty} onEnd={handleEnd} />}
           {def.id === "whack-a-mole" && <WhackAMole difficulty={difficulty} onEnd={handleEnd} />}
-          {def.id === "word-scramble" && <WordScramble difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id.startsWith("word-scramble") && (
+            <WordScramble gameId={def.id} difficulty={difficulty} onEnd={handleEnd} />
+          )}
           {def.id === "connect-four" && <ConnectFour difficulty={difficulty} onEnd={handleEnd} />}
-          {def.id === "speed-math" && <SpeedMath difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id.startsWith("speed-math") && <SpeedMath gameId={def.id} difficulty={difficulty} onEnd={handleEnd} />}
           {def.id === "higher-lower" && <HigherOrLower difficulty={difficulty} onEnd={handleEnd} />}
           {def.id === "color-match" && <ColorMatch difficulty={difficulty} onEnd={handleEnd} />}
           {def.id === "slide-puzzle" && <SlidePuzzle difficulty={difficulty} onEnd={handleEnd} />}
           {def.id === "minesweeper" && <Minesweeper difficulty={difficulty} onEnd={handleEnd} />}
-          {def.id === "typing-challenge" && <TypingChallenge difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id.startsWith("typing") && <TypingChallenge gameId={def.id} difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "twenty-four-game" && <TwentyFourGame difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "reaction-test" && <ReactionTest difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "pattern-memory" && <PatternMemory difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "mini-sudoku" && <MiniSudoku difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id.startsWith("odd-one-out") && <OddOneOut gameId={def.id} difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id.startsWith("trivia") && <TriviaBlitz gameId={def.id} difficulty={difficulty} onEnd={handleEnd} />}
           <button onClick={() => setStarted(false)} className="comic-btn bg-panel px-4 py-1.5 text-sm">
             ← Change difficulty
           </button>

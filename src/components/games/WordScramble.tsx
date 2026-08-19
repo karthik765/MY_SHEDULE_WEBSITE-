@@ -3,10 +3,79 @@
 import { useEffect, useRef, useState } from "react";
 import type { Difficulty, GameResult } from "@/lib/games";
 
-const WORDS: Record<Difficulty, string[]> = {
-  easy: ["CAT", "DOG", "SUN", "BOOK", "TREE", "FISH"],
-  medium: ["PLANET", "GUITAR", "PUZZLE", "GARDEN", "PENCIL", "WINDOW"],
-  hard: ["ELEPHANT", "COMPUTER", "MOUNTAIN", "CHOCOLATE", "ADVENTURE", "TELESCOPE"],
+// Keyed by game id so the same engine can power themed "packs" that unlock
+// on their own weekly schedule — a different word list, not a different game.
+export const WORD_SCRAMBLE_PACKS: Record<string, Record<Difficulty, string[]>> = {
+  "word-scramble": {
+    easy: ["CAT", "DOG", "SUN", "BOOK", "TREE", "FISH"],
+    medium: ["PLANET", "GUITAR", "PUZZLE", "GARDEN", "PENCIL", "WINDOW"],
+    hard: ["ELEPHANT", "COMPUTER", "MOUNTAIN", "CHOCOLATE", "ADVENTURE", "TELESCOPE"],
+  },
+  "word-scramble-animals": {
+    easy: ["CAT", "DOG", "PIG", "OWL", "BEAR", "LION"],
+    medium: ["RABBIT", "MONKEY", "DONKEY", "PANTHER", "DOLPHIN", "GIRAFFE"],
+    hard: ["ELEPHANT", "CROCODILE", "KANGAROO", "CHIMPANZEE", "RHINOCEROS", "HIPPOPOTAMUS"],
+  },
+  "word-scramble-countries": {
+    easy: ["CHAD", "CUBA", "PERU", "CHINA", "INDIA", "SPAIN"],
+    medium: ["FRANCE", "MEXICO", "CANADA", "NORWAY", "IRELAND", "GERMANY"],
+    hard: ["AUSTRALIA", "ARGENTINA", "SWITZERLAND", "PHILIPPINES", "INDONESIA", "KAZAKHSTAN"],
+  },
+  "word-scramble-sports": {
+    easy: ["GOLF", "SWIM", "RUN", "SKI", "BOX", "DIVE"],
+    medium: ["TENNIS", "HOCKEY", "SOCCER", "RUGBY", "CYCLING", "ROWING"],
+    hard: ["BASKETBALL", "BADMINTON", "GYMNASTICS", "VOLLEYBALL", "WRESTLING", "SKATEBOARD"],
+  },
+  "word-scramble-fruits": {
+    easy: ["FIG", "PEAR", "PLUM", "LIME", "KIWI", "APPLE"],
+    medium: ["MANGO", "GRAPE", "LEMON", "CHERRY", "PAPAYA", "APRICOT"],
+    hard: ["PINEAPPLE", "WATERMELON", "STRAWBERRY", "POMEGRANATE", "GRAPEFRUIT", "PASSIONFRUIT"],
+  },
+  "word-scramble-movies": {
+    easy: ["JAWS", "SAW", "UP", "CARS", "ELF", "RIO"],
+    medium: ["FROZEN", "AVATAR", "MATRIX", "ROCKY", "GREASE", "MOANA"],
+    hard: ["INCEPTION", "GLADIATOR", "TITANIC", "INTERSTELLAR", "CASABLANCA", "GOODFELLAS"],
+  },
+  "word-scramble-colors": {
+    easy: ["RED", "PINK", "TEAL", "GOLD", "GRAY", "NAVY"],
+    medium: ["PURPLE", "ORANGE", "YELLOW", "MAROON", "SILVER", "VIOLET"],
+    hard: ["TURQUOISE", "MAGENTA", "LAVENDER", "CHARCOAL", "CRIMSON", "PERIWINKLE"],
+  },
+  "word-scramble-space": {
+    easy: ["SUN", "MOON", "STAR", "MARS", "ORBIT", "COMET"],
+    medium: ["PLANET", "GALAXY", "METEOR", "ROCKET", "NEBULA", "SATURN"],
+    hard: ["ASTEROID", "TELESCOPE", "ATMOSPHERE", "CONSTELLATION", "ASTRONAUT", "GRAVITY"],
+  },
+  "word-scramble-food": {
+    easy: ["SOUP", "RICE", "CAKE", "TACO", "BREAD", "PASTA"],
+    medium: ["BURGER", "NOODLE", "PANCAKE", "SANDWICH", "OMELETTE", "BURRITO"],
+    hard: ["SPAGHETTI", "CASSEROLE", "QUESADILLA", "CHEESECAKE", "BRUSCHETTA", "GUACAMOLE"],
+  },
+  "word-scramble-jobs": {
+    easy: ["COOK", "NURSE", "PILOT", "ACTOR", "JUDGE", "MAYOR"],
+    medium: ["DOCTOR", "DENTIST", "PLUMBER", "TEACHER", "FARMER", "LAWYER"],
+    hard: ["ENGINEER", "ARCHITECT", "ELECTRICIAN", "ACCOUNTANT", "VETERINARIAN", "PHOTOGRAPHER"],
+  },
+  "word-scramble-music": {
+    easy: ["POP", "JAZZ", "SONG", "BEAT", "DRUM", "TUNE"],
+    medium: ["GUITAR", "PIANO", "VIOLIN", "RHYTHM", "MELODY", "SINGER"],
+    hard: ["ORCHESTRA", "SYMPHONY", "HARMONICA", "SAXOPHONE", "ACCORDION", "PERCUSSION"],
+  },
+  "word-scramble-weather": {
+    easy: ["RAIN", "SNOW", "WIND", "FOG", "HAIL", "SUN"],
+    medium: ["STORM", "CLOUDY", "DROUGHT", "THUNDER", "BREEZE", "HUMID"],
+    hard: ["HURRICANE", "BLIZZARD", "TORNADO", "MONSOON", "AVALANCHE", "TEMPERATURE"],
+  },
+  "word-scramble-emotions": {
+    easy: ["JOY", "SAD", "FEAR", "CALM", "MAD", "SHY"],
+    medium: ["HAPPY", "ANGRY", "PROUD", "EXCITED", "NERVOUS", "JEALOUS"],
+    hard: ["ANXIOUS", "GRATEFUL", "CONFUSED", "OPTIMISTIC", "FRUSTRATED", "OVERWHELMED"],
+  },
+  "word-scramble-gadgets": {
+    easy: ["FAN", "LAMP", "CLOCK", "RADIO", "PHONE", "TV"],
+    medium: ["CAMERA", "LAPTOP", "TABLET", "SPEAKER", "PRINTER", "MONITOR"],
+    hard: ["HEADPHONES", "MICROWAVE", "PROJECTOR", "SMARTWATCH", "REFRIGERATOR", "DISHWASHER"],
+  },
 };
 
 const TIME_LIMIT: Record<Difficulty, number> = { easy: 30, medium: 25, hard: 20 };
@@ -25,12 +94,15 @@ function scramble(word: string): string {
 }
 
 export default function WordScramble({
+  gameId,
   difficulty,
   onEnd,
 }: {
+  gameId: string;
   difficulty: Difficulty;
   onEnd: (result: GameResult) => void;
 }) {
+  const wordPack = WORD_SCRAMBLE_PACKS[gameId] ?? WORD_SCRAMBLE_PACKS["word-scramble"];
   const [word, setWord] = useState("");
   const [scrambled, setScrambled] = useState("");
   const [guess, setGuess] = useState("");
@@ -56,7 +128,7 @@ export default function WordScramble({
   }, [secondsLeft, status]);
 
   function start() {
-    const pool = WORDS[difficulty];
+    const pool = wordPack[difficulty];
     const chosen = pool[Math.floor(Math.random() * pool.length)];
     setWord(chosen);
     setScrambled(scramble(chosen));

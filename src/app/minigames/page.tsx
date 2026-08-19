@@ -10,7 +10,6 @@ import {
   currentContentWeek,
   weekUnlockDate,
   type GameDef,
-  type AnswerDef,
 } from "@/lib/games";
 
 interface LimitsResponse {
@@ -32,13 +31,19 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "stats", label: "📊 Stats" },
 ];
 
-function NewThisWeekBanner({ kind, item }: { kind: "puzzle" | "riddle"; item: AnswerDef | undefined }) {
+const KIND_LABEL: Record<"puzzle" | "riddle" | "minigame", string> = {
+  puzzle: "Puzzle",
+  riddle: "Riddle",
+  minigame: "Minigame",
+};
+
+function NewThisWeekBanner({ kind, item }: { kind: "puzzle" | "riddle" | "minigame"; item: GameDef | undefined }) {
   if (!item) return null;
   return (
     <div className="comic-panel-sm flex items-center gap-3 bg-comic-yellow p-3 text-chip-ink">
       <span className="text-2xl">🆕</span>
       <p className="text-sm font-bold">
-        New {kind === "puzzle" ? "Puzzle" : "Riddle"} of the Week: {item.emoji} {item.title}
+        New {KIND_LABEL[kind]} of the Week: {item.emoji} {item.title}
       </p>
     </div>
   );
@@ -183,6 +188,7 @@ export default function MinigamesPage() {
   const thisWeekDate = weekUnlockDate(currentContentWeek());
   const thisWeekPuzzle = PUZZLES.find((p) => p.unlock?.type === "date" && p.unlock.after === thisWeekDate);
   const thisWeekRiddle = RIDDLES.find((r) => r.unlock?.type === "date" && r.unlock.after === thisWeekDate);
+  const thisWeekMinigame = MINIGAMES.find((g) => g.unlock?.type === "date" && g.unlock.after === thisWeekDate);
 
   return (
     <div className="space-y-6">
@@ -213,7 +219,10 @@ export default function MinigamesPage() {
       </div>
 
       {tab === "minigames" && (
-        <GameRow title="🎮 Minigames" color="var(--comic-blue)" games={MINIGAMES} records={recordMap} unlocks={unlocks} />
+        <div className="space-y-3">
+          <NewThisWeekBanner kind="minigame" item={thisWeekMinigame} />
+          <GameRow title="🎮 Minigames" color="var(--comic-blue)" games={MINIGAMES} records={recordMap} unlocks={unlocks} />
+        </div>
       )}
       {tab === "puzzles" && (
         <div className="space-y-3">

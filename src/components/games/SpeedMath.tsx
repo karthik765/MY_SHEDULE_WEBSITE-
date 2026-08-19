@@ -24,39 +24,72 @@ function addOrSub(min: number, max: number): Problem {
   return { text: `${hi} - ${lo}`, answer: hi - lo };
 }
 
-function generateProblem(difficulty: Difficulty): Problem {
-  if (difficulty === "easy") return addOrSub(1, 20);
+function multiplyProblem(loA: number, hiA: number, loB: number, hiB: number): Problem {
+  const a = randInt(loA, hiA);
+  const b = randInt(loB, hiB);
+  return { text: `${a} × ${b}`, answer: a * b };
+}
 
+function divideProblem(loDivisor: number, hiDivisor: number, loQuotient: number, hiQuotient: number): Problem {
+  const b = randInt(loDivisor, hiDivisor);
+  const answer = randInt(loQuotient, hiQuotient);
+  return { text: `${b * answer} ÷ ${b}`, answer };
+}
+
+// Which operations a game id focuses on. "all" is the original mixed mode;
+// the rest power themed variants (same engine, a narrower problem set).
+export type SpeedMathMode = "all" | "addsub" | "mul" | "div" | "mixed-hard";
+
+const MODE_BY_ID: Record<string, SpeedMathMode> = {
+  "speed-math": "all",
+  "speed-math-addition": "addsub",
+  "speed-math-multiplication": "mul",
+  "speed-math-division": "div",
+  "speed-math-mixed": "mixed-hard",
+};
+
+function generateProblem(difficulty: Difficulty, mode: SpeedMathMode): Problem {
+  if (mode === "addsub") {
+    const range = difficulty === "easy" ? 20 : difficulty === "medium" ? 50 : 100;
+    return addOrSub(1, range);
+  }
+  if (mode === "mul") {
+    const hi = difficulty === "easy" ? 10 : difficulty === "medium" ? 15 : 20;
+    return multiplyProblem(2, hi, 2, hi);
+  }
+  if (mode === "div") {
+    const hi = difficulty === "easy" ? 10 : difficulty === "medium" ? 12 : 15;
+    return divideProblem(2, hi, 2, hi);
+  }
+  if (mode === "mixed-hard") {
+    const roll = Math.random();
+    if (roll < 0.35) return multiplyProblem(3, 20, 3, 15);
+    if (roll < 0.65) return divideProblem(2, 12, 2, 12);
+    return addOrSub(10, 60);
+  }
+
+  // "all" — the original difficulty-scaled mixed mode.
+  if (difficulty === "easy") return addOrSub(1, 20);
   if (difficulty === "medium") {
-    if (Math.random() < 0.4) {
-      const a = randInt(2, 12);
-      const b = randInt(2, 12);
-      return { text: `${a} × ${b}`, answer: a * b };
-    }
+    if (Math.random() < 0.4) return multiplyProblem(2, 12, 2, 12);
     return addOrSub(1, 30);
   }
-
   const roll = Math.random();
-  if (roll < 0.3) {
-    const a = randInt(3, 20);
-    const b = randInt(3, 15);
-    return { text: `${a} × ${b}`, answer: a * b };
-  }
-  if (roll < 0.55) {
-    const b = randInt(2, 12);
-    const answer = randInt(2, 12);
-    return { text: `${b * answer} ÷ ${b}`, answer };
-  }
+  if (roll < 0.3) return multiplyProblem(3, 20, 3, 15);
+  if (roll < 0.55) return divideProblem(2, 12, 2, 12);
   return addOrSub(10, 60);
 }
 
 export default function SpeedMath({
+  gameId,
   difficulty,
   onEnd,
 }: {
+  gameId: string;
   difficulty: Difficulty;
   onEnd: (result: GameResult, score: number) => void;
 }) {
+  const mode = MODE_BY_ID[gameId] ?? "all";
   const [phase, setPhase] = useState<"idle" | "playing">("idle");
   const [problem, setProblem] = useState<Problem | null>(null);
   const [input, setInput] = useState("");
@@ -87,7 +120,7 @@ export default function SpeedMath({
   function start() {
     setScore(0);
     setSecondsLeft(TIME_LIMIT[difficulty]);
-    setProblem(generateProblem(difficulty));
+    setProblem(generateProblem(difficulty, mode));
     setInput("");
     reportedRef.current = false;
     setPhase("playing");
@@ -96,7 +129,7 @@ export default function SpeedMath({
   function submit() {
     if (status !== "playing" || !problem) return;
     if (Number(input) === problem.answer) setScore((s) => s + 1);
-    setProblem(generateProblem(difficulty));
+    setProblem(generateProblem(difficulty, mode));
     setInput("");
   }
 

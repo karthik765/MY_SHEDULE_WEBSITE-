@@ -69,6 +69,88 @@ export function currentContentWeek(now: Date = new Date()): number {
   return Math.max(0, Math.min(52, Math.floor(diffDays / 7)));
 }
 
+// One brand-new minigame unlocks every week for a full year. Most weeks
+// reuse an existing engine (Word Scramble, Memory, Speed Math, Typing
+// Challenge, Trivia Blitz, Odd One Out) with fresh content — a different
+// theme/category, not a different game, same pattern as the puzzle/riddle
+// content packs. A handful of weeks introduce a genuinely new mechanic
+// (24 Game, Reaction Test, Pattern Memory, Mini Sudoku). Week 1 is already
+// covered by Rock-Paper-Scissors Blitz above.
+interface WeeklyMinigameSpec {
+  week: number;
+  id: string;
+  title: string;
+  emoji: string;
+  difficulty: Difficulty;
+  rewardMinutes: number;
+  description: string;
+}
+
+const WEEKLY_MINIGAME_SPECS: WeeklyMinigameSpec[] = [
+  { week: 2, id: "word-scramble-animals", title: "Word Scramble: Animals", emoji: "🐾", difficulty: "medium", rewardMinutes: 9, description: "Unscramble animal names." },
+  { week: 3, id: "memory-animals", title: "Memory: Animals", emoji: "🐾", difficulty: "medium", rewardMinutes: 9, description: "Flip cards, find every animal pair." },
+  { week: 4, id: "speed-math-addition", title: "Speed Math: Addition & Subtraction", emoji: "➕", difficulty: "medium", rewardMinutes: 9, description: "Solve add/subtract problems fast." },
+  { week: 5, id: "typing-quotes", title: "Typing Challenge: Quotes", emoji: "💬", difficulty: "medium", rewardMinutes: 9, description: "Type famous quotes exactly." },
+  { week: 6, id: "trivia-blitz", title: "Trivia Blitz", emoji: "🧠", difficulty: "medium", rewardMinutes: 9, description: "Answer general knowledge questions fast." },
+  { week: 7, id: "odd-one-out", title: "Odd One Out", emoji: "🔍", difficulty: "medium", rewardMinutes: 9, description: "Spot the mismatched tile before time runs out." },
+  { week: 8, id: "twenty-four-game", title: "24 Game", emoji: "🔢", difficulty: "hard", rewardMinutes: 13, description: "Combine 4 numbers with +−×÷ to hit the target." },
+  { week: 9, id: "word-scramble-countries", title: "Word Scramble: Countries", emoji: "🌎", difficulty: "medium", rewardMinutes: 9, description: "Unscramble country names." },
+  { week: 10, id: "memory-food", title: "Memory: Food", emoji: "🍔", difficulty: "medium", rewardMinutes: 9, description: "Flip cards, find every food pair." },
+  { week: 11, id: "speed-math-multiplication", title: "Speed Math: Multiplication", emoji: "✖️", difficulty: "medium", rewardMinutes: 9, description: "Solve multiplication problems fast." },
+  { week: 12, id: "typing-tongue-twisters", title: "Typing Challenge: Tongue Twisters", emoji: "👅", difficulty: "medium", rewardMinutes: 9, description: "Type tongue twisters exactly." },
+  { week: 13, id: "trivia-science", title: "Trivia: Science", emoji: "🔬", difficulty: "medium", rewardMinutes: 9, description: "Answer science trivia fast." },
+  { week: 14, id: "odd-one-out-animals", title: "Odd One Out: Animals", emoji: "🐾", difficulty: "medium", rewardMinutes: 9, description: "Spot the mismatched animal before time runs out." },
+  { week: 15, id: "reaction-test", title: "Reaction Test", emoji: "⚡", difficulty: "medium", rewardMinutes: 9, description: "Click the instant it turns green." },
+  { week: 16, id: "word-scramble-sports", title: "Word Scramble: Sports", emoji: "🏅", difficulty: "medium", rewardMinutes: 9, description: "Unscramble sports names." },
+  { week: 17, id: "memory-space", title: "Memory: Space", emoji: "🪐", difficulty: "medium", rewardMinutes: 9, description: "Flip cards, find every space pair." },
+  { week: 18, id: "speed-math-division", title: "Speed Math: Division", emoji: "➗", difficulty: "medium", rewardMinutes: 9, description: "Solve division problems fast." },
+  { week: 19, id: "typing-proverbs", title: "Typing Challenge: Proverbs", emoji: "📜", difficulty: "medium", rewardMinutes: 9, description: "Type classic proverbs exactly." },
+  { week: 20, id: "trivia-history", title: "Trivia: History", emoji: "🏛️", difficulty: "medium", rewardMinutes: 9, description: "Answer history trivia fast." },
+  { week: 21, id: "odd-one-out-fruits", title: "Odd One Out: Fruits", emoji: "🍓", difficulty: "medium", rewardMinutes: 9, description: "Spot the mismatched fruit before time runs out." },
+  { week: 22, id: "pattern-memory", title: "Pattern Memory", emoji: "🧩", difficulty: "medium", rewardMinutes: 9, description: "Memorize the lit cells, then click them from memory." },
+  { week: 23, id: "word-scramble-fruits", title: "Word Scramble: Fruits", emoji: "🍉", difficulty: "medium", rewardMinutes: 9, description: "Unscramble fruit names." },
+  { week: 24, id: "memory-sports", title: "Memory: Sports", emoji: "⚽", difficulty: "medium", rewardMinutes: 9, description: "Flip cards, find every sports pair." },
+  { week: 25, id: "speed-math-mixed", title: "Speed Math: Mixed Master", emoji: "🧮", difficulty: "hard", rewardMinutes: 13, description: "All four operations, no mercy." },
+  { week: 26, id: "typing-movie-lines", title: "Typing Challenge: Movie Lines", emoji: "🎥", difficulty: "medium", rewardMinutes: 9, description: "Type famous movie lines exactly." },
+  { week: 27, id: "trivia-geography", title: "Trivia: Geography", emoji: "🗺️", difficulty: "medium", rewardMinutes: 9, description: "Answer geography trivia fast." },
+  { week: 28, id: "odd-one-out-vehicles", title: "Odd One Out: Vehicles", emoji: "🚙", difficulty: "medium", rewardMinutes: 9, description: "Spot the mismatched vehicle before time runs out." },
+  { week: 29, id: "mini-sudoku", title: "Mini Sudoku", emoji: "🟦", difficulty: "hard", rewardMinutes: 13, description: "Fill the 4x4 grid — every row, column, and box gets 1-4." },
+  { week: 30, id: "word-scramble-movies", title: "Word Scramble: Movies", emoji: "🎬", difficulty: "medium", rewardMinutes: 9, description: "Unscramble movie titles." },
+  { week: 31, id: "memory-ocean", title: "Memory: Ocean", emoji: "🌊", difficulty: "medium", rewardMinutes: 9, description: "Flip cards, find every ocean pair." },
+  { week: 32, id: "typing-idioms", title: "Typing Challenge: Idioms", emoji: "🗣️", difficulty: "medium", rewardMinutes: 9, description: "Type common idioms exactly." },
+  { week: 33, id: "trivia-movies", title: "Trivia: Movies", emoji: "🎬", difficulty: "medium", rewardMinutes: 9, description: "Answer movie trivia fast." },
+  { week: 34, id: "odd-one-out-space", title: "Odd One Out: Space", emoji: "✨", difficulty: "medium", rewardMinutes: 9, description: "Spot the mismatched space icon before time runs out." },
+  { week: 35, id: "word-scramble-colors", title: "Word Scramble: Colors", emoji: "🎨", difficulty: "medium", rewardMinutes: 9, description: "Unscramble color names." },
+  { week: 36, id: "memory-weather", title: "Memory: Weather", emoji: "🌦️", difficulty: "medium", rewardMinutes: 9, description: "Flip cards, find every weather pair." },
+  { week: 37, id: "typing-facts", title: "Typing Challenge: Fun Facts", emoji: "💡", difficulty: "medium", rewardMinutes: 9, description: "Type fun facts exactly." },
+  { week: 38, id: "trivia-sports", title: "Trivia: Sports", emoji: "🏆", difficulty: "medium", rewardMinutes: 9, description: "Answer sports trivia fast." },
+  { week: 39, id: "word-scramble-space", title: "Word Scramble: Space", emoji: "🌌", difficulty: "medium", rewardMinutes: 9, description: "Unscramble space words." },
+  { week: 40, id: "memory-fantasy", title: "Memory: Fantasy", emoji: "🐉", difficulty: "medium", rewardMinutes: 9, description: "Flip cards, find every fantasy pair." },
+  { week: 41, id: "typing-famous-speeches", title: "Typing Challenge: Famous Speeches", emoji: "🎙️", difficulty: "hard", rewardMinutes: 13, description: "Type lines from famous speeches exactly." },
+  { week: 42, id: "trivia-animals", title: "Trivia: Animals", emoji: "🐘", difficulty: "medium", rewardMinutes: 9, description: "Answer animal trivia fast." },
+  { week: 43, id: "word-scramble-food", title: "Word Scramble: Food", emoji: "🍽️", difficulty: "medium", rewardMinutes: 9, description: "Unscramble food names." },
+  { week: 44, id: "memory-vehicles", title: "Memory: Vehicles", emoji: "🚗", difficulty: "medium", rewardMinutes: 9, description: "Flip cards, find every vehicle pair." },
+  { week: 45, id: "trivia-space", title: "Trivia: Space", emoji: "🚀", difficulty: "medium", rewardMinutes: 9, description: "Answer space trivia fast." },
+  { week: 46, id: "word-scramble-jobs", title: "Word Scramble: Jobs", emoji: "💼", difficulty: "medium", rewardMinutes: 9, description: "Unscramble job titles." },
+  { week: 47, id: "memory-instruments", title: "Memory: Instruments", emoji: "🎸", difficulty: "medium", rewardMinutes: 9, description: "Flip cards, find every instrument pair." },
+  { week: 48, id: "word-scramble-music", title: "Word Scramble: Music", emoji: "🎵", difficulty: "medium", rewardMinutes: 9, description: "Unscramble music words." },
+  { week: 49, id: "memory-dinosaurs", title: "Memory: Dinosaurs", emoji: "🦖", difficulty: "medium", rewardMinutes: 9, description: "Flip cards, find every dinosaur pair." },
+  { week: 50, id: "word-scramble-weather", title: "Word Scramble: Weather", emoji: "⛅", difficulty: "medium", rewardMinutes: 9, description: "Unscramble weather words." },
+  { week: 51, id: "word-scramble-emotions", title: "Word Scramble: Emotions", emoji: "😊", difficulty: "medium", rewardMinutes: 9, description: "Unscramble emotion words." },
+  { week: 52, id: "word-scramble-gadgets", title: "Word Scramble: Gadgets", emoji: "📱", difficulty: "hard", rewardMinutes: 13, description: "Unscramble gadget names — the final drop of the year." },
+];
+
+const WEEKLY_MINIGAMES: GameDef[] = WEEKLY_MINIGAME_SPECS.map((s) => ({
+  id: s.id,
+  kind: "minigame",
+  title: s.title,
+  emoji: s.emoji,
+  difficulty: s.difficulty,
+  rewardMinutes: s.rewardMinutes,
+  description: s.description,
+  unlock: weeklyUnlock(s.week),
+}));
+
 export const MINIGAMES: GameDef[] = [
   {
     id: "tic-tac-toe",
@@ -225,6 +307,7 @@ export const MINIGAMES: GameDef[] = [
     description: "Type the sentence correctly before time runs out.",
     unlock: { type: "goalsCompleted", count: 3 },
   },
+  ...WEEKLY_MINIGAMES,
 ];
 
 // Minigames now use a player-chosen per-play difficulty (see GameDetailPage)
