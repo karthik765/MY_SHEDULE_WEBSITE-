@@ -95,58 +95,73 @@ export default function NavBar() {
 
   return (
     <nav className="border-b-4 border-ink bg-panel">
-      <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-2 px-4 py-3">
-        <span
-          className="font-heading mr-2 text-2xl tracking-wide text-comic-red"
-          style={{ WebkitTextStroke: "1px var(--ink)" }}
-        >
-          LIFE HQ
-        </span>
-        {focusPoints !== null && (
+      <div className="mx-auto max-w-5xl px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <Link
-            href="/focus"
-            className="comic-badge bg-comic-orange px-3 py-1.5 text-sm text-chip-ink"
-            title="All-time Focus Points (1 minute of focus = 1 point)"
+            href="/"
+            className="font-heading text-2xl tracking-wide text-comic-red"
+            style={{ WebkitTextStroke: "1px var(--ink)" }}
           >
-            ⏱️ {focusPoints} Focus Points
+            LIFE HQ
           </Link>
-        )}
-        {trophies && (
-          <Link
-            href="/trophies"
-            className="comic-badge flex items-center gap-2 bg-panel px-3 py-1.5 text-base"
-            title="Trophies"
-          >
-            <span style={dimStyle(trophies.gold > 0)}>{TIER_EMOJI.gold}{trophies.gold}</span>
-            <span style={dimStyle(trophies.silver > 0)}>{TIER_EMOJI.silver}{trophies.silver}</span>
-            <span style={dimStyle(trophies.bronze > 0)}>{TIER_EMOJI.bronze}{trophies.bronze}</span>
-            <span style={dimStyle(trophies.platinum)}>🏆</span>
-          </Link>
-        )}
-        {LINKS.map((link) => {
-          const active = pathname === link.href;
-          return (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`comic-btn px-3 py-1.5 text-sm ${active ? "text-chip-ink" : ""}`}
-              style={{
-                backgroundColor: active ? link.color : "var(--panel)",
-                boxShadow: active ? "3px 3px 0 0 var(--ink)" : "2px 2px 0 0 var(--ink)",
-              }}
-            >
-              {link.label}
-            </Link>
-          );
-        })}
-        <ThemeToggle />
-        <button
-          onClick={handleLogout}
-          className="comic-btn px-3 py-1.5 text-sm"
-          style={{ boxShadow: "2px 2px 0 0 var(--ink)" }}
-        >
-          Log Out
-        </button>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {(focusPoints !== null || trophies) && (
+              <div className="comic-panel-sm flex items-stretch overflow-hidden">
+                {focusPoints !== null && (
+                  <Link
+                    href="/focus"
+                    className="flex items-center gap-1.5 bg-comic-orange px-3 py-1.5 text-sm font-bold text-chip-ink"
+                    title="All-time Focus Points (1 minute of focus = 1 point)"
+                  >
+                    <span>⏱️</span>
+                    <span>{focusPoints}</span>
+                  </Link>
+                )}
+                {trophies && (
+                  <Link
+                    href="/trophies"
+                    className="flex items-center gap-2 border-l-2 border-ink/15 px-3 py-1.5 text-sm font-bold"
+                    title="Trophies"
+                  >
+                    <span style={dimStyle(trophies.gold > 0)}>{TIER_EMOJI.gold} {trophies.gold}</span>
+                    <span style={dimStyle(trophies.silver > 0)}>{TIER_EMOJI.silver} {trophies.silver}</span>
+                    <span style={dimStyle(trophies.bronze > 0)}>{TIER_EMOJI.bronze} {trophies.bronze}</span>
+                    <span style={dimStyle(trophies.platinum)}>🏆</span>
+                  </Link>
+                )}
+              </div>
+            )}
+            <div className="comic-panel-sm flex items-stretch overflow-hidden">
+              <ThemeToggle />
+              <button
+                onClick={handleLogout}
+                className="border-l-2 border-ink/15 px-3 py-1.5 text-sm font-bold"
+              >
+                Log Out
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="comic-panel-sm mt-3 flex items-center gap-1 overflow-x-auto p-1">
+          {LINKS.map((link) => {
+            const active = pathname === link.href;
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="shrink-0 rounded-lg px-4 py-1.5 text-sm font-bold transition-colors"
+                style={{
+                  backgroundColor: active ? link.color : "transparent",
+                  color: active ? "var(--chip-ink)" : "var(--ink)",
+                }}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
+        </div>
       </div>
 
       {toast && (

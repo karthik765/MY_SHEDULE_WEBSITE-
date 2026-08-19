@@ -9,8 +9,7 @@ export default function ThemeToggle() {
     <button
       onClick={toggle}
       aria-label="Toggle dark mode"
-      className="comic-btn ml-auto px-3 py-1.5 text-base"
-      style={{ backgroundColor: "var(--panel)" }}
+      className="px-3 py-1.5 text-base"
     >
       {theme === "dark" ? "☀️" : "🌙"}
     </button>
