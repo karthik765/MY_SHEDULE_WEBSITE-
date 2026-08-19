@@ -60,6 +60,41 @@ function formatWeekLabel(weekKey: string): string {
   return `${fmt(start)} – ${fmt(end)}`;
 }
 
+function formatCompactByUnit(minutes: number, unit: DisplayUnit): string {
+  if (unit === "minutes") return `${Math.round(minutes)}m`;
+  const hours = minutes / 60;
+  return hours < 1 ? `${Math.round(minutes)}m` : `${hours.toFixed(1)}h`;
+}
+
+// Monday..Sunday, one accent color per weekday for a consistent, colorful
+// history view (a given weekday always renders the same color).
+const WEEKDAY_COLORS = [
+  "var(--comic-pink)", // Sunday (Date#getDay() === 0)
+  "var(--comic-red)", // Monday
+  "var(--comic-orange)", // Tuesday
+  "var(--comic-yellow)", // Wednesday
+  "var(--comic-green)", // Thursday
+  "var(--comic-blue)", // Friday
+  "var(--comic-purple)", // Saturday
+];
+
+function effortEmoji(minutes: number, goal: number = PLAN_TOTAL_FOCUS_MINUTES): string {
+  if (minutes <= 0) return "💤";
+  if (minutes >= goal) return "🔥";
+  return "⏱️";
+}
+
+// Opacity tier for the calendar heatmap — steps instead of continuous
+// scaling read as more deliberately "designed" than a raw linear fade.
+function effortOpacity(minutes: number, goal: number): number {
+  if (minutes <= 0) return 0;
+  const ratio = minutes / goal;
+  if (ratio >= 1) return 1;
+  if (ratio >= 0.5) return 0.8;
+  if (ratio >= 0.25) return 0.55;
+  return 0.35;
+}
+
 const BREAK_MS = 20 * 60 * 1000;
 const BREAK_STORAGE_KEY = "timer-break-ends-at";
 
@@ -521,11 +556,6 @@ export default function TimerPage() {
     localStorage.removeItem(BREAK_STORAGE_KEY);
   }
 
-  async function remove(id: string) {
-    setSessions((prev) => prev.filter((s) => s.id !== id));
-    await fetch(`/api/timer/${id}`, { method: "DELETE" });
-  }
-
   const elapsedSeconds = active ? Math.max(0, (now - new Date(active.startTime).getTime()) / 1000) : 0;
 
   const weekStart = startOfWeek(new Date());
@@ -550,12 +580,14 @@ export default function TimerPage() {
   const totalLoggedMinutes = [...dailyTotals.values()].reduce((sum, m) => sum + m, 0);
   const dailyAverageMinutes = dailyTotals.size > 0 ? totalLoggedMinutes / dailyTotals.size : 0;
 
-  const last10Days = Array.from({ length: 10 }, (_, i) => {
+  // Oldest first so the calendar grid reads chronologically, today at the end.
+  const last30Days = Array.from({ length: 30 }, (_, i) => {
     const d = new Date();
-    d.setDate(d.getDate() - i);
+    d.setDate(d.getDate() - (29 - i));
     const key = localDayKey(d);
     return { key, date: d, minutes: dailyTotals.get(key) ?? 0 };
   });
+  const leadingBlankDays = (last30Days[0].date.getDay() + 6) % 7; // Monday-start grid
 
   const weeklyTotals = new Map<string, number>();
   for (const [key, minutes] of dailyTotals.entries()) {
@@ -792,14 +824,14 @@ export default function TimerPage() {
       </div>
 
       <div>
-        <div className="mb-2 flex items-center justify-between">
+        <div className="mb-3 flex items-center justify-between">
           <h2 className="font-heading text-lg tracking-wide text-comic-purple">History</h2>
-          <div className="flex overflow-hidden rounded-lg border-2 border-ink">
+          <div className="flex gap-1.5">
             <button
               onClick={() => setHistoryView("daily")}
-              className="px-2 py-1 text-xs font-bold"
+              className="comic-btn px-3 py-1 text-xs"
               style={{
-                backgroundColor: historyView === "daily" ? "var(--comic-purple)" : "transparent",
+                backgroundColor: historyView === "daily" ? "var(--comic-purple)" : "var(--panel)",
                 color: historyView === "daily" ? "var(--chip-ink)" : "var(--ink)",
               }}
             >
@@ -807,9 +839,9 @@ export default function TimerPage() {
             </button>
             <button
               onClick={() => setHistoryView("weekly")}
-              className="px-2 py-1 text-xs font-bold"
+              className="comic-btn px-3 py-1 text-xs"
               style={{
-                backgroundColor: historyView === "weekly" ? "var(--comic-purple)" : "transparent",
+                backgroundColor: historyView === "weekly" ? "var(--comic-purple)" : "var(--panel)",
                 color: historyView === "weekly" ? "var(--chip-ink)" : "var(--ink)",
               }}
             >
@@ -819,50 +851,90 @@ export default function TimerPage() {
         </div>
 
         {historyView === "daily" ? (
-          <ul className="space-y-1">
-            {last10Days.map(({ key, date, minutes }) => (
-              <li key={key} className="comic-panel-sm flex items-center justify-between px-3 py-2 text-sm">
-                <span className="font-bold">{formatDayLabel(date, key, todayLocalKey)}</span>
-                <span className="text-ink/60">{formatByUnit(minutes, unit)}</span>
-              </li>
-            ))}
-          </ul>
+          <div className="comic-panel p-3">
+            <div className="mb-2 grid grid-cols-7 gap-1.5">
+              {["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map((d) => (
+                <p key={d} className="text-center text-xs font-bold text-ink/40">
+                  {d}
+                </p>
+              ))}
+            </div>
+            <div className="grid grid-cols-7 gap-1.5">
+              {Array.from({ length: leadingBlankDays }, (_, i) => (
+                <div key={`blank-${i}`} />
+              ))}
+              {last30Days.map(({ key, date, minutes }) => {
+                const color = WEEKDAY_COLORS[date.getDay()];
+                const opacity = effortOpacity(minutes, PLAN_TOTAL_FOCUS_MINUTES);
+                const isToday = key === todayLocalKey;
+                return (
+                  <div
+                    key={key}
+                    title={`${formatDayLabel(date, key, todayLocalKey)}: ${formatByUnit(minutes, unit)}`}
+                    className="comic-panel-sm flex aspect-square flex-col items-center justify-center gap-0.5 p-0.5"
+                    style={{
+                      backgroundColor: opacity > 0 ? color : "var(--panel)",
+                      opacity: opacity > 0 ? opacity : 1,
+                      outline: isToday ? "2px solid var(--ink)" : undefined,
+                      outlineOffset: isToday ? "-2px" : undefined,
+                    }}
+                  >
+                    <span
+                      className="text-[10px] font-bold leading-none"
+                      style={{ color: opacity >= 0.55 ? "var(--chip-ink)" : "var(--ink)" }}
+                    >
+                      {date.getDate()}
+                    </span>
+                    {minutes > 0 && (
+                      <span
+                        className="text-[9px] font-bold leading-none"
+                        style={{ color: opacity >= 0.55 ? "var(--chip-ink)" : "var(--ink)" }}
+                      >
+                        {formatCompactByUnit(minutes, unit)}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-3 flex items-center justify-end gap-1.5 text-xs text-ink/50">
+              <span>Less</span>
+              {[0, 0.35, 0.55, 0.8, 1].map((o) => (
+                <span
+                  key={o}
+                  className="h-3 w-3 rounded"
+                  style={{ backgroundColor: o > 0 ? "var(--comic-green)" : "var(--panel)", opacity: o || 1, border: "1.5px solid var(--ink)" }}
+                />
+              ))}
+              <span>More</span>
+            </div>
+          </div>
         ) : weeklyBreakdown.length === 0 ? (
           <p className="text-xs text-ink/40">No weeks logged yet.</p>
         ) : (
-          <ul className="space-y-1">
-            {weeklyBreakdown.map(([weekKey, minutes]) => (
-              <li key={weekKey} className="comic-panel-sm flex items-center justify-between px-3 py-2 text-sm">
-                <span className="font-bold">{formatWeekLabel(weekKey)}</span>
-                <span className="text-ink/60">{formatByUnit(minutes, unit)}</span>
-              </li>
-            ))}
+          <ul className="space-y-2">
+            {weeklyBreakdown.map(([weekKey, minutes], i) => {
+              const color = WEEKDAY_COLORS[i % WEEKDAY_COLORS.length];
+              const maxWeekly = Math.max(1, ...weeklyBreakdown.map(([, m]) => m));
+              const pct = Math.max(minutes > 0 ? 4 : 0, (minutes / maxWeekly) * 100);
+              return (
+                <li key={weekKey} className="comic-panel-sm overflow-hidden p-0">
+                  <div className="flex items-center justify-between px-3 pt-2.5">
+                    <span className="text-sm font-bold">
+                      {effortEmoji(minutes, PLAN_TOTAL_FOCUS_MINUTES * 7)} {formatWeekLabel(weekKey)}
+                    </span>
+                    <span className="comic-badge px-2 py-0.5 text-xs text-chip-ink" style={{ backgroundColor: color }}>
+                      {formatByUnit(minutes, unit)}
+                    </span>
+                  </div>
+                  <div className="mx-3 my-2.5 h-3 overflow-hidden rounded-full bg-paper">
+                    <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
-
-        <h3 className="font-heading mb-2 mt-6 text-sm tracking-wide text-ink/60">Session Log</h3>
-        <ul className="space-y-1">
-          {sessions
-            .filter((s) => s.endTime)
-            .slice(0, 30)
-            .map((s) => (
-              <li
-                key={s.id}
-                className="comic-panel-sm flex items-center justify-between px-3 py-2 text-sm"
-              >
-                <span className="font-bold">{s.subject}</span>
-                <span className="text-ink/60">
-                  {new Date(s.startTime).toLocaleDateString()} · {s.durationMinutes} min
-                </span>
-                <button
-                  onClick={() => remove(s.id)}
-                  className="text-xs font-bold text-comic-red hover:underline"
-                >
-                  Delete
-                </button>
-              </li>
-            ))}
-        </ul>
       </div>
     </div>
   );
