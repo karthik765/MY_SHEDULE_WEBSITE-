@@ -102,6 +102,27 @@ export default function NavBar() {
         >
           LIFE HQ
         </span>
+        {focusPoints !== null && (
+          <Link
+            href="/focus"
+            className="comic-badge bg-comic-orange px-3 py-1.5 text-sm text-chip-ink"
+            title="All-time Focus Points (1 minute of focus = 1 point)"
+          >
+            ⏱️ {focusPoints} Focus Points
+          </Link>
+        )}
+        {trophies && (
+          <Link
+            href="/trophies"
+            className="comic-badge flex items-center gap-2 bg-panel px-3 py-1.5 text-base"
+            title="Trophies"
+          >
+            <span style={dimStyle(trophies.gold > 0)}>{TIER_EMOJI.gold}{trophies.gold}</span>
+            <span style={dimStyle(trophies.silver > 0)}>{TIER_EMOJI.silver}{trophies.silver}</span>
+            <span style={dimStyle(trophies.bronze > 0)}>{TIER_EMOJI.bronze}{trophies.bronze}</span>
+            <span style={dimStyle(trophies.platinum)}>🏆</span>
+          </Link>
+        )}
         {LINKS.map((link) => {
           const active = pathname === link.href;
           return (
@@ -119,27 +140,6 @@ export default function NavBar() {
           );
         })}
         <ThemeToggle />
-        {focusPoints !== null && (
-          <Link
-            href="/focus"
-            className="comic-badge bg-comic-orange px-2 py-1 text-xs text-chip-ink"
-            title="All-time Focus Points (1 minute of focus = 1 point)"
-          >
-            ⏱️ {focusPoints} Focus Points
-          </Link>
-        )}
-        {trophies && (
-          <Link
-            href="/trophies"
-            className="comic-badge flex items-center gap-1.5 bg-panel px-2 py-1 text-xs"
-            title="Trophies"
-          >
-            <span style={dimStyle(trophies.gold > 0)}>{TIER_EMOJI.gold}{trophies.gold}</span>
-            <span style={dimStyle(trophies.silver > 0)}>{TIER_EMOJI.silver}{trophies.silver}</span>
-            <span style={dimStyle(trophies.bronze > 0)}>{TIER_EMOJI.bronze}{trophies.bronze}</span>
-            <span style={dimStyle(trophies.platinum)}>🏆</span>
-          </Link>
-        )}
         <button
           onClick={handleLogout}
           className="comic-btn px-3 py-1.5 text-sm"

@@ -40,7 +40,7 @@ export default async function DashboardPage() {
       </h1>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Study hours this week" value={`${(weeklyMinutes / 60).toFixed(1)} hrs`} color="var(--comic-blue)" />
+        <StatCard label="Focus Points this week" value={`${weeklyMinutes} pts`} color="var(--comic-blue)" />
         <StatCard label="Tasks due" value={String(dueTodayOrOverdue.length)} color="var(--comic-red)" />
         <StatCard
           label="Focus"

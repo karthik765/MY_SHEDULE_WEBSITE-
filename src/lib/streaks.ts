@@ -26,6 +26,30 @@ export function computeStreakFromDayKeys(dayKeys: Set<string>): number {
   return streak;
 }
 
+// Longest run of consecutive qualifying days ever seen, not just the one
+// still active today — so a streak that broke (e.g. 20 days, then a missed
+// day) stays remembered instead of disappearing once the current streak
+// resets to 0.
+export function computeLongestStreakFromDayKeys(dayKeys: Set<string>): number {
+  const sorted = [...dayKeys].sort();
+  let longest = 0;
+  let current = 0;
+  let prevDate: Date | null = null;
+
+  for (const key of sorted) {
+    const date = new Date(key);
+    if (prevDate && Math.round((date.getTime() - prevDate.getTime()) / 86_400_000) === 1) {
+      current += 1;
+    } else {
+      current = 1;
+    }
+    longest = Math.max(longest, current);
+    prevDate = date;
+  }
+
+  return longest;
+}
+
 export interface StudySessionLike {
   startTime: string | Date;
   durationMinutes: number | null;

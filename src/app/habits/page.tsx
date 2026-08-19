@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { computeStreak } from "@/lib/habits";
+import { computeLongestStreak, computeStreak } from "@/lib/habits";
 import MediaSection from "@/components/MediaSection";
 import JournalSection from "@/components/JournalSection";
 
@@ -113,6 +113,7 @@ export default function HabitsPage() {
               {habits.map((habit) => {
                 const doneToday = habit.logs.some((l) => l.date.slice(0, 10) === todayKey());
                 const streak = computeStreak(habit.logs);
+                const longest = computeLongestStreak(habit.logs);
                 return (
                   <li key={habit.id} className="comic-panel-sm flex items-center gap-3 p-3">
                     <button
@@ -125,7 +126,8 @@ export default function HabitsPage() {
                     <div className="flex-1">
                       <p className="text-sm font-bold">{habit.name}</p>
                       <p className="text-xs text-ink/60">
-                        {streak > 0 ? `🔥 ${streak} day streak` : "No streak yet"}
+                        {streak > 0 ? `🔥 ${streak} day streak` : "No active streak"}
+                        {longest > 0 && longest !== streak && ` · Best: ${longest} days`}
                       </p>
                     </div>
                     <button
