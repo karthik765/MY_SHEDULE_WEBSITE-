@@ -12,6 +12,7 @@ const LINKS = [
   { href: "/habits", label: "Habits", color: "var(--comic-green)" },
   { href: "/journal", label: "Journal", color: "var(--comic-pink)" },
   { href: "/goals", label: "Goals", color: "var(--comic-yellow)" },
+  { href: "/minigames", label: "Minigames", color: "var(--comic-pink)" },
   { href: "/achievements", label: "Achievements", color: "var(--comic-orange)" },
   { href: "/analytics", label: "Analytics", color: "var(--comic-blue)" },
 ];

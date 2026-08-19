@@ -108,3 +108,20 @@ model UnlockedAchievement {
   id         String   @id // achievement id from src/lib/achievements.ts
   unlockedAt DateTime @default(now())
 }
+
+// One row per minigame/puzzle/riddle id (see src/lib/games.ts). Minigames are
+// replayable — completionsToday/lastCompletionDate cap how many awards a
+// single game can earn per day so focus-time can't be farmed by replaying
+// the same game. Puzzles/riddles are one-shot: `solved` gates the reward to
+// the first correct answer only.
+model GameRecord {
+  id                 String   @id @default(cuid())
+  game               String   @unique
+  kind               String // "minigame" | "puzzle" | "riddle"
+  timesCompleted     Int      @default(0)
+  bestScore          Int?
+  solved             Boolean  @default(false)
+  completionsToday   Int      @default(0)
+  lastCompletionDate String? // "YYYY-MM-DD", local to the server
+  updatedAt          DateTime @updatedAt
+}

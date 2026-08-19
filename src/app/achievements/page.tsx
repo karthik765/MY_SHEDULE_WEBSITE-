@@ -18,9 +18,10 @@ const CATEGORY_META: Record<AchievementCategory, { label: string; color: string 
   tasks: { label: "Tasks", color: "var(--comic-red)" },
   goals: { label: "Goals", color: "var(--comic-yellow)" },
   media: { label: "Movies, Web Series & Games", color: "var(--comic-purple)" },
+  minigames: { label: "Minigames, Puzzles & Riddles", color: "var(--comic-pink)" },
 };
 
-const CATEGORY_ORDER: AchievementCategory[] = ["timer", "habits", "tasks", "goals", "media"];
+const CATEGORY_ORDER: AchievementCategory[] = ["timer", "habits", "tasks", "goals", "media", "minigames"];
 
 export default function AchievementsPage() {
   const [achievements, setAchievements] = useState<AchievementRow[]>([]);

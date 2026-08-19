@@ -1,6 +1,8 @@
 // Xbox-style achievements computed live from current stats — nothing is
 // stored separately, so "unlocked" always reflects the current data.
 
+import { PUZZLES, RIDDLES } from "./games";
+
 export interface AchievementStats {
   studyStreak: number;
   totalStudyHours: number;
@@ -13,9 +15,12 @@ export interface AchievementStats {
   moviesWatched: number;
   webSeriesWatched: number;
   gamesPlayed: number;
+  minigamesWon: number;
+  puzzlesSolved: number;
+  riddlesSolved: number;
 }
 
-export type AchievementCategory = "timer" | "habits" | "tasks" | "goals" | "media";
+export type AchievementCategory = "timer" | "habits" | "tasks" | "goals" | "media" | "minigames";
 
 export interface AchievementDef {
   id: string;
@@ -203,6 +208,72 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     points: 30,
     category: "media",
     check: (s) => s.gamesPlayed >= 5,
+  },
+
+  // Minigames, puzzles & mystery riddles
+  {
+    id: "minigame-win-1",
+    title: "Player One",
+    description: "Win your first minigame.",
+    points: 10,
+    category: "minigames",
+    check: (s) => s.minigamesWon >= 1,
+  },
+  {
+    id: "minigame-win-10",
+    title: "High Scorer",
+    description: "Win minigames 10 times total.",
+    points: 40,
+    category: "minigames",
+    check: (s) => s.minigamesWon >= 10,
+  },
+  {
+    id: "minigame-win-25",
+    title: "Arcade Legend",
+    description: "Win minigames 25 times total.",
+    points: 100,
+    category: "minigames",
+    check: (s) => s.minigamesWon >= 25,
+  },
+  {
+    id: "puzzle-solve-1",
+    title: "Puzzle Novice",
+    description: "Solve your first brain puzzle.",
+    points: 10,
+    category: "minigames",
+    check: (s) => s.puzzlesSolved >= 1,
+  },
+  {
+    id: "puzzle-solve-all",
+    title: "Puzzle Master",
+    description: "Solve every brain puzzle.",
+    points: 60,
+    category: "minigames",
+    check: (s) => s.puzzlesSolved >= PUZZLES.length,
+  },
+  {
+    id: "riddle-solve-1",
+    title: "Riddle Rookie",
+    description: "Solve your first mystery riddle.",
+    points: 10,
+    category: "minigames",
+    check: (s) => s.riddlesSolved >= 1,
+  },
+  {
+    id: "riddle-solve-all",
+    title: "Master Detective",
+    description: "Solve every mystery riddle.",
+    points: 60,
+    category: "minigames",
+    check: (s) => s.riddlesSolved >= RIDDLES.length,
+  },
+  {
+    id: "brain-champion",
+    title: "Brain Champion",
+    description: "Solve every puzzle and every mystery riddle.",
+    points: 100,
+    category: "minigames",
+    check: (s) => s.puzzlesSolved >= PUZZLES.length && s.riddlesSolved >= RIDDLES.length,
   },
 ];
 
