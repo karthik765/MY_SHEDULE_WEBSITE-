@@ -1,4 +1,4 @@
-export type GameKind = "minigame" | "puzzle" | "riddle";
+export type GameKind = "minigame" | "puzzle" | "riddle" | "iq";
 export type Difficulty = "easy" | "medium" | "hard";
 export type GameResult = "won" | "lost" | "draw";
 
@@ -341,6 +341,99 @@ export const DIFFICULTY_BONUS_PCT: Record<Difficulty, number> = {
   medium: 0.1,
   hard: 0.3,
 };
+
+// --- IQ Levels: a 52-level progressive logic/puzzle track, inspired by (not
+// copied from) Q Remastered's "draw anything, physics solves it" IQ-test
+// mode. Levels 1-5 are always available; one more unlocks every Monday after
+// that (level 6 = week 1 ... level 52 = week 47), reusing the same
+// CONTENT_LAUNCH_DATE anchor as every other weekly drop. A small set of
+// reusable "engine" mechanics gets reassigned across levels, each time with
+// tougher parameters (grid size, obstacle count, time limit, ...) computed
+// from the level number itself, so difficulty climbs level over level, not
+// just band over band. No two consecutive levels reuse the same engine.
+export type IQMechanic =
+  | "drawPhysics"
+  | "matrixReasoning"
+  | "numberGridLogic"
+  | "cubeNetMatch"
+  | "analogySolver"
+  | "weighingPuzzle"
+  | "flowConnect"
+  | "shapePacking"
+  | "syllogismCheck"
+  | "mirrorMatch"
+  | "setDeduction"
+  | "numberSeries"
+  | "hiddenShape"
+  | "logicGrid";
+
+const IQ_MECHANIC_META: Record<IQMechanic, { title: string; emoji: string; description: string }> = {
+  drawPhysics: { title: "Gravity Draw", emoji: "✏️", description: "Draw a line to guide the ball into the goal." },
+  matrixReasoning: { title: "Matrix Reasoning", emoji: "🔳", description: "Pick the tile that completes the 3x3 pattern." },
+  numberGridLogic: { title: "Number Grid", emoji: "🔢", description: "Work out the rule and fill in the missing number." },
+  cubeNetMatch: { title: "Cube Net Match", emoji: "🎲", description: "Pick the cube that matches the unfolded net." },
+  analogySolver: { title: "Analogy Solver", emoji: "🔗", description: "A is to B as C is to... pick the answer." },
+  weighingPuzzle: { title: "Weighing Puzzle", emoji: "⚖️", description: "Find the odd one out using the balance scale." },
+  flowConnect: { title: "Flow Connect", emoji: "🧵", description: "Connect matching dots without crossing any path." },
+  shapePacking: { title: "Shape Packing", emoji: "🧩", description: "Fit every piece into the grid with no gaps." },
+  syllogismCheck: { title: "Syllogism Check", emoji: "🗯️", description: "Decide whether the conclusion really follows." },
+  mirrorMatch: { title: "Mirror Match", emoji: "🪞", description: "Pick the true mirror reflection of the shape." },
+  setDeduction: { title: "Set Deduction", emoji: "🃏", description: "Pick the card that completes a valid set." },
+  numberSeries: { title: "Number Series", emoji: "📈", description: "Crack the two interleaved rules in the sequence." },
+  hiddenShape: { title: "Hidden Shape", emoji: "🔍", description: "Spot the target shape hiding in the figure." },
+  logicGrid: { title: "Logic Grid", emoji: "🧠", description: "Use the clues to deduce the correct answer." },
+};
+
+// The level-by-level engine assignment (52 entries): three full round-robin
+// passes through all 14 engines (levels 1-42), then a tail (levels 43-52)
+// that spends down each engine's remaining reuse budget while still never
+// repeating an engine back-to-back, ending on Logic Grid as the level-52
+// finale.
+const IQ_LEVEL_MECHANICS: IQMechanic[] = [
+  "drawPhysics", "matrixReasoning", "numberGridLogic", "cubeNetMatch", "analogySolver", "weighingPuzzle", "flowConnect", "shapePacking", "syllogismCheck", "mirrorMatch", "setDeduction", "numberSeries", "hiddenShape", "logicGrid",
+  "drawPhysics", "matrixReasoning", "numberGridLogic", "cubeNetMatch", "analogySolver", "weighingPuzzle", "flowConnect", "shapePacking", "syllogismCheck", "mirrorMatch", "setDeduction", "numberSeries", "hiddenShape", "logicGrid",
+  "drawPhysics", "matrixReasoning", "numberGridLogic", "cubeNetMatch", "analogySolver", "weighingPuzzle", "flowConnect", "shapePacking", "syllogismCheck", "mirrorMatch", "setDeduction", "numberSeries", "hiddenShape", "logicGrid",
+  "drawPhysics", "matrixReasoning", "numberGridLogic", "analogySolver", "drawPhysics", "flowConnect", "matrixReasoning", "syllogismCheck", "drawPhysics", "logicGrid",
+];
+
+function iqDifficulty(level: number): Difficulty {
+  if (level <= 17) return "easy";
+  if (level <= 35) return "medium";
+  return "hard";
+}
+
+// Reward climbs gradually within each difficulty band so level 52 pays
+// noticeably more than level 36, not just "hard" flat across 17 levels.
+function iqRewardMinutes(level: number, difficulty: Difficulty): number {
+  if (difficulty === "easy") return 8 + Math.floor((level - 1) / 5); // 8-11
+  if (difficulty === "medium") return 12 + Math.floor((level - 18) / 4); // 12-16
+  return 17 + Math.floor((level - 36) / 3); // 17-22
+}
+
+export const IQ_GAMES: GameDef[] = Array.from({ length: 52 }, (_, i) => {
+  const level = i + 1;
+  const meta = IQ_MECHANIC_META[IQ_LEVEL_MECHANICS[i]];
+  const difficulty = iqDifficulty(level);
+  return {
+    id: `iq-level-${String(level).padStart(2, "0")}`,
+    kind: "iq",
+    title: `IQ Level ${level}: ${meta.title}`,
+    emoji: meta.emoji,
+    difficulty,
+    rewardMinutes: iqRewardMinutes(level, difficulty),
+    description: meta.description,
+    unlock: level <= 5 ? undefined : weeklyUnlock(level - 5),
+  };
+});
+
+// Looks up which engine (and level number) an "iq-level-NN" id maps to, so
+// the detail page can dispatch to the right component without a 52-branch
+// if/else chain.
+export function iqLevelMechanic(id: string): { level: number; mechanic: IQMechanic } | undefined {
+  const idx = IQ_GAMES.findIndex((g) => g.id === id);
+  if (idx === -1) return undefined;
+  return { level: idx + 1, mechanic: IQ_LEVEL_MECHANICS[idx] };
+}
 
 export const PUZZLES: AnswerDef[] = [
   {
@@ -2422,7 +2515,8 @@ export function findGameDef(id: string): GameDef | AnswerDef | undefined {
   return (
     MINIGAMES.find((g) => g.id === id) ||
     PUZZLES.find((g) => g.id === id) ||
-    RIDDLES.find((g) => g.id === id)
+    RIDDLES.find((g) => g.id === id) ||
+    IQ_GAMES.find((g) => g.id === id)
   );
 }
 

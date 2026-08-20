@@ -6,6 +6,7 @@ import {
   MINIGAMES,
   PUZZLES,
   RIDDLES,
+  IQ_GAMES,
   DIFFICULTY_COLOR,
   currentContentWeek,
   weekUnlockDate,
@@ -22,22 +23,24 @@ interface LimitsResponse {
   timesFailedThisWeek: number;
 }
 
-type Tab = "minigames" | "puzzles" | "riddles" | "stats";
+type Tab = "minigames" | "puzzles" | "riddles" | "iq" | "stats";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "minigames", label: "🎮 Minigames" },
   { id: "puzzles", label: "🧩 Puzzles" },
   { id: "riddles", label: "🔍 Riddles" },
+  { id: "iq", label: "🧠 IQ Levels" },
   { id: "stats", label: "📊 Stats" },
 ];
 
-const KIND_LABEL: Record<"puzzle" | "riddle" | "minigame", string> = {
+const KIND_LABEL: Record<"puzzle" | "riddle" | "minigame" | "iq", string> = {
   puzzle: "Puzzle",
   riddle: "Riddle",
   minigame: "Minigame",
+  iq: "IQ Level",
 };
 
-function NewThisWeekBanner({ kind, item }: { kind: "puzzle" | "riddle" | "minigame"; item: GameDef | undefined }) {
+function NewThisWeekBanner({ kind, item }: { kind: "puzzle" | "riddle" | "minigame" | "iq"; item: GameDef | undefined }) {
   if (!item) return null;
   return (
     <div className="comic-panel-sm flex items-center gap-3 bg-comic-yellow p-3 text-chip-ink">
@@ -189,6 +192,7 @@ export default function MinigamesPage() {
   const thisWeekPuzzle = PUZZLES.find((p) => p.unlock?.type === "date" && p.unlock.after === thisWeekDate);
   const thisWeekRiddle = RIDDLES.find((r) => r.unlock?.type === "date" && r.unlock.after === thisWeekDate);
   const thisWeekMinigame = MINIGAMES.find((g) => g.unlock?.type === "date" && g.unlock.after === thisWeekDate);
+  const thisWeekIQ = IQ_GAMES.find((g) => g.unlock?.type === "date" && g.unlock.after === thisWeekDate);
 
   return (
     <div className="space-y-6">
@@ -234,6 +238,16 @@ export default function MinigamesPage() {
         <div className="space-y-3">
           <NewThisWeekBanner kind="riddle" item={thisWeekRiddle} />
           <GameRow title="🔍 Mystery Riddles" color="var(--comic-purple)" games={RIDDLES} records={recordMap} unlocks={unlocks} />
+        </div>
+      )}
+      {tab === "iq" && (
+        <div className="space-y-3">
+          <p className="text-sm text-ink/60">
+            52 levels, each one harder than the last. Levels 1-5 are open now — one more unlocks every Monday after
+            that. Every level pays once, the first time you solve it.
+          </p>
+          <NewThisWeekBanner kind="iq" item={thisWeekIQ} />
+          <GameRow title="🧠 IQ Levels" color="var(--comic-red)" games={IQ_GAMES} records={recordMap} unlocks={unlocks} />
         </div>
       )}
 

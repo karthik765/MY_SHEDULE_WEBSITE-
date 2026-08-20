@@ -3,7 +3,15 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { findGameDef, DIFFICULTY_BONUS_PCT, type AnswerDef, type Difficulty, type GameResult } from "@/lib/games";
+import {
+  findGameDef,
+  iqLevelMechanic,
+  DIFFICULTY_BONUS_PCT,
+  DIFFICULTY_COLOR,
+  type AnswerDef,
+  type Difficulty,
+  type GameResult,
+} from "@/lib/games";
 import TicTacToe from "@/components/games/TicTacToe";
 import Snake from "@/components/games/Snake";
 import Memory from "@/components/games/Memory";
@@ -62,6 +70,20 @@ import LetterCount from "@/components/games/LetterCount";
 import WordAssociation from "@/components/games/WordAssociation";
 import RapidFireFacts from "@/components/games/RapidFireFacts";
 import AnswerGame from "@/components/games/AnswerGame";
+import IQDrawPhysics from "@/components/games/IQDrawPhysics";
+import IQMatrixReasoning from "@/components/games/IQMatrixReasoning";
+import IQNumberGridLogic from "@/components/games/IQNumberGridLogic";
+import IQCubeNetMatch from "@/components/games/IQCubeNetMatch";
+import IQAnalogySolver from "@/components/games/IQAnalogySolver";
+import IQWeighingPuzzle from "@/components/games/IQWeighingPuzzle";
+import IQFlowConnect from "@/components/games/IQFlowConnect";
+import IQShapePacking from "@/components/games/IQShapePacking";
+import IQSyllogismCheck from "@/components/games/IQSyllogismCheck";
+import IQMirrorMatch from "@/components/games/IQMirrorMatch";
+import IQSetDeduction from "@/components/games/IQSetDeduction";
+import IQNumberSeries from "@/components/games/IQNumberSeries";
+import IQHiddenShape from "@/components/games/IQHiddenShape";
+import IQLogicGrid from "@/components/games/IQLogicGrid";
 
 interface GameRecordRow {
   game: string;
@@ -294,6 +316,53 @@ export default function GameDetailPage() {
           </button>
         </>
       )}
+
+      {def.kind === "iq" && !started && (
+        <div className="comic-panel-sm space-y-3 p-4 text-center">
+          <span
+            className="comic-badge inline-block px-2 py-0.5 text-xs text-chip-ink capitalize"
+            style={{ backgroundColor: DIFFICULTY_COLOR[def.difficulty] }}
+          >
+            {def.difficulty}
+          </span>
+          <button
+            onClick={() => {
+              setReward(null);
+              setStarted(true);
+            }}
+            className="comic-btn bg-comic-blue px-5 py-2 text-chip-ink"
+          >
+            Start
+          </button>
+        </div>
+      )}
+
+      {def.kind === "iq" && started && (() => {
+        const info = iqLevelMechanic(def.id);
+        if (!info) return null;
+        const { level, mechanic } = info;
+        return (
+          <>
+            {mechanic === "drawPhysics" && <IQDrawPhysics level={level} onEnd={handleEnd} />}
+            {mechanic === "matrixReasoning" && <IQMatrixReasoning level={level} onEnd={handleEnd} />}
+            {mechanic === "numberGridLogic" && <IQNumberGridLogic level={level} onEnd={handleEnd} />}
+            {mechanic === "cubeNetMatch" && <IQCubeNetMatch level={level} onEnd={handleEnd} />}
+            {mechanic === "analogySolver" && <IQAnalogySolver level={level} onEnd={handleEnd} />}
+            {mechanic === "weighingPuzzle" && <IQWeighingPuzzle level={level} onEnd={handleEnd} />}
+            {mechanic === "flowConnect" && <IQFlowConnect level={level} onEnd={handleEnd} />}
+            {mechanic === "shapePacking" && <IQShapePacking level={level} onEnd={handleEnd} />}
+            {mechanic === "syllogismCheck" && <IQSyllogismCheck level={level} onEnd={handleEnd} />}
+            {mechanic === "mirrorMatch" && <IQMirrorMatch level={level} onEnd={handleEnd} />}
+            {mechanic === "setDeduction" && <IQSetDeduction level={level} onEnd={handleEnd} />}
+            {mechanic === "numberSeries" && <IQNumberSeries level={level} onEnd={handleEnd} />}
+            {mechanic === "hiddenShape" && <IQHiddenShape level={level} onEnd={handleEnd} />}
+            {mechanic === "logicGrid" && <IQLogicGrid level={level} onEnd={handleEnd} />}
+            <button onClick={() => setStarted(false)} className="comic-btn bg-panel px-4 py-1.5 text-sm">
+              ← Back
+            </button>
+          </>
+        );
+      })()}
 
       {(def.kind === "puzzle" || def.kind === "riddle") && (
         <AnswerGame def={def as AnswerDef} alreadySolved={alreadySolved} onSolved={() => complete()} />

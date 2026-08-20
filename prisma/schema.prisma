@@ -131,7 +131,7 @@ model UnlockedAchievement {
 model GameRecord {
   id                 String   @id @default(cuid())
   game               String   @unique
-  kind               String // "minigame" | "puzzle" | "riddle"
+  kind               String // "minigame" | "puzzle" | "riddle" | "iq"
   timesCompleted     Int      @default(0)
   bestScore          Int?
   solved             Boolean  @default(false)
