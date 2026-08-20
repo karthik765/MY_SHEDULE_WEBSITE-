@@ -26,6 +26,41 @@ import PatternMemory from "@/components/games/PatternMemory";
 import MiniSudoku from "@/components/games/MiniSudoku";
 import OddOneOut from "@/components/games/OddOneOut";
 import TriviaBlitz from "@/components/games/TriviaBlitz";
+import MazeRunner from "@/components/games/MazeRunner";
+import BalanceGame from "@/components/games/BalanceGame";
+import NumberChain from "@/components/games/NumberChain";
+import BubblePop from "@/components/games/BubblePop";
+import SliderStop from "@/components/games/SliderStop";
+import SimonReverse from "@/components/games/SimonReverse";
+import DigitSpanMemory from "@/components/games/DigitSpanMemory";
+import AnagramBuilder from "@/components/games/AnagramBuilder";
+import GuessThePattern from "@/components/games/GuessThePattern";
+import TrueFalseBlitz from "@/components/games/TrueFalseBlitz";
+import NumberLineJump from "@/components/games/NumberLineJump";
+import SequenceSum from "@/components/games/SequenceSum";
+import GridPainter from "@/components/games/GridPainter";
+import BalanceScaleLogic from "@/components/games/BalanceScaleLogic";
+import WordLadder from "@/components/games/WordLadder";
+import RhymeTime from "@/components/games/RhymeTime";
+import MathChain from "@/components/games/MathChain";
+import CategorySort from "@/components/games/CategorySort";
+import BalloonPopTiming from "@/components/games/BalloonPopTiming";
+import SecretCode from "@/components/games/SecretCode";
+import CoinFlipStreak from "@/components/games/CoinFlipStreak";
+import EstimateTheTime from "@/components/games/EstimateTheTime";
+import SpeedSort from "@/components/games/SpeedSort";
+import EmojiStory from "@/components/games/EmojiStory";
+import MissingLetter from "@/components/games/MissingLetter";
+import CountTheShapes from "@/components/games/CountTheShapes";
+import QuickSum from "@/components/games/QuickSum";
+import MemoryGridNumbers from "@/components/games/MemoryGridNumbers";
+import DirectionsRecall from "@/components/games/DirectionsRecall";
+import CompareNumbers from "@/components/games/CompareNumbers";
+import DivisibilityCheck from "@/components/games/DivisibilityCheck";
+import ShapeRotation from "@/components/games/ShapeRotation";
+import LetterCount from "@/components/games/LetterCount";
+import WordAssociation from "@/components/games/WordAssociation";
+import RapidFireFacts from "@/components/games/RapidFireFacts";
 import AnswerGame from "@/components/games/AnswerGame";
 
 interface GameRecordRow {
@@ -219,6 +254,41 @@ export default function GameDetailPage() {
           {def.id === "mini-sudoku" && <MiniSudoku difficulty={difficulty} onEnd={handleEnd} />}
           {def.id.startsWith("odd-one-out") && <OddOneOut gameId={def.id} difficulty={difficulty} onEnd={handleEnd} />}
           {def.id.startsWith("trivia") && <TriviaBlitz gameId={def.id} difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "maze-runner" && <MazeRunner difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "balance-game" && <BalanceGame difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "number-chain" && <NumberChain difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "bubble-pop" && <BubblePop difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "slider-stop" && <SliderStop difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "simon-reverse" && <SimonReverse difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "digit-span-memory" && <DigitSpanMemory difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "anagram-builder" && <AnagramBuilder difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "guess-the-pattern" && <GuessThePattern difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "true-false-blitz" && <TrueFalseBlitz difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "number-line-jump" && <NumberLineJump difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "sequence-sum" && <SequenceSum difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "grid-painter" && <GridPainter difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "balance-scale-logic" && <BalanceScaleLogic difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "word-ladder" && <WordLadder difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "rhyme-time" && <RhymeTime difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "math-chain" && <MathChain difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "category-sort" && <CategorySort difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "balloon-pop-timing" && <BalloonPopTiming difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "secret-code" && <SecretCode difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "coin-flip-streak" && <CoinFlipStreak difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "estimate-the-time" && <EstimateTheTime difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "speed-sort" && <SpeedSort difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "emoji-story" && <EmojiStory difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "missing-letter" && <MissingLetter difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "count-the-shapes" && <CountTheShapes difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "quick-sum" && <QuickSum difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "memory-grid-numbers" && <MemoryGridNumbers difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "directions-recall" && <DirectionsRecall difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "compare-numbers" && <CompareNumbers difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "divisibility-check" && <DivisibilityCheck difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "shape-rotation" && <ShapeRotation difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "letter-count" && <LetterCount difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "word-association" && <WordAssociation difficulty={difficulty} onEnd={handleEnd} />}
+          {def.id === "rapid-fire-facts" && <RapidFireFacts difficulty={difficulty} onEnd={handleEnd} />}
           <button onClick={() => setStarted(false)} className="comic-btn bg-panel px-4 py-1.5 text-sm">
             ← Change difficulty
           </button>
