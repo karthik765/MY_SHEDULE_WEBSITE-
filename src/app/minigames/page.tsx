@@ -24,6 +24,23 @@ interface LimitsResponse {
   timesFailedThisWeek: number;
 }
 
+interface TabStat {
+  kind: "minigame" | "puzzle" | "riddle" | "iq" | "qmaster";
+  total: number;
+  completed: number;
+  failed: number;
+  locked: number;
+  points: number;
+}
+
+const TAB_STAT_META: Record<TabStat["kind"], { label: string; color: string }> = {
+  minigame: { label: "🎮 Minigames", color: "var(--comic-blue)" },
+  puzzle: { label: "🧩 Puzzles", color: "var(--comic-orange)" },
+  riddle: { label: "🔍 Riddles", color: "var(--comic-purple)" },
+  iq: { label: "🧠 IQ Levels", color: "var(--comic-red)" },
+  qmaster: { label: "✏️ Q Mastered Games", color: "var(--comic-blue)" },
+};
+
 type Tab = "minigames" | "puzzles" | "riddles" | "iq" | "qmaster" | "stats";
 
 const TABS: { id: Tab; label: string }[] = [
@@ -91,21 +108,22 @@ function GameRow({
   games,
   records,
   unlocks,
+  mode = "active",
 }: {
   title: string;
   color: string;
   games: GameDef[];
   records: Map<string, GameRecordRow>;
   unlocks: Record<string, UnlockInfo>;
+  // "active": normal playable list (minigames always land here — they're
+  // replayable and never "complete" forever). "completed": only the
+  // one-shot kinds (puzzle/riddle/iq/qmaster) that have been solved,
+  // replayable here for fun but never for reward.
+  mode?: "active" | "completed";
 }) {
-  // Puzzles/riddles are one-shot (same question forever), so once solved
-  // they're pushed to the end of the list and can't be replayed — replaying
-  // for a question you already have the answer to isn't a real game. Minigames
-  // stay replayable and keep their original order regardless of win count.
-  const sorted = [...games].sort((a, b) => {
-    const aSolved = a.kind !== "minigame" && (records.get(a.id)?.solved ?? false);
-    const bSolved = b.kind !== "minigame" && (records.get(b.id)?.solved ?? false);
-    return Number(aSolved) - Number(bSolved);
+  const filtered = games.filter((g) => {
+    const solved = g.kind !== "minigame" && (records.get(g.id)?.solved ?? false);
+    return mode === "completed" ? solved : !solved;
   });
 
   return (
@@ -113,11 +131,13 @@ function GameRow({
       <h2 className="font-heading mb-2 text-lg tracking-wide" style={{ color }}>
         {title}
       </h2>
+      {filtered.length === 0 && (
+        <p className="text-sm text-ink/50">{mode === "completed" ? "Nothing solved here yet." : "Nothing here right now."}</p>
+      )}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
-        {sorted.map((g) => {
+        {filtered.map((g) => {
           const record = records.get(g.id);
           const done = g.kind === "minigame" ? (record?.timesCompleted ?? 0) > 0 : (record?.solved ?? false);
-          const solvedOneShot = done && g.kind !== "minigame";
           const unlock = unlocks[g.id];
           const locked = unlock ? !unlock.unlocked : false;
 
@@ -135,17 +155,17 @@ function GameRow({
             );
           }
 
-          if (solvedOneShot) {
+          if (mode === "completed") {
             return (
-              <div
+              <Link
                 key={g.id}
-                title="Already solved — no replay for a question you already know the answer to."
-                className="comic-panel-sm flex flex-col items-center gap-1 p-3 text-center opacity-45"
+                href={`/minigames/${g.id}`}
+                className="comic-panel-sm flex flex-col items-center gap-1 p-3 text-center transition hover:-translate-y-0.5"
               >
-                <span className="text-3xl grayscale">{g.emoji}</span>
+                <span className="text-3xl">{g.emoji}</span>
                 <span className="text-sm font-bold">{g.title}</span>
-                <span className="text-xs font-bold text-comic-green">✓ Solved</span>
-              </div>
+                <span className="comic-badge bg-comic-yellow px-2 py-0.5 text-xs text-chip-ink">🔁 Replay · no reward</span>
+              </Link>
             );
           }
 
@@ -177,11 +197,48 @@ function GameRow({
   );
 }
 
+function CompletedToggle({
+  view,
+  onChange,
+}: {
+  view: "active" | "completed";
+  onChange: (v: "active" | "completed") => void;
+}) {
+  const options: { id: "active" | "completed"; label: string }[] = [
+    { id: "active", label: "Active" },
+    { id: "completed", label: "✓ Completed" },
+  ];
+  return (
+    <div className="flex gap-1">
+      {options.map((o) => (
+        <button
+          key={o.id}
+          onClick={() => onChange(o.id)}
+          className="rounded-lg px-3 py-1 text-xs font-bold transition-colors"
+          style={{
+            backgroundColor: view === o.id ? "var(--comic-blue)" : "var(--panel)",
+            color: view === o.id ? "var(--chip-ink)" : "var(--ink)",
+          }}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+type ContentView = "active" | "completed";
+
 export default function MinigamesPage() {
   const [records, setRecords] = useState<GameRecordRow[]>([]);
   const [limits, setLimits] = useState<LimitsResponse | null>(null);
   const [unlocks, setUnlocks] = useState<Record<string, UnlockInfo>>({});
+  const [tabStats, setTabStats] = useState<TabStat[]>([]);
   const [tab, setTab] = useState<Tab>("minigames");
+  const [puzzlesView, setPuzzlesView] = useState<ContentView>("active");
+  const [riddlesView, setRiddlesView] = useState<ContentView>("active");
+  const [iqView, setIqView] = useState<ContentView>("active");
+  const [qmasterView, setQmasterView] = useState<ContentView>("active");
 
   useEffect(() => {
     fetch("/api/games")
@@ -193,6 +250,9 @@ export default function MinigamesPage() {
     fetch("/api/games/unlocks")
       .then((r) => r.json())
       .then(setUnlocks);
+    fetch("/api/games/tab-stats")
+      .then((r) => r.json())
+      .then(setTabStats);
   }, []);
 
   const recordMap = new Map(records.map((r) => [r.game, r]));
@@ -241,13 +301,29 @@ export default function MinigamesPage() {
       {tab === "puzzles" && (
         <div className="space-y-3">
           <NewThisWeekBanner kind="puzzle" item={thisWeekPuzzle} />
-          <GameRow title="🧩 Brain Puzzles" color="var(--comic-orange)" games={PUZZLES} records={recordMap} unlocks={unlocks} />
+          <CompletedToggle view={puzzlesView} onChange={setPuzzlesView} />
+          <GameRow
+            title="🧩 Brain Puzzles"
+            color="var(--comic-orange)"
+            games={PUZZLES}
+            records={recordMap}
+            unlocks={unlocks}
+            mode={puzzlesView}
+          />
         </div>
       )}
       {tab === "riddles" && (
         <div className="space-y-3">
           <NewThisWeekBanner kind="riddle" item={thisWeekRiddle} />
-          <GameRow title="🔍 Mystery Riddles" color="var(--comic-purple)" games={RIDDLES} records={recordMap} unlocks={unlocks} />
+          <CompletedToggle view={riddlesView} onChange={setRiddlesView} />
+          <GameRow
+            title="🔍 Mystery Riddles"
+            color="var(--comic-purple)"
+            games={RIDDLES}
+            records={recordMap}
+            unlocks={unlocks}
+            mode={riddlesView}
+          />
         </div>
       )}
       {tab === "iq" && (
@@ -257,7 +333,8 @@ export default function MinigamesPage() {
             that. Every level pays once, the first time you solve it.
           </p>
           <NewThisWeekBanner kind="iq" item={thisWeekIQ} />
-          <GameRow title="🧠 IQ Levels" color="var(--comic-red)" games={IQ_GAMES} records={recordMap} unlocks={unlocks} />
+          <CompletedToggle view={iqView} onChange={setIqView} />
+          <GameRow title="🧠 IQ Levels" color="var(--comic-red)" games={IQ_GAMES} records={recordMap} unlocks={unlocks} mode={iqView} />
         </div>
       )}
       {tab === "qmaster" && (
@@ -268,27 +345,83 @@ export default function MinigamesPage() {
             it.
           </p>
           <NewThisWeekBanner kind="qmaster" item={thisWeekQMaster} />
-          <GameRow title="✏️ Q Mastered Games" color="var(--comic-blue)" games={QMASTER_GAMES} records={recordMap} unlocks={unlocks} />
+          <CompletedToggle view={qmasterView} onChange={setQmasterView} />
+          <GameRow
+            title="✏️ Q Mastered Games"
+            color="var(--comic-blue)"
+            games={QMASTER_GAMES}
+            records={recordMap}
+            unlocks={unlocks}
+            mode={qmasterView}
+          />
         </div>
       )}
 
       {tab === "stats" && (
-        <div className="space-y-3">
-          <p className="text-sm text-ink/60">This week, resetting every Monday:</p>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {limits && (
-              <>
-                <StatTile label="Games played" value={limits.gamesPlayedThisWeek} color="var(--comic-blue)" />
-                <StatTile label="Times failed" value={limits.timesFailedThisWeek} color="var(--comic-red)" />
-                <StatTile label="Points from minigames" value={limits.pointsEarnedThisWeek} color="var(--comic-green)" />
-                <StatTile
-                  label="Weekly chances left"
-                  value={`${limits.weeklyRemaining} / ${limits.weeklyCap}`}
-                  color="var(--comic-orange)"
-                />
-                <StatTile label="Max still earnable" value={`+${limits.maxEarnableThisWeek}`} color="var(--comic-purple)" />
-              </>
-            )}
+        <div className="space-y-5">
+          <div>
+            <p className="mb-2 text-sm text-ink/60">All-time, across every track:</p>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <StatTile
+                label="Total completed"
+                value={tabStats.reduce((sum, t) => sum + t.completed, 0)}
+                color="var(--comic-green)"
+              />
+              <StatTile
+                label="Total failed"
+                value={tabStats.reduce((sum, t) => sum + t.failed, 0)}
+                color="var(--comic-red)"
+              />
+              <StatTile
+                label="Still locked"
+                value={tabStats.reduce((sum, t) => sum + t.locked, 0)}
+                color="var(--comic-orange)"
+              />
+              <StatTile
+                label="Net focus points"
+                value={tabStats.reduce((sum, t) => sum + t.points, 0)}
+                color="var(--comic-purple)"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <p className="text-sm text-ink/60">By track — completed, failed, still locked, and net focus points:</p>
+            {tabStats.map((t) => {
+              const meta = TAB_STAT_META[t.kind];
+              return (
+                <div key={t.kind}>
+                  <h3 className="font-heading mb-1 text-sm tracking-wide" style={{ color: meta.color }}>
+                    {meta.label} <span className="text-xs font-normal text-ink/40">({t.total} total)</span>
+                  </h3>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    <StatTile label="Completed" value={t.completed} color="var(--comic-green)" />
+                    <StatTile label="Failed" value={t.failed} color="var(--comic-red)" />
+                    <StatTile label="Locked" value={t.locked} color="var(--comic-orange)" />
+                    <StatTile label="Net points" value={t.points} color="var(--comic-purple)" />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div>
+            <p className="mb-2 text-sm text-ink/60">Minigames only, this week, resetting every Monday:</p>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {limits && (
+                <>
+                  <StatTile label="Games played" value={limits.gamesPlayedThisWeek} color="var(--comic-blue)" />
+                  <StatTile label="Times failed" value={limits.timesFailedThisWeek} color="var(--comic-red)" />
+                  <StatTile label="Points from minigames" value={limits.pointsEarnedThisWeek} color="var(--comic-green)" />
+                  <StatTile
+                    label="Weekly chances left"
+                    value={`${limits.weeklyRemaining} / ${limits.weeklyCap}`}
+                    color="var(--comic-orange)"
+                  />
+                  <StatTile label="Max still earnable" value={`+${limits.maxEarnableThisWeek}`} color="var(--comic-purple)" />
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}

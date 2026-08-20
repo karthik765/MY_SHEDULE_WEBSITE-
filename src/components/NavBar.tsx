@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import ThemeToggle from "./ThemeToggle";
 import { getAudioContext, playChime } from "@/lib/sound";
+import { MINIGAMES, PUZZLES, RIDDLES, IQ_GAMES, QMASTER_GAMES, currentContentWeek, weekUnlockDate, type GameDef } from "@/lib/games";
 
 const LINKS = [
   { href: "/", label: "Dashboard", color: "var(--comic-blue)" },
@@ -14,8 +15,16 @@ const LINKS = [
   { href: "/goals", label: "Goals", color: "var(--comic-yellow)" },
   { href: "/minigames", label: "Minigames", color: "var(--comic-pink)" },
   { href: "/trophies", label: "Trophies", color: "var(--comic-orange)" },
+  { href: "/focus-points", label: "Focus Points", color: "var(--comic-green)" },
   { href: "/analytics", label: "Analytics", color: "var(--comic-blue)" },
 ];
+
+const UNLOCK_NOTICE_KEY = "unlock-notice-dismissed";
+
+interface WeeklyUnlockItem {
+  label: string;
+  def: GameDef;
+}
 
 type Tier = "bronze" | "silver" | "gold";
 
@@ -42,6 +51,7 @@ export default function NavBar() {
   const [focusPoints, setFocusPoints] = useState<number | null>(null);
   const [trophies, setTrophies] = useState<TrophyCounts | null>(null);
   const [toast, setToast] = useState<AchievementRow[] | null>(null);
+  const [unlockNoticeDismissed, setUnlockNoticeDismissed] = useState(true);
   const seenIdsRef = useRef<Set<string> | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
 
@@ -80,6 +90,42 @@ export default function NavBar() {
       }
     })();
   }, [pathname]);
+
+  // What's new this content-week, across every track — pure function of the
+  // static content schedule, so it's a derived value, not state.
+  const weekDate = weekUnlockDate(currentContentWeek());
+  const unlockItems = useMemo(() => {
+    const items: WeeklyUnlockItem[] = [];
+    const push = (label: string, defs: GameDef[]) => {
+      const found = defs.find((g) => g.unlock?.type === "date" && g.unlock.after === weekDate);
+      if (found) items.push({ label, def: found });
+    };
+    push("Minigame", MINIGAMES);
+    push("Puzzle", PUZZLES);
+    push("Riddle", RIDDLES);
+    push("IQ Level", IQ_GAMES);
+    push("Q Mastered Level", QMASTER_GAMES);
+    return items;
+  }, [weekDate]);
+
+  // Whether this week's notice was already dismissed lives in localStorage
+  // (an external system), so reading it needs an effect — shown once per
+  // week until manually dismissed with "OK".
+  useEffect(() => {
+    if (pathname === "/login") return;
+    (async () => {
+      // Read localStorage after a microtask so this genuinely isn't a
+      // synchronous "derive from render state" setState — it's syncing
+      // from an external store, which needs the read to happen post-mount.
+      await Promise.resolve();
+      setUnlockNoticeDismissed(localStorage.getItem(UNLOCK_NOTICE_KEY) === weekDate);
+    })();
+  }, [pathname, weekDate]);
+
+  function dismissUnlockNotice() {
+    localStorage.setItem(UNLOCK_NOTICE_KEY, weekDate);
+    setUnlockNoticeDismissed(true);
+  }
 
   if (pathname === "/login") return null;
 
@@ -161,6 +207,25 @@ export default function NavBar() {
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {!unlockNoticeDismissed && unlockItems.length > 0 && (
+        <div className="comic-panel fixed top-20 right-4 z-50 max-w-[300px] bg-comic-blue p-3 text-chip-ink">
+          <p className="font-heading text-sm tracking-wide">🆕 New This Week</p>
+          <ul className="mt-1 space-y-0.5">
+            {unlockItems.map((item) => (
+              <li key={item.def.id} className="text-xs font-bold">
+                {item.def.emoji} {item.label}: {item.def.title}
+              </li>
+            ))}
+          </ul>
+          <button
+            onClick={dismissUnlockNotice}
+            className="comic-btn mt-2 w-full bg-panel px-3 py-1 text-xs text-ink"
+          >
+            OK
+          </button>
         </div>
       )}
     </nav>

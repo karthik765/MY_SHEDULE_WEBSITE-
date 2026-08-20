@@ -98,6 +98,22 @@ function effortOpacity(minutes: number, goal: number): number {
 
 const BREAK_MS = 20 * 60 * 1000;
 const BREAK_STORAGE_KEY = "timer-break-ends-at";
+// Skipping a break banks its unused remainder here, added on top of the
+// next break's normal length instead of being lost. Each timer mode has its
+// own carry pool since their break lengths differ.
+const BREAK_CARRY_KEY = "timer-break-carry-ms";
+
+function bankBreakCarry(key: string, remainingMs: number) {
+  if (remainingMs <= 0) return;
+  const carried = Number(localStorage.getItem(key) ?? 0) + remainingMs;
+  localStorage.setItem(key, String(carried));
+}
+
+function takeBreakCarry(key: string): number {
+  const carried = Number(localStorage.getItem(key) ?? 0);
+  localStorage.removeItem(key);
+  return carried;
+}
 
 // 4x(2h focus / 45m break) + 1x(1h focus / 1h break) + 1x(70m focus, final —
 // no break after) = 610 minutes (~10h10m) of focus for the day.
@@ -126,6 +142,7 @@ interface PlanState {
 }
 
 const PLAN_STORAGE_KEY = "timer-plan-state";
+const PLAN_BREAK_CARRY_KEY = "timer-plan-break-carry-ms";
 
 function loadPlanState(): PlanState | null {
   const raw = localStorage.getItem(PLAN_STORAGE_KEY);
@@ -189,6 +206,7 @@ function loadForceStopState(): ForceStopState {
 const BONUS_CAP_MINUTES = 3 * 60;
 const BONUS_BREAK_MAX_MINUTES = 10;
 const BONUS_STORAGE_KEY = "timer-bonus-state";
+const BONUS_BREAK_CARRY_KEY = "timer-bonus-break-carry-ms";
 
 interface BonusState {
   phase: PlanPhase;
@@ -346,10 +364,11 @@ export default function FocusPage() {
       playFocusEndSound();
       await stopActiveSession();
       if (block.breakMinutes != null) {
+        const carryMs = takeBreakCarry(PLAN_BREAK_CARRY_KEY);
         const next: PlanState = {
           blockIndex: current.blockIndex,
           phase: "break",
-          phaseEndsAt: Date.now() + block.breakMinutes * 60_000,
+          phaseEndsAt: Date.now() + block.breakMinutes * 60_000 + carryMs,
         };
         setPlan(next);
         savePlanState(next);
@@ -376,6 +395,7 @@ export default function FocusPage() {
 
   async function skipPlanBreak() {
     if (!plan || plan.phase !== "break") return;
+    bankBreakCarry(PLAN_BREAK_CARRY_KEY, plan.phaseEndsAt - Date.now());
     playBreakEndSound();
     await advancePlan(plan.blockIndex + 1);
   }
@@ -465,9 +485,12 @@ export default function FocusPage() {
       load();
       return;
     }
+    // Carry-over is allowed to push this past the normal 10-minute cap — it
+    // was earned by skipping a prior break, not part of the base allowance.
+    const carryMs = takeBreakCarry(BONUS_BREAK_CARRY_KEY);
     const next: BonusState = {
       phase: "break",
-      phaseEndsAt: Date.now() + BONUS_BREAK_MAX_MINUTES * 60_000,
+      phaseEndsAt: Date.now() + BONUS_BREAK_MAX_MINUTES * 60_000 + carryMs,
       usedFocusSeconds,
     };
     setBonus(next);
@@ -477,6 +500,7 @@ export default function FocusPage() {
 
   async function resumeBonusNow() {
     if (!bonus || bonus.phase !== "break") return;
+    bankBreakCarry(BONUS_BREAK_CARRY_KEY, bonus.phaseEndsAt - Date.now());
     await startBonusFocus(bonus.usedFocusSeconds);
   }
 
@@ -509,13 +533,15 @@ export default function FocusPage() {
 
   async function stop() {
     await stopActiveSession();
-    const endsAt = Date.now() + BREAK_MS;
+    const carryMs = takeBreakCarry(BREAK_CARRY_KEY);
+    const endsAt = Date.now() + BREAK_MS + carryMs;
     setBreakEndsAt(endsAt);
     localStorage.setItem(BREAK_STORAGE_KEY, String(endsAt));
     load();
   }
 
   function skipBreak() {
+    if (breakEndsAt) bankBreakCarry(BREAK_CARRY_KEY, breakEndsAt - Date.now());
     setBreakEndsAt(null);
     localStorage.removeItem(BREAK_STORAGE_KEY);
   }

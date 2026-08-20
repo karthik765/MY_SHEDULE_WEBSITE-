@@ -13,7 +13,9 @@ export default function AnswerGame({
   onSolved: () => void;
 }) {
   const [guess, setGuess] = useState("");
-  const [status, setStatus] = useState<"idle" | "wrong" | "correct">(alreadySolved ? "correct" : "idle");
+  // Always starts idle, even when alreadySolved — that flag now only means
+  // "replaying for fun, this won't earn focus time again", not "block input".
+  const [status, setStatus] = useState<"idle" | "wrong" | "correct">("idle");
   const [attempts, setAttempts] = useState(0);
 
   function handleSubmit(e: FormEvent) {
@@ -32,10 +34,16 @@ export default function AnswerGame({
     <div className="comic-panel space-y-4 p-6">
       <p className="text-lg leading-relaxed">{def.question}</p>
 
+      {alreadySolved && status !== "correct" && (
+        <p className="comic-badge inline-block bg-comic-yellow px-2 py-0.5 text-xs text-chip-ink">
+          🔁 Replay — already solved, no focus points this time
+        </p>
+      )}
+
       {status === "correct" ? (
         <div className="comic-panel-sm bg-comic-green p-4 text-center text-chip-ink">
           <p className="font-heading text-2xl">Solved! 🎉</p>
-          {alreadySolved && attempts === 0 && (
+          {alreadySolved && (
             <p className="mt-1 text-xs font-bold text-chip-ink/80">
               Already solved before — no extra focus time this time, but great job.
             </p>

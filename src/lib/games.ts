@@ -342,6 +342,20 @@ export const DIFFICULTY_BONUS_PCT: Record<Difficulty, number> = {
   hard: 0.3,
 };
 
+// Losing costs a slice of what that item would have paid — steeper at
+// higher difficulty since more was on the line. Only ever charged on a
+// fresh (not-yet-solved) attempt; replaying something already solved is
+// always reward-and-penalty-neutral.
+export const FAILURE_PENALTY_PCT: Record<Difficulty, number> = {
+  easy: 0.1,
+  medium: 0.15,
+  hard: 0.2,
+};
+
+export function failurePenalty(baseReward: number, difficulty: Difficulty): number {
+  return Math.round(baseReward * FAILURE_PENALTY_PCT[difficulty]);
+}
+
 // --- IQ Levels: a 52-level progressive logic/puzzle track, inspired by (not
 // copied from) Q Remastered's "draw anything, physics solves it" IQ-test
 // mode. Levels 1-5 are always available; one more unlocks every Monday after

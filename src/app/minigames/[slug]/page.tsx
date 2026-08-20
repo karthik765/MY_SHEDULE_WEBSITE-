@@ -115,6 +115,7 @@ export default function GameDetailPage() {
   const def = findGameDef(params.slug);
   const [alreadySolved, setAlreadySolved] = useState(false);
   const [reward, setReward] = useState<{ minutes: number; bonus: number; limitReason: string | null } | null>(null);
+  const [penalty, setPenalty] = useState<number | null>(null);
   const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   const [started, setStarted] = useState(false);
   const [gameLimits, setGameLimits] = useState<LimitsResponse["games"][number] | null>(null);
@@ -156,14 +157,21 @@ export default function GameDetailPage() {
     setReward({ minutes: data.awardedMinutes, bonus: data.bonusPoints ?? 0, limitReason: data.limitReason ?? null });
   }
 
-  function handleEnd(result: GameResult, score?: number) {
+  async function handleEnd(result: GameResult, score?: number) {
     if (!def) return;
-    fetch("/api/games/attempt", {
+    setReward(null);
+    setPenalty(null);
+    const res = await fetch("/api/games/attempt", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ game: def.id, result }),
+      body: JSON.stringify({ game: def.id, result, difficulty }),
     });
-    if (result === "won") complete(score);
+    if (result === "won") {
+      complete(score);
+    } else {
+      const data = await res.json();
+      if (data.penalty > 0) setPenalty(data.penalty);
+    }
   }
 
   if (!def) {
@@ -214,6 +222,12 @@ export default function GameDetailPage() {
                 ? "No bonus this time — this week's 15 shared minigame chances are all used up."
                 : "Nice work — no bonus this time (already solved, or today's reward limit for this game/difficulty is used up)."}
           </p>
+        </div>
+      )}
+
+      {penalty !== null && (
+        <div className="comic-panel-sm bg-comic-red p-3 text-center text-chip-ink">
+          <p className="text-sm font-bold">😬 −{penalty} focus points for losing.</p>
         </div>
       )}
 
