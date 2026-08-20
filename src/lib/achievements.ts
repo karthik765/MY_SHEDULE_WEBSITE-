@@ -1,7 +1,7 @@
 // PlayStation-style trophy case, computed live from current stats — nothing
 // is stored separately, so "unlocked" always reflects the current data.
 
-import { MINIGAMES, PUZZLES, RIDDLES } from "./games";
+import { MINIGAMES, PUZZLES, RIDDLES, IQ_GAMES } from "./games";
 
 export interface AchievementStats {
   studyStreak: number;
@@ -21,9 +21,10 @@ export interface AchievementStats {
   distinctMinigamesWon: number; // how many DIFFERENT minigames have at least one win, not total wins
   hardDifficultyWins: number; // rewarded minigame wins completed on Hard
   minigameWinsById: Record<string, number>; // per-game win counts, for "beat this specific new game" trophies
+  iqLevelsSolved: number; // how many of the 52 IQ Levels have been solved
 }
 
-export type AchievementCategory = "timer" | "habits" | "tasks" | "goals" | "media" | "minigames";
+export type AchievementCategory = "timer" | "habits" | "tasks" | "goals" | "media" | "minigames" | "iq";
 
 export type AchievementTier = "bronze" | "silver" | "gold";
 
@@ -482,6 +483,61 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     tier: "bronze",
     category: "minigames",
     check: (s) => (s.minigameWinsById["typing-challenge"] ?? 0) >= 1,
+  },
+
+  // The weekly minigame library has grown well past the original 16 — these
+  // fill the gap between "8 different" and "every single one" as more keep
+  // unlocking every Monday.
+  {
+    id: "minigame-variety-20",
+    title: "Well Rounded",
+    description: "Win at least 20 different minigames (any difficulty).",
+    tier: "bronze",
+    category: "minigames",
+    check: (s) => s.distinctMinigamesWon >= 20,
+  },
+  {
+    id: "minigame-variety-35",
+    title: "Arcade Collector",
+    description: "Win at least 35 different minigames (any difficulty).",
+    tier: "silver",
+    category: "minigames",
+    check: (s) => s.distinctMinigamesWon >= 35,
+  },
+
+  // IQ Levels — the 52-level progressive logic track. Each level pays out
+  // once, the first time it's solved, so these track distinct levels solved.
+  {
+    id: "iq-level-1",
+    title: "IQ Awakening",
+    description: "Solve your first IQ Level.",
+    tier: "bronze",
+    category: "iq",
+    check: (s) => s.iqLevelsSolved >= 1,
+  },
+  {
+    id: "iq-level-13",
+    title: "Warming Up",
+    description: "Solve 13 IQ Levels.",
+    tier: "bronze",
+    category: "iq",
+    check: (s) => s.iqLevelsSolved >= 13,
+  },
+  {
+    id: "iq-level-26",
+    title: "Halfway to Genius",
+    description: "Solve 26 IQ Levels — the halfway point.",
+    tier: "silver",
+    category: "iq",
+    check: (s) => s.iqLevelsSolved >= 26,
+  },
+  {
+    id: "iq-level-all",
+    title: "IQ Genius",
+    description: "Solve every IQ Level, all the way to Level 52.",
+    tier: "gold",
+    category: "iq",
+    check: (s) => s.iqLevelsSolved >= IQ_GAMES.length,
   },
 ];
 

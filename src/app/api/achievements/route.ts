@@ -45,6 +45,7 @@ export async function GET() {
     minigameWinsById: Object.fromEntries(
       games.filter((g) => g.kind === "minigame").map((g) => [g.game, g.timesCompleted])
     ),
+    iqLevelsSolved: games.filter((g) => g.kind === "iq" && g.solved).length,
   };
 
   const computed = computeUnlocked(stats);
