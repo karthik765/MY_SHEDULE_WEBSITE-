@@ -15,6 +15,7 @@ import {
   type Difficulty,
   type GameResult,
 } from "@/lib/games";
+import { isTestModeActive } from "@/lib/testMode";
 import TicTacToe from "@/components/games/TicTacToe";
 import Snake from "@/components/games/Snake";
 import Memory from "@/components/games/Memory";
@@ -122,6 +123,7 @@ export default function GameDetailPage() {
   const [started, setStarted] = useState(false);
   const [gameLimits, setGameLimits] = useState<LimitsResponse["games"][number] | null>(null);
   const [unlockInfo, setUnlockInfo] = useState<UnlockInfo | null>(null);
+  const [testMode, setTestMode] = useState(false);
 
   useEffect(() => {
     if (!def) return;
@@ -129,6 +131,15 @@ export default function GameDetailPage() {
       .then((r) => r.json())
       .then((data: Record<string, UnlockInfo>) => setUnlockInfo(data[def.id] ?? null));
   }, [def]);
+
+  useEffect(() => {
+    (async () => {
+      // Deferred a tick since this reads localStorage, an external store —
+      // see the identical pattern in NavBar.tsx.
+      await Promise.resolve();
+      setTestMode(isTestModeActive());
+    })();
+  }, []);
 
   useEffect(() => {
     if (!def || def.kind === "minigame") return;
@@ -153,7 +164,7 @@ export default function GameDetailPage() {
     const res = await fetch("/api/games/complete", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ game: def.id, score, difficulty }),
+      body: JSON.stringify({ game: def.id, score, difficulty, testMode }),
     });
     const data = await res.json();
     setReward({ minutes: data.awardedMinutes, bonus: data.bonusPoints ?? 0, limitReason: data.limitReason ?? null });
@@ -166,7 +177,7 @@ export default function GameDetailPage() {
     const res = await fetch("/api/games/attempt", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ game: def.id, result, difficulty }),
+      body: JSON.stringify({ game: def.id, result, difficulty, testMode }),
     });
     if (result === "won") {
       complete(score);
@@ -187,7 +198,7 @@ export default function GameDetailPage() {
     );
   }
 
-  if (unlockInfo && !unlockInfo.unlocked) {
+  if (unlockInfo && !unlockInfo.unlocked && !testMode) {
     return (
       <div className="comic-panel space-y-3 p-6 text-center">
         <p className="text-5xl">🔒</p>
@@ -212,6 +223,12 @@ export default function GameDetailPage() {
           ← Back
         </Link>
       </div>
+
+      {testMode && (
+        <div className="comic-panel-sm bg-comic-purple p-2 text-center text-chip-ink">
+          <p className="text-xs font-bold">🧪 Beta Mode — this play won&apos;t earn any focus points.</p>
+        </div>
+      )}
 
       {reward !== null && (
         <div className="comic-panel-sm bg-comic-yellow p-3 text-center text-chip-ink">

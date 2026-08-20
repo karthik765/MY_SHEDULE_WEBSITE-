@@ -337,6 +337,12 @@ export const MINIGAME_DAILY_LIMIT_BY_DIFFICULTY: Record<Difficulty, number> = {
 // historical holdover from when this only applied to minigames.
 export const MINIGAME_WEEKLY_CAP = 25;
 
+// A sub-cap within the shared 25: no more than 10 of those attempts per
+// week can come from Minigames specifically. The other four tracks
+// (Puzzles, Riddles, IQ Levels, Q Mastered Games) have no per-track
+// sub-cap — they can freely use whatever's left of the shared 25.
+export const MINIGAME_ONLY_WEEKLY_CAP = 10;
+
 // Bonus added on top of a minigame's base rewardMinutes, based on the
 // difficulty tier the play was completed at. Applied once per play — never
 // stacked or doubled.

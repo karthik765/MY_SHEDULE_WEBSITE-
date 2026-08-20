@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
   const game = body.game as string | undefined;
   const result = body.result as string | undefined;
   const difficulty: Difficulty = isDifficulty(body.difficulty) ? body.difficulty : "medium";
+  const testMode = body.testMode === true;
 
   if (!game || (result !== "won" && result !== "lost" && result !== "draw")) {
     return NextResponse.json({ error: "Invalid attempt" }, { status: 400 });
@@ -31,6 +32,12 @@ export async function POST(request: NextRequest) {
   if (!def) {
     return NextResponse.json({ error: "Unknown game" }, { status: 400 });
   }
+
+  // Beta/test mode ("sendhook"): no penalty, no logged attempt, no trace.
+  if (testMode) {
+    return NextResponse.json({ ok: true, penalty: 0 });
+  }
+
   if (def.unlock) {
     const stats = await getUnlockStats();
     if (!isUnlocked(def, stats)) {

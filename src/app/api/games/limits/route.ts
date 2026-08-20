@@ -4,12 +4,14 @@ import {
   MINIGAMES,
   MINIGAME_DAILY_LIMIT_BY_DIFFICULTY,
   MINIGAME_WEEKLY_CAP,
+  MINIGAME_ONLY_WEEKLY_CAP,
   startOfWeek,
   difficultyBonus,
   type Difficulty,
 } from "@/lib/games";
 
 const DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard"];
+const MINIGAME_IDS = new Set(MINIGAMES.map((g) => g.id));
 
 // Powers the "chances left" section on the Minigames tab: how many rewarded
 // plays are left today per game/difficulty, how much of the combined weekly
@@ -30,6 +32,8 @@ export async function GET() {
   // plays — see /api/games/complete for the matching enforcement logic.
   const weeklyUsed = weekAttempts.length;
   const weeklyRemaining = Math.max(0, MINIGAME_WEEKLY_CAP - weeklyUsed);
+  const minigameWeeklyUsed = weekAttempts.filter((a) => MINIGAME_IDS.has(a.game)).length;
+  const minigameWeeklyRemaining = Math.max(0, MINIGAME_ONLY_WEEKLY_CAP - minigameWeeklyUsed);
   const pointsEarnedThisWeek = weekPlays.reduce((sum, p) => sum + p.awardedMinutes + p.bonusPoints, 0);
   const gamesPlayedThisWeek = weekAttempts.length;
   const timesFailedThisWeek = weekAttempts.filter((a) => a.result !== "won").length;
@@ -83,6 +87,9 @@ export async function GET() {
     weeklyCap: MINIGAME_WEEKLY_CAP,
     weeklyUsed,
     weeklyRemaining,
+    minigameWeeklyCap: MINIGAME_ONLY_WEEKLY_CAP,
+    minigameWeeklyUsed,
+    minigameWeeklyRemaining,
     pointsEarnedThisWeek,
     maxEarnableThisWeek,
     gamesPlayedThisWeek,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import {
   MINIGAMES,
@@ -11,15 +11,20 @@ import {
   DIFFICULTY_COLOR,
   REPLAY_REWARD_PCT,
   MINIGAME_WEEKLY_CAP,
+  MINIGAME_ONLY_WEEKLY_CAP,
   currentContentWeek,
   weekUnlockDate,
   type GameDef,
 } from "@/lib/games";
+import { isTestModeActive, tryActivateTestMode, deactivateTestMode } from "@/lib/testMode";
 
 interface LimitsResponse {
   weeklyCap: number;
   weeklyUsed: number;
   weeklyRemaining: number;
+  minigameWeeklyCap: number;
+  minigameWeeklyUsed: number;
+  minigameWeeklyRemaining: number;
   pointsEarnedThisWeek: number;
   maxEarnableThisWeek: number;
   gamesPlayedThisWeek: number;
@@ -111,6 +116,7 @@ function GameRow({
   records,
   unlocks,
   mode = "active",
+  testMode = false,
 }: {
   title: string;
   color: string;
@@ -122,6 +128,9 @@ function GameRow({
   // one-shot kinds (puzzle/riddle/iq/qmaster) that have been solved,
   // replayable here for fun but never for reward.
   mode?: "active" | "completed";
+  // Beta/test mode: lock status is ignored (everything becomes playable),
+  // but never earns a reward — see src/lib/testMode.ts.
+  testMode?: boolean;
 }) {
   const filtered = games.filter((g) => {
     const solved = g.kind !== "minigame" && (records.get(g.id)?.solved ?? false);
@@ -143,7 +152,7 @@ function GameRow({
           const unlock = unlocks[g.id];
           const locked = unlock ? !unlock.unlocked : false;
 
-          if (locked) {
+          if (locked && !testMode) {
             return (
               <div
                 key={g.id}
@@ -188,6 +197,9 @@ function GameRow({
                 {g.difficulty}
               </span>
               <span className="text-xs text-ink/50">+{g.rewardMinutes}m focus</span>
+              {locked && testMode && (
+                <span className="comic-badge bg-comic-purple px-2 py-0.5 text-xs text-chip-ink">🧪 beta — no reward</span>
+              )}
               {done && (
                 <span className="text-xs font-bold text-comic-green">
                   ✓ {record?.timesCompleted} win{record?.timesCompleted === 1 ? "" : "s"}
@@ -243,6 +255,9 @@ export default function MinigamesPage() {
   const [riddlesView, setRiddlesView] = useState<ContentView>("active");
   const [iqView, setIqView] = useState<ContentView>("active");
   const [qmasterView, setQmasterView] = useState<ContentView>("active");
+  const [testMode, setTestMode] = useState(false);
+  const [codeInput, setCodeInput] = useState("");
+  const [codeError, setCodeError] = useState(false);
 
   useEffect(() => {
     fetch("/api/games")
@@ -257,7 +272,29 @@ export default function MinigamesPage() {
     fetch("/api/games/tab-stats")
       .then((r) => r.json())
       .then(setTabStats);
+    (async () => {
+      // Deferred a tick since this reads localStorage, an external store —
+      // see the identical pattern in NavBar.tsx.
+      await Promise.resolve();
+      setTestMode(isTestModeActive());
+    })();
   }, []);
+
+  function submitCode(e: FormEvent) {
+    e.preventDefault();
+    if (tryActivateTestMode(codeInput)) {
+      setTestMode(true);
+      setCodeInput("");
+      setCodeError(false);
+    } else {
+      setCodeError(true);
+    }
+  }
+
+  function turnOffTestMode() {
+    deactivateTestMode();
+    setTestMode(false);
+  }
 
   const recordMap = new Map(records.map((r) => [r.game, r]));
 
@@ -277,9 +314,35 @@ export default function MinigamesPage() {
         Play, solve, and earn bonus focus points credited straight to your Focus stats. Each minigame lets you pick
         Easy, Medium, or Hard before you play — harder tiers pay a bonus (+10% Medium, +30% Hard) but are rarer:
         Hard and Medium reward once per game per day, Easy twice. Puzzles, riddles, IQ Levels, and Q Mastered Games
-        reward in full the first time you solve them, and a reduced amount on replay. All rewarded completions —
-        across every tab — share one pool of {MINIGAME_WEEKLY_CAP} per week, reset every Monday.
+        reward in full the first time you solve them, and a reduced amount on replay. Every attempt — win or lose,
+        any tab — counts against a shared pool of {MINIGAME_WEEKLY_CAP} per week, reset every Monday; Minigames
+        alone are further capped at {MINIGAME_ONLY_WEEKLY_CAP} of those.
       </p>
+
+      {testMode ? (
+        <div className="comic-panel-sm flex flex-wrap items-center justify-between gap-2 bg-comic-purple p-3 text-chip-ink">
+          <p className="text-sm font-bold">🧪 Beta Mode active — play anything, unlimited, no rewards.</p>
+          <button onClick={turnOffTestMode} className="comic-btn bg-panel px-3 py-1 text-xs text-ink">
+            Turn off
+          </button>
+        </div>
+      ) : (
+        <form onSubmit={submitCode} className="flex flex-wrap items-center gap-2">
+          <input
+            className="comic-input px-3 py-1.5 text-xs"
+            placeholder="Enter code..."
+            value={codeInput}
+            onChange={(e) => {
+              setCodeInput(e.target.value);
+              setCodeError(false);
+            }}
+          />
+          <button type="submit" className="comic-btn bg-panel px-3 py-1.5 text-xs">
+            Enter Code
+          </button>
+          {codeError && <span className="text-xs font-bold text-comic-red">Not a valid code.</span>}
+        </form>
+      )}
 
       <div className="comic-panel-sm flex items-center gap-1 overflow-x-auto p-1">
         {TABS.map((t) => (
@@ -300,7 +363,14 @@ export default function MinigamesPage() {
       {tab === "minigames" && (
         <div className="space-y-3">
           <NewThisWeekBanner kind="minigame" item={thisWeekMinigame} />
-          <GameRow title="🎮 Minigames" color="var(--comic-blue)" games={MINIGAMES} records={recordMap} unlocks={unlocks} />
+          <GameRow
+            title="🎮 Minigames"
+            color="var(--comic-blue)"
+            games={MINIGAMES}
+            records={recordMap}
+            unlocks={unlocks}
+            testMode={testMode}
+          />
         </div>
       )}
       {tab === "puzzles" && (
@@ -314,6 +384,7 @@ export default function MinigamesPage() {
             records={recordMap}
             unlocks={unlocks}
             mode={puzzlesView}
+            testMode={testMode}
           />
         </div>
       )}
@@ -328,6 +399,7 @@ export default function MinigamesPage() {
             records={recordMap}
             unlocks={unlocks}
             mode={riddlesView}
+            testMode={testMode}
           />
         </div>
       )}
@@ -340,7 +412,15 @@ export default function MinigamesPage() {
           </p>
           <NewThisWeekBanner kind="iq" item={thisWeekIQ} />
           <CompletedToggle view={iqView} onChange={setIqView} />
-          <GameRow title="🧠 IQ Levels" color="var(--comic-red)" games={IQ_GAMES} records={recordMap} unlocks={unlocks} mode={iqView} />
+          <GameRow
+            title="🧠 IQ Levels"
+            color="var(--comic-red)"
+            games={IQ_GAMES}
+            records={recordMap}
+            unlocks={unlocks}
+            mode={iqView}
+            testMode={testMode}
+          />
         </div>
       )}
       {tab === "qmaster" && (
@@ -359,6 +439,7 @@ export default function MinigamesPage() {
             records={recordMap}
             unlocks={unlocks}
             mode={qmasterView}
+            testMode={testMode}
           />
         </div>
       )}
@@ -425,6 +506,11 @@ export default function MinigamesPage() {
                     label="Weekly chances left"
                     value={`${limits.weeklyRemaining} / ${limits.weeklyCap}`}
                     color="var(--comic-orange)"
+                  />
+                  <StatTile
+                    label="Minigame chances left"
+                    value={`${limits.minigameWeeklyRemaining} / ${limits.minigameWeeklyCap}`}
+                    color="var(--comic-blue)"
                   />
                   <StatTile
                     label="Max still earnable (minigames)"

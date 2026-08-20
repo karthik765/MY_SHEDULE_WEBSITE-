@@ -5,11 +5,15 @@ import {
   startOfWeek,
   difficultyBonus,
   replayReward,
+  MINIGAMES,
   MINIGAME_DAILY_LIMIT_BY_DIFFICULTY,
   MINIGAME_WEEKLY_CAP,
+  MINIGAME_ONLY_WEEKLY_CAP,
   type Difficulty,
 } from "@/lib/games";
 import { getUnlockStats, isUnlocked } from "@/lib/unlocks";
+
+const MINIGAME_IDS = MINIGAMES.map((g) => g.id);
 
 function todayKey(): string {
   return new Date().toISOString().slice(0, 10);
@@ -24,10 +28,18 @@ export async function POST(request: NextRequest) {
   const gameId = body.game as string | undefined;
   const score = typeof body.score === "number" ? Math.round(body.score) : null;
   const difficulty: Difficulty = isDifficulty(body.difficulty) ? body.difficulty : "medium";
+  const testMode = body.testMode === true;
 
   const def = gameId ? findGameDef(gameId) : undefined;
   if (!def) {
     return NextResponse.json({ error: "Unknown game" }, { status: 400 });
+  }
+
+  // Beta/test mode ("sendhook"): play anything, locked or not, as many
+  // times as you want — never earns a reward and never touches the
+  // database, so it leaves zero trace on real stats/caps/records.
+  if (testMode) {
+    return NextResponse.json({ awardedMinutes: 0, bonusPoints: 0, limitReason: null });
   }
 
   if (def.unlock) {
@@ -60,12 +72,19 @@ export async function POST(request: NextRequest) {
     const dayStart = new Date(now);
     dayStart.setHours(0, 0, 0, 0);
 
+    // Sub-cap within the shared 25: minigames alone can't use more than 10
+    // attempts a week, even if the shared pool still has room.
+    const minigameWeeklyCount = await prisma.gameAttempt.count({
+      where: { playedAt: { gte: startOfWeek(now) }, game: { in: MINIGAME_IDS } },
+    });
+    const minigameCapHit = minigameWeeklyCount > MINIGAME_ONLY_WEEKLY_CAP;
+
     const dailyCount = await prisma.gamePlay.count({
       where: { game: def.id, difficulty, playedAt: { gte: dayStart } },
     });
 
     const dailyLimit = MINIGAME_DAILY_LIMIT_BY_DIFFICULTY[difficulty];
-    if (weeklyCapHit) {
+    if (weeklyCapHit || minigameCapHit) {
       limitReason = "weekly";
     } else if (dailyCount >= dailyLimit) {
       limitReason = "daily";
