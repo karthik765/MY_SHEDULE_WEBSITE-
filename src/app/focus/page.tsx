@@ -115,20 +115,24 @@ function takeBreakCarry(key: string): number {
   return carried;
 }
 
-// 4x(2h focus / 45m break) + 1x(1h focus / 1h break) + 1x(70m focus, final —
-// no break after) = 610 minutes (~10h10m) of focus for the day.
+// 10x(1h focus / 22m break), final block has no break after = 600 minutes
+// (10h) of focus for the day.
 interface PlanBlock {
   focusMinutes: number;
   breakMinutes: number | null;
 }
 
 const STUDY_PLAN: PlanBlock[] = [
-  { focusMinutes: 120, breakMinutes: 45 },
-  { focusMinutes: 120, breakMinutes: 45 },
-  { focusMinutes: 120, breakMinutes: 45 },
-  { focusMinutes: 120, breakMinutes: 45 },
-  { focusMinutes: 60, breakMinutes: 60 },
-  { focusMinutes: 70, breakMinutes: null },
+  { focusMinutes: 60, breakMinutes: 22 },
+  { focusMinutes: 60, breakMinutes: 22 },
+  { focusMinutes: 60, breakMinutes: 22 },
+  { focusMinutes: 60, breakMinutes: 22 },
+  { focusMinutes: 60, breakMinutes: 22 },
+  { focusMinutes: 60, breakMinutes: 22 },
+  { focusMinutes: 60, breakMinutes: 22 },
+  { focusMinutes: 60, breakMinutes: 22 },
+  { focusMinutes: 60, breakMinutes: 22 },
+  { focusMinutes: 60, breakMinutes: null },
 ];
 
 const PLAN_TOTAL_FOCUS_MINUTES = STUDY_PLAN.reduce((sum, b) => sum + b.focusMinutes, 0);
@@ -755,7 +759,7 @@ export default function FocusPage() {
                   Start Today&apos;s Study Plan ({formatMinutes(PLAN_TOTAL_FOCUS_MINUTES)} focus)
                 </button>
                 <p className="text-xs text-ink/50">
-                  4×2h focus/45m break · 1×1h focus/1h break · 1×70m focus (no break)
+                  9×1h focus/22m break · 1×1h focus (no break)
                 </p>
               </form>
               <form onSubmit={startBonus} className="space-y-1">
