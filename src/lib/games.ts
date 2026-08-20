@@ -46,11 +46,12 @@ export function difficultyBonus(baseMinutes: number, difficulty: Difficulty): nu
   return Math.round(baseMinutes * DIFFICULTY_BONUS_PCT[difficulty]);
 }
 
-// Anchor for the weekly content-drip schedule: a new puzzle AND a new
-// riddle both unlock every week for a full year, starting the week after
-// launch. Computing dates from this anchor (instead of hand-writing 52 date
-// strings) keeps the schedule correct and easy to extend.
-const CONTENT_LAUNCH_DATE = new Date("2026-08-19T00:00:00Z");
+// Anchor for the weekly content-drip schedule: a new puzzle, riddle, AND
+// minigame all unlock every Monday for a full year. This anchor is itself a
+// Monday (2026-08-17) so weekUnlockDate(n) = anchor + n*7 days always lands
+// on a Monday. Computing dates from this anchor (instead of hand-writing 52
+// date strings) keeps the schedule correct and easy to extend.
+const CONTENT_LAUNCH_DATE = new Date("2026-08-17T00:00:00Z");
 
 export function weekUnlockDate(weekNumber: number): string {
   const d = new Date(CONTENT_LAUNCH_DATE);
