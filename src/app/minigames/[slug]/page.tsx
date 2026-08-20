@@ -10,6 +10,7 @@ import {
   DIFFICULTY_BONUS_PCT,
   DIFFICULTY_COLOR,
   REPLAY_REWARD_PCT,
+  MINIGAME_WEEKLY_CAP,
   type AnswerDef,
   type Difficulty,
   type GameResult,
@@ -220,7 +221,7 @@ export default function GameDetailPage() {
                 (reward.bonus > 0 ? ` + ${reward.bonus} ${DIFFICULTY_LABEL[difficulty]} bonus` : "") +
                 " added to your Focus stats!"
               : reward.limitReason === "weekly"
-                ? "No bonus this time — this week's 15 shared minigame chances are all used up."
+                ? `No bonus this time — this week's ${MINIGAME_WEEKLY_CAP} shared chances (across Minigames, Puzzles, Riddles, IQ Levels, and Q Mastered Games) are all used up.`
                 : "Nice work — no bonus this time (already solved, or today's reward limit for this game/difficulty is used up)."}
           </p>
         </div>

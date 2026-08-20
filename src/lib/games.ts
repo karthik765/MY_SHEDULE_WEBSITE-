@@ -328,10 +328,14 @@ export const MINIGAME_DAILY_LIMIT_BY_DIFFICULTY: Record<Difficulty, number> = {
   hard: 1,
 };
 
-// Weekly: total rewarded minigame plays allowed across ALL minigames
-// combined, reset every Monday. Once used up, every minigame is locked for
-// rewards until next week (you can still play, just for fun).
-export const MINIGAME_WEEKLY_CAP = 15;
+// Weekly: total ATTEMPTS allowed across ALL five tracks combined —
+// minigames, puzzles, riddles, IQ Levels, and Q Mastered Games — reset
+// every Monday. Every attempt counts against this, win or lose; once the
+// 25th attempt of the week is used, nothing earns a reward for the rest of
+// the week (you can still play/replay anything, just for fun — and losses
+// still apply their usual penalty regardless of this cap). The name is a
+// historical holdover from when this only applied to minigames.
+export const MINIGAME_WEEKLY_CAP = 25;
 
 // Bonus added on top of a minigame's base rewardMinutes, based on the
 // difficulty tier the play was completed at. Applied once per play — never

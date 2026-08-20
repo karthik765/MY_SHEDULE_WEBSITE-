@@ -26,7 +26,9 @@ export async function GET() {
     prisma.gameAttempt.findMany({ where: { playedAt: { gte: weekStart } } }),
   ]);
 
-  const weeklyUsed = weekPlays.length;
+  // The weekly cap counts every attempt (win or lose), not just rewarded
+  // plays — see /api/games/complete for the matching enforcement logic.
+  const weeklyUsed = weekAttempts.length;
   const weeklyRemaining = Math.max(0, MINIGAME_WEEKLY_CAP - weeklyUsed);
   const pointsEarnedThisWeek = weekPlays.reduce((sum, p) => sum + p.awardedMinutes + p.bonusPoints, 0);
   const gamesPlayedThisWeek = weekAttempts.length;

@@ -10,6 +10,7 @@ import {
   QMASTER_GAMES,
   DIFFICULTY_COLOR,
   REPLAY_REWARD_PCT,
+  MINIGAME_WEEKLY_CAP,
   currentContentWeek,
   weekUnlockDate,
   type GameDef,
@@ -275,8 +276,9 @@ export default function MinigamesPage() {
       <p className="text-sm text-ink/60">
         Play, solve, and earn bonus focus points credited straight to your Focus stats. Each minigame lets you pick
         Easy, Medium, or Hard before you play — harder tiers pay a bonus (+10% Medium, +30% Hard) but are rarer:
-        Hard and Medium reward once per game per day, Easy twice. Puzzles and mystery riddles reward once, the
-        first time you solve them.
+        Hard and Medium reward once per game per day, Easy twice. Puzzles, riddles, IQ Levels, and Q Mastered Games
+        reward in full the first time you solve them, and a reduced amount on replay. All rewarded completions —
+        across every tab — share one pool of {MINIGAME_WEEKLY_CAP} per week, reset every Monday.
       </p>
 
       <div className="comic-panel-sm flex items-center gap-1 overflow-x-auto p-1">
@@ -410,19 +412,25 @@ export default function MinigamesPage() {
           </div>
 
           <div>
-            <p className="mb-2 text-sm text-ink/60">Minigames only, this week, resetting every Monday:</p>
+            <p className="mb-2 text-sm text-ink/60">
+              This week, resetting every Monday — shared across all five tracks:
+            </p>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {limits && (
                 <>
                   <StatTile label="Games played" value={limits.gamesPlayedThisWeek} color="var(--comic-blue)" />
                   <StatTile label="Times failed" value={limits.timesFailedThisWeek} color="var(--comic-red)" />
-                  <StatTile label="Points from minigames" value={limits.pointsEarnedThisWeek} color="var(--comic-green)" />
+                  <StatTile label="Points earned" value={limits.pointsEarnedThisWeek} color="var(--comic-green)" />
                   <StatTile
                     label="Weekly chances left"
                     value={`${limits.weeklyRemaining} / ${limits.weeklyCap}`}
                     color="var(--comic-orange)"
                   />
-                  <StatTile label="Max still earnable" value={`+${limits.maxEarnableThisWeek}`} color="var(--comic-purple)" />
+                  <StatTile
+                    label="Max still earnable (minigames)"
+                    value={`+${limits.maxEarnableThisWeek}`}
+                    color="var(--comic-purple)"
+                  />
                 </>
               )}
             </div>
