@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { describeFocusReason } from "@/lib/focusHistory";
+import { describeFocusReason, iconForReason } from "@/lib/focusHistory";
 
 const HISTORY_LIMIT = 1000;
 
@@ -8,6 +8,7 @@ interface HistoryEntry {
   id: string;
   amount: number;
   label: string;
+  icon: string;
   at: string;
 }
 
@@ -33,12 +34,14 @@ export async function GET() {
       id: `study:${s.id}`,
       amount: s.durationMinutes ?? 0,
       label: `Focus session: ${s.subject}`,
+      icon: "🔥",
       at: (s.endTime ?? s.startTime).toISOString(),
     })),
     ...adjustments.map((a) => ({
       id: `adj:${a.id}`,
       amount: a.amount,
       label: describeFocusReason(a.reason),
+      icon: iconForReason(a.reason),
       at: a.createdAt.toISOString(),
     })),
   ]

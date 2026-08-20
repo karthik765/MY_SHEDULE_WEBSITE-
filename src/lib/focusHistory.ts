@@ -35,3 +35,18 @@ export function describeFocusReason(reason: string): string {
 
   return reason;
 }
+
+// A quick-scan emoji per reason, so the history list doesn't rely on reading
+// every label to tell entry types apart.
+export function iconForReason(reason: string): string {
+  const [head] = reason.split(":");
+
+  if (head === "task-failed" || head === "goal-failed" || head === "habit-missed") return "📌";
+  if (head.endsWith("-fail")) return "😬";
+  if (head === "minigame") return "🎮";
+  if (head === "puzzle") return "🧩";
+  if (head === "riddle") return "🔍";
+  if (head === "iq") return "🧠";
+  if (head === "qmaster") return "✏️";
+  return "✨";
+}
