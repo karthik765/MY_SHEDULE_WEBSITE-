@@ -1,12 +1,17 @@
 import { prisma } from "@/lib/prisma";
 import { toDayKey } from "@/lib/streaks";
+import { getElapsedMonthlyGoalMonths } from "@/lib/monthlyGoals";
 
 // Focus-point costs for each kind of failure. These only ever affect the
 // FocusPointAdjustment ledger — never the StudySession history that Focus
 // stats/streaks are computed from.
-export const TASK_FAILURE_PENALTY = 100;
-export const GOAL_FAILURE_PENALTY = 500;
-export const HABIT_MISS_PENALTY = 50;
+export const TASK_FAILURE_PENALTY = 500;
+export const GOAL_FAILURE_PENALTY = 500; // an individual goal missing its own target date
+export const HABIT_MISS_PENALTY = 100;
+// A separate, larger penalty for the "at least one goal completed every
+// calendar month" mandate — distinct from GOAL_FAILURE_PENALTY, which is
+// per-goal-deadline. This fires once per missed calendar month.
+export const MONTHLY_GOAL_MISSED_PENALTY = 1000;
 
 // How far back to look for missed daily-habit days. Bounded so this stays
 // cheap even if the app hasn't been opened in a while.
@@ -71,13 +76,26 @@ async function penalizeMissedHabitDays(now: Date) {
   }
 }
 
-// Sweeps for newly-failed tasks/goals and newly-missed daily habit days,
-// deducting focus points for each one exactly once. Safe to call on every
-// request — every deduction is gated by a persisted guard (Task.failedAt,
-// Goal.failedAt, or a FocusPointAdjustment row already existing for that
-// reason), so re-running never double-penalizes.
+async function penalizeMissedMonthlyGoals(now: Date) {
+  const months = await getElapsedMonthlyGoalMonths(now);
+  for (const month of months) {
+    if (month.completed) continue;
+    const reason = `monthly-goal-missed:${month.key}`;
+    const already = await prisma.focusPointAdjustment.findFirst({ where: { reason } });
+    if (already) continue;
+    await prisma.focusPointAdjustment.create({ data: { amount: -MONTHLY_GOAL_MISSED_PENALTY, reason } });
+  }
+}
+
+// Sweeps for newly-failed tasks/goals, newly-missed daily habit days, and
+// newly-elapsed calendar months without a completed goal — deducting focus
+// points for each one exactly once. Safe to call on every request — every
+// deduction is gated by a persisted guard (Task.failedAt, Goal.failedAt, or
+// a FocusPointAdjustment row already existing for that reason), so
+// re-running never double-penalizes.
 export async function applyAutoPenalties(now: Date = new Date()): Promise<void> {
   await penalizeOverdueTasks(now);
   await penalizeOverdueGoals(now);
   await penalizeMissedHabitDays(now);
+  await penalizeMissedMonthlyGoals(now);
 }

@@ -3,18 +3,21 @@ import { prisma } from "@/lib/prisma";
 import { computeStreak } from "@/lib/habits";
 import { computeStudyStreak } from "@/lib/streaks";
 import { computeUnlocked, trophyCounts, type AchievementStats } from "@/lib/achievements";
+import { getElapsedMonthlyGoalMonths, hasFullYearStreak } from "@/lib/monthlyGoals";
 
 export async function GET() {
-  const [sessions, habits, tasksCompleted, goals, milestonesCompleted, media, games, hardWins] = await Promise.all([
-    prisma.studySession.findMany({ orderBy: { startTime: "desc" } }),
-    prisma.habit.findMany({ include: { logs: true } }),
-    prisma.task.count({ where: { completed: true } }),
-    prisma.goal.findMany({ select: { status: true } }),
-    prisma.milestone.count({ where: { completed: true } }),
-    prisma.mediaItem.findMany({ where: { status: "completed" }, select: { category: true } }),
-    prisma.gameRecord.findMany(),
-    prisma.gamePlay.count({ where: { difficulty: "hard" } }),
-  ]);
+  const [sessions, habits, tasksCompleted, goals, milestonesCompleted, media, games, hardWins, monthlyGoalMonths] =
+    await Promise.all([
+      prisma.studySession.findMany({ orderBy: { startTime: "desc" } }),
+      prisma.habit.findMany({ include: { logs: true } }),
+      prisma.task.count({ where: { completed: true } }),
+      prisma.goal.findMany({ select: { status: true } }),
+      prisma.milestone.count({ where: { completed: true } }),
+      prisma.mediaItem.findMany({ where: { status: "completed" }, select: { category: true } }),
+      prisma.gameRecord.findMany(),
+      prisma.gamePlay.count({ where: { difficulty: "hard" } }),
+      getElapsedMonthlyGoalMonths(),
+    ]);
 
   const totalStudyMinutes = sessions.reduce((sum, s) => sum + (s.durationMinutes ?? 0), 0);
   const longestHabitStreak = habits.reduce(
@@ -47,6 +50,8 @@ export async function GET() {
     ),
     iqLevelsSolved: games.filter((g) => g.kind === "iq" && g.solved).length,
     qmasterLevelsSolved: games.filter((g) => g.kind === "qmaster" && g.solved).length,
+    monthlyGoalsCompletedCount: monthlyGoalMonths.filter((m) => m.completed).length,
+    monthlyGoalFullYear: hasFullYearStreak(monthlyGoalMonths),
   };
 
   const computed = computeUnlocked(stats);

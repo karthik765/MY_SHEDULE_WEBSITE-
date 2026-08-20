@@ -345,11 +345,12 @@ export const DIFFICULTY_BONUS_PCT: Record<Difficulty, number> = {
 // Losing costs a slice of what that item would have paid — steeper at
 // higher difficulty since more was on the line. Only ever charged on a
 // fresh (not-yet-solved) attempt; replaying something already solved is
-// always reward-and-penalty-neutral.
+// always reward-and-penalty-neutral. (Raised ~30% from the original
+// 10/15/20 tiers.)
 export const FAILURE_PENALTY_PCT: Record<Difficulty, number> = {
-  easy: 0.1,
-  medium: 0.15,
-  hard: 0.2,
+  easy: 0.13,
+  medium: 0.2,
+  hard: 0.26,
 };
 
 export function failurePenalty(baseReward: number, difficulty: Difficulty): number {

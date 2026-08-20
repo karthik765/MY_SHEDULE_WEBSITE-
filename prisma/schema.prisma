@@ -92,6 +92,10 @@ model Goal {
   // "active" — gates the one-time focus-point penalty (status also flips to
   // "abandoned" at that point) so it never fires twice for one goal.
   failedAt    DateTime?
+  // Set/cleared in lockstep with status flipping to/from "completed" — backs
+  // the "at least one goal completed every calendar month" mandate (see
+  // src/lib/monthlyGoals.ts) and the Analytics goals chart.
+  completedAt DateTime?
   createdAt   DateTime    @default(now())
   milestones  Milestone[]
 }

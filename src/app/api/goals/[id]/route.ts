@@ -37,7 +37,13 @@ export async function PATCH(
   if (body.description !== undefined) data.description = body.description || null;
   if (body.targetDate !== undefined)
     data.targetDate = body.targetDate ? new Date(body.targetDate) : null;
-  if (body.status !== undefined) data.status = body.status;
+  if (body.status !== undefined) {
+    data.status = body.status;
+    // Tracks which calendar month a goal was completed in, for the "at
+    // least one goal completed every month" mandate — set/cleared in
+    // lockstep with the completed flag, not just on the initial transition.
+    data.completedAt = body.status === "completed" ? new Date() : null;
+  }
   if (body.locked !== undefined) data.locked = body.locked;
   if (body.proofUrl !== undefined) data.proofUrl = body.proofUrl || null;
 
