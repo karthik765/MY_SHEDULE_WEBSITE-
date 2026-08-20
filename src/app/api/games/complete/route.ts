@@ -35,18 +35,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unknown game" }, { status: 400 });
   }
 
-  // Beta/test mode ("sendhook"): play anything, locked or not, as many
-  // times as you want — never earns a reward and never touches the
-  // database, so it leaves zero trace on real stats/caps/records.
-  if (testMode) {
-    return NextResponse.json({ awardedMinutes: 0, bonusPoints: 0, limitReason: null });
-  }
-
+  // Beta/test mode ("sendhook") still respects the unlock schedule — it
+  // only bypasses the weekly caps, never locked content — so this check
+  // always runs first, testMode or not.
   if (def.unlock) {
     const stats = await getUnlockStats();
     if (!isUnlocked(def, stats)) {
       return NextResponse.json({ error: "Game is locked" }, { status: 403 });
     }
+  }
+
+  // Play as many times as you want — never earns a reward and never
+  // touches the database, so it leaves zero trace on real stats/caps/records.
+  if (testMode) {
+    return NextResponse.json({ awardedMinutes: 0, bonusPoints: 0, limitReason: null });
   }
 
   const existing = await prisma.gameRecord.findUnique({ where: { game: def.id } });

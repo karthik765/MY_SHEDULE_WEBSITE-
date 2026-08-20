@@ -198,7 +198,7 @@ export default function GameDetailPage() {
     );
   }
 
-  if (unlockInfo && !unlockInfo.unlocked && !testMode) {
+  if (unlockInfo && !unlockInfo.unlocked) {
     return (
       <div className="comic-panel space-y-3 p-6 text-center">
         <p className="text-5xl">🔒</p>
@@ -226,7 +226,7 @@ export default function GameDetailPage() {
 
       {testMode && (
         <div className="comic-panel-sm bg-comic-purple p-2 text-center text-chip-ink">
-          <p className="text-xs font-bold">🧪 Beta Mode — this play won&apos;t earn any focus points.</p>
+          <p className="text-xs font-bold">🧪 Beta Mode — unlimited replays, but this play won&apos;t earn any focus points.</p>
         </div>
       )}
 

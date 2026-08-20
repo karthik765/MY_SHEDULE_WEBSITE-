@@ -1,9 +1,11 @@
-// Beta/test mode: enter the code "sendhook" anywhere in Minigames to play
-// anything — locked or not, across all five tracks — as many times as you
-// want. Never earns a reward and never touches the database (see the
-// testMode branch in /api/games/attempt and /api/games/complete). Purely a
-// client-side localStorage flag; there's no real adversary to defend
-// against in a single-user app, so no server-side secret validation.
+// Beta/test mode: enter the code "sendhook" anywhere in Minigames to replay
+// anything already unlocked, across all five tracks, as many times as you
+// want — bypasses the weekly/daily caps only, never the unlock schedule
+// (locked content stays locked). Never earns a reward and never touches
+// the database (see the testMode branch in /api/games/attempt and
+// /api/games/complete). Purely a client-side localStorage flag; there's no
+// real adversary to defend against in a single-user app, so no
+// server-side secret validation.
 
 const TEST_MODE_KEY = "minigames-test-mode";
 export const TEST_MODE_CODE = "sendhook";

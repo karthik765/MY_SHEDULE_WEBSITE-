@@ -152,7 +152,7 @@ function GameRow({
           const unlock = unlocks[g.id];
           const locked = unlock ? !unlock.unlocked : false;
 
-          if (locked && !testMode) {
+          if (locked) {
             return (
               <div
                 key={g.id}
@@ -197,8 +197,8 @@ function GameRow({
                 {g.difficulty}
               </span>
               <span className="text-xs text-ink/50">+{g.rewardMinutes}m focus</span>
-              {locked && testMode && (
-                <span className="comic-badge bg-comic-purple px-2 py-0.5 text-xs text-chip-ink">🧪 beta — no reward</span>
+              {testMode && (
+                <span className="comic-badge bg-comic-purple px-2 py-0.5 text-xs text-chip-ink">🧪 no reward</span>
               )}
               {done && (
                 <span className="text-xs font-bold text-comic-green">
@@ -321,7 +321,10 @@ export default function MinigamesPage() {
 
       {testMode ? (
         <div className="comic-panel-sm flex flex-wrap items-center justify-between gap-2 bg-comic-purple p-3 text-chip-ink">
-          <p className="text-sm font-bold">🧪 Beta Mode active — play anything, unlimited, no rewards.</p>
+          <p className="text-sm font-bold">
+            🧪 Beta Mode active — unlimited replays of anything already unlocked, no rewards. Locked content stays
+            locked.
+          </p>
           <button onClick={turnOffTestMode} className="comic-btn bg-panel px-3 py-1 text-xs text-ink">
             Turn off
           </button>

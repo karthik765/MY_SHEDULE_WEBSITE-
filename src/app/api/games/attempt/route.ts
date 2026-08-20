@@ -33,16 +33,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unknown game" }, { status: 400 });
   }
 
-  // Beta/test mode ("sendhook"): no penalty, no logged attempt, no trace.
-  if (testMode) {
-    return NextResponse.json({ ok: true, penalty: 0 });
-  }
-
+  // Beta/test mode ("sendhook") still respects the unlock schedule — it
+  // only bypasses the weekly caps, never locked content — so this check
+  // always runs first, testMode or not.
   if (def.unlock) {
     const stats = await getUnlockStats();
     if (!isUnlocked(def, stats)) {
       return NextResponse.json({ error: "Game is locked" }, { status: 403 });
     }
+  }
+
+  // No penalty, no logged attempt, no trace.
+  if (testMode) {
+    return NextResponse.json({ ok: true, penalty: 0 });
   }
 
   await prisma.gameAttempt.create({ data: { game, result } });
