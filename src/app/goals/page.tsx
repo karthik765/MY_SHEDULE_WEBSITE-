@@ -23,18 +23,8 @@ interface Goal {
   status: string;
   locked: boolean;
   proofUrl: string | null;
-  completedAt: string | null;
   milestones: Milestone[];
 }
-
-function daysLeftInMonth(now: Date): number {
-  const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  return Math.ceil((end.getTime() - now.getTime()) / 86_400_000);
-}
-
-// Mirrors MONTHLY_GOAL_MISSED_PENALTY in src/lib/penalties.ts — kept as a
-// local constant since that module pulls in the server-only Prisma client.
-const MONTHLY_GOAL_MISSED_PENALTY_DISPLAY = 1000;
 
 function readImageAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -220,28 +210,6 @@ export default function GoalsPage() {
       <h1 className="font-heading text-4xl text-comic-yellow" style={{ WebkitTextStroke: "1.5px var(--ink)" }}>
         Goals
       </h1>
-
-      {(() => {
-        const now = new Date();
-        const thisMonthDone = goals.some((g) => {
-          if (!g.completedAt) return false;
-          const d = new Date(g.completedAt);
-          return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
-        });
-        const left = daysLeftInMonth(now);
-        return (
-          <div
-            className="comic-panel-sm flex items-center justify-between gap-3 p-3"
-            style={{ backgroundColor: thisMonthDone ? "var(--comic-green)" : "var(--comic-yellow)" }}
-          >
-            <p className="text-sm font-bold text-chip-ink">
-              {thisMonthDone
-                ? "✅ This month's mandatory goal is done."
-                : `⚠️ Mandatory: complete at least one goal this month — ${left} day${left === 1 ? "" : "s"} left, or lose ${MONTHLY_GOAL_MISSED_PENALTY_DISPLAY} focus points.`}
-            </p>
-          </div>
-        );
-      })()}
 
       {(() => {
         const streak = computeStudyStreak(sessions);

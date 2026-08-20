@@ -23,8 +23,6 @@ export interface AchievementStats {
   minigameWinsById: Record<string, number>; // per-game win counts, for "beat this specific new game" trophies
   iqLevelsSolved: number; // how many of the 52 IQ Levels have been solved
   qmasterLevelsSolved: number; // how many of the 57 Q Mastered Games levels have been solved
-  monthlyGoalsCompletedCount: number; // how many elapsed calendar months had >=1 completed goal
-  monthlyGoalFullYear: boolean; // any 12-consecutive-month run with a completed goal in every month
 }
 
 export type AchievementCategory = "timer" | "habits" | "tasks" | "goals" | "media" | "minigames" | "iq" | "qmaster";
@@ -191,33 +189,6 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     tier: "gold",
     category: "goals",
     check: (s) => s.goalsCompleted >= 5,
-  },
-
-  // The monthly goal mandate: at least one completed goal every calendar
-  // month, once the Goals feature has been started.
-  {
-    id: "monthly-goal-1",
-    title: "First Monthly Goal",
-    description: "Complete at least one goal in a calendar month.",
-    tier: "bronze",
-    category: "goals",
-    check: (s) => s.monthlyGoalsCompletedCount >= 1,
-  },
-  {
-    id: "monthly-goal-6",
-    title: "Half a Year of Monthly Goals",
-    description: "Complete a monthly goal in 6 different calendar months.",
-    tier: "silver",
-    category: "goals",
-    check: (s) => s.monthlyGoalsCompletedCount >= 6,
-  },
-  {
-    id: "monthly-goal-full-year",
-    title: "Full Year, Every Month",
-    description: "Complete a goal in all 12 months of a 12-month run.",
-    tier: "gold",
-    category: "goals",
-    check: (s) => s.monthlyGoalFullYear,
   },
 
   // Media
