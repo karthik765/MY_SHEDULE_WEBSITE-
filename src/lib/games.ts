@@ -356,6 +356,20 @@ export function failurePenalty(baseReward: number, difficulty: Difficulty): numb
   return Math.round(baseReward * FAILURE_PENALTY_PCT[difficulty]);
 }
 
+// Replaying an already-solved puzzle/riddle/IQ level/Q Mastered level (via
+// the Completed tab) still pays a reduced reward — otherwise there'd be no
+// point ever playing it back. Steeper tiers pay a bigger slice since more
+// effort/skill was required the first time too.
+export const REPLAY_REWARD_PCT: Record<Difficulty, number> = {
+  easy: 0.25,
+  medium: 0.3,
+  hard: 0.35,
+};
+
+export function replayReward(baseReward: number, difficulty: Difficulty): number {
+  return Math.round(baseReward * REPLAY_REWARD_PCT[difficulty]);
+}
+
 // --- IQ Levels: a 52-level progressive logic/puzzle track, inspired by (not
 // copied from) Q Remastered's "draw anything, physics solves it" IQ-test
 // mode. Levels 1-5 are always available; one more unlocks every Monday after

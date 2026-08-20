@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { isCorrectAnswer, type AnswerDef } from "@/lib/games";
+import { isCorrectAnswer, REPLAY_REWARD_PCT, type AnswerDef } from "@/lib/games";
 
 export default function AnswerGame({
   def,
@@ -14,9 +14,10 @@ export default function AnswerGame({
 }) {
   const [guess, setGuess] = useState("");
   // Always starts idle, even when alreadySolved — that flag now only means
-  // "replaying for fun, this won't earn focus time again", not "block input".
+  // "replaying via the Completed tab, pays a reduced reward", not "block input".
   const [status, setStatus] = useState<"idle" | "wrong" | "correct">("idle");
   const [attempts, setAttempts] = useState(0);
+  const replayPct = Math.round(REPLAY_REWARD_PCT[def.difficulty] * 100);
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -36,7 +37,7 @@ export default function AnswerGame({
 
       {alreadySolved && status !== "correct" && (
         <p className="comic-badge inline-block bg-comic-yellow px-2 py-0.5 text-xs text-chip-ink">
-          🔁 Replay — already solved, no focus points this time
+          🔁 Replay — already solved, pays {replayPct}% this time
         </p>
       )}
 
@@ -45,7 +46,7 @@ export default function AnswerGame({
           <p className="font-heading text-2xl">Solved! 🎉</p>
           {alreadySolved && (
             <p className="mt-1 text-xs font-bold text-chip-ink/80">
-              Already solved before — no extra focus time this time, but great job.
+              Already solved before — {replayPct}% focus time this time, but great job.
             </p>
           )}
         </div>

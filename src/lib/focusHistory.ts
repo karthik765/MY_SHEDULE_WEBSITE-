@@ -8,8 +8,9 @@ function isDifficulty(v: string): v is Difficulty {
 
 // Turns a FocusPointAdjustment.reason string into something readable for the
 // Focus Points history feed. Reasons are colon-separated: "<kind>:<id>" for
-// a reward, "<kind>-fail:<id>[:difficulty]" for a loss penalty, plus a few
-// non-game reasons from src/lib/penalties.ts.
+// a first-solve reward, "<kind>-replay:<id>" for a reduced Completed-tab
+// replay reward, "<kind>-fail:<id>[:difficulty]" for a loss penalty, plus a
+// few non-game reasons from src/lib/penalties.ts.
 export function describeFocusReason(reason: string): string {
   const [head, id, extra] = reason.split(":");
 
@@ -28,6 +29,12 @@ export function describeFocusReason(reason: string): string {
     return extra && isDifficulty(extra) ? `Won "${title}" (${DIFFICULTY_LABEL[extra]})` : `Won "${title}"`;
   }
 
+  const replayMatch = head.match(/^(puzzle|riddle|iq|qmaster)-replay$/);
+  if (replayMatch) {
+    const title = findGameDef(id)?.title ?? id;
+    return `Replayed "${title}"`;
+  }
+
   if (head === "puzzle" || head === "riddle" || head === "iq" || head === "qmaster") {
     const title = findGameDef(id)?.title ?? id;
     return `Solved "${title}"`;
@@ -39,10 +46,14 @@ export function describeFocusReason(reason: string): string {
 // A quick-scan emoji per reason, so the history list doesn't rely on reading
 // every label to tell entry types apart.
 export function iconForReason(reason: string): string {
-  const [head] = reason.split(":");
+  const [rawHead] = reason.split(":");
 
-  if (head === "task-failed" || head === "goal-failed" || head === "habit-missed") return "📌";
-  if (head.endsWith("-fail")) return "😬";
+  if (rawHead === "task-failed" || rawHead === "goal-failed" || rawHead === "habit-missed") return "📌";
+  if (rawHead.endsWith("-fail")) return "😬";
+
+  // Replays use the same icon as a first solve of that kind — only the
+  // label distinguishes "Solved" from "Replayed".
+  const head = rawHead.endsWith("-replay") ? rawHead.slice(0, -"-replay".length) : rawHead;
   if (head === "minigame") return "🎮";
   if (head === "puzzle") return "🧩";
   if (head === "riddle") return "🔍";

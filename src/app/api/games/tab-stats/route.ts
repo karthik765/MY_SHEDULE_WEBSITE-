@@ -15,9 +15,9 @@ const KINDS: GameKind[] = ["minigame", "puzzle", "riddle", "iq", "qmaster"];
 
 // Per-track (Minigames/Puzzles/Riddles/IQ Levels/Q Mastered Games) breakdown
 // for the Stats tab: how many completed, how many attempts failed, how many
-// are still locked, and the net focus points earned from that track
-// (rewards minus loss penalties — see the "-fail:" reason prefix from
-// /api/games/attempt).
+// are still locked, and the net focus points earned from that track (first-
+// solve + Completed-tab replay rewards, minus loss penalties — the "-fail:"
+// and "-replay:" reason prefixes from /api/games/attempt and /complete).
 export async function GET() {
   const [gameRecords, attempts, adjustments, stats] = await Promise.all([
     prisma.gameRecord.findMany(),
@@ -41,7 +41,10 @@ export async function GET() {
     const failed = attempts.filter((a) => kindById.get(a.game) === kind && a.result !== "won").length;
     const locked = defs.filter((d) => !isUnlocked(d, stats)).length;
     const points = adjustments
-      .filter((a) => a.reason.startsWith(`${kind}:`) || a.reason.startsWith(`${kind}-fail:`))
+      .filter(
+        (a) =>
+          a.reason.startsWith(`${kind}:`) || a.reason.startsWith(`${kind}-fail:`) || a.reason.startsWith(`${kind}-replay:`)
+      )
       .reduce((sum, a) => sum + a.amount, 0);
     return { kind, total: defs.length, completed, failed, locked, points };
   });

@@ -4,6 +4,7 @@ import {
   findGameDef,
   startOfWeek,
   difficultyBonus,
+  replayReward,
   MINIGAME_DAILY_LIMIT_BY_DIFFICULTY,
   MINIGAME_WEEKLY_CAP,
   type Difficulty,
@@ -98,8 +99,11 @@ export async function POST(request: NextRequest) {
       });
     }
   } else {
+    // First solve pays full reward; every replay after that (via the
+    // Completed tab) still pays a reduced slice — otherwise there'd be no
+    // point ever playing it back.
     const alreadySolved = existing?.solved ?? false;
-    awardedMinutes = alreadySolved ? 0 : def.rewardMinutes;
+    awardedMinutes = alreadySolved ? replayReward(def.rewardMinutes, def.difficulty) : def.rewardMinutes;
 
     await prisma.gameRecord.upsert({
       where: { game: def.id },
@@ -117,7 +121,7 @@ export async function POST(request: NextRequest) {
 
     if (awardedMinutes > 0) {
       await prisma.focusPointAdjustment.create({
-        data: { amount: awardedMinutes, reason: `${def.kind}:${def.id}` },
+        data: { amount: awardedMinutes, reason: `${def.kind}${alreadySolved ? "-replay" : ""}:${def.id}` },
       });
     }
   }

@@ -9,6 +9,7 @@ import {
   qmasterLevelMechanic,
   DIFFICULTY_BONUS_PCT,
   DIFFICULTY_COLOR,
+  REPLAY_REWARD_PCT,
   type AnswerDef,
   type Difficulty,
   type GameResult,
@@ -344,6 +345,11 @@ export default function GameDetailPage() {
           >
             {def.difficulty}
           </span>
+          {alreadySolved && (
+            <p className="comic-badge inline-block bg-comic-yellow px-2 py-0.5 text-xs text-chip-ink">
+              🔁 Replay — already solved, pays {Math.round(REPLAY_REWARD_PCT[def.difficulty] * 100)}% this time
+            </p>
+          )}
           <button
             onClick={() => {
               setReward(null);
@@ -391,6 +397,11 @@ export default function GameDetailPage() {
           >
             {def.difficulty}
           </span>
+          {alreadySolved && (
+            <p className="comic-badge inline-block bg-comic-yellow px-2 py-0.5 text-xs text-chip-ink">
+              🔁 Replay — already solved, pays {Math.round(REPLAY_REWARD_PCT[def.difficulty] * 100)}% this time
+            </p>
+          )}
           <button
             onClick={() => {
               setReward(null);

@@ -9,6 +9,7 @@ import {
   IQ_GAMES,
   QMASTER_GAMES,
   DIFFICULTY_COLOR,
+  REPLAY_REWARD_PCT,
   currentContentWeek,
   weekUnlockDate,
   type GameDef,
@@ -164,7 +165,9 @@ function GameRow({
               >
                 <span className="text-3xl">{g.emoji}</span>
                 <span className="text-sm font-bold">{g.title}</span>
-                <span className="comic-badge bg-comic-yellow px-2 py-0.5 text-xs text-chip-ink">🔁 Replay · no reward</span>
+                <span className="comic-badge bg-comic-yellow px-2 py-0.5 text-xs text-chip-ink">
+                  🔁 Replay · {Math.round(REPLAY_REWARD_PCT[g.difficulty] * 100)}% reward
+                </span>
               </Link>
             );
           }
@@ -330,7 +333,8 @@ export default function MinigamesPage() {
         <div className="space-y-3">
           <p className="text-sm text-ink/60">
             52 levels, each one harder than the last. Levels 1-5 are open now — one more unlocks every Monday after
-            that. Every level pays once, the first time you solve it.
+            that. Full reward the first time you solve a level; replay it later from the Completed tab for a
+            reduced reward (25%/30%/35% by difficulty).
           </p>
           <NewThisWeekBanner kind="iq" item={thisWeekIQ} />
           <CompletedToggle view={iqView} onChange={setIqView} />
@@ -341,8 +345,8 @@ export default function MinigamesPage() {
         <div className="space-y-3">
           <p className="text-sm text-ink/60">
             57 levels, all built on one idea: draw a line and let gravity do the rest. Levels 1-5 are open now — one
-            more unlocks every Monday after that, for a full year. Every level pays once, the first time you solve
-            it.
+            more unlocks every Monday after that, for a full year. Full reward the first time you solve a level;
+            replay it later from the Completed tab for a reduced reward (25%/30%/35% by difficulty).
           </p>
           <NewThisWeekBanner kind="qmaster" item={thisWeekQMaster} />
           <CompletedToggle view={qmasterView} onChange={setQmasterView} />
