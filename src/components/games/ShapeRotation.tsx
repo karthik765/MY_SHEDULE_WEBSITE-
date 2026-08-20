@@ -3,48 +3,34 @@
 import { useEffect, useRef, useState } from "react";
 import type { Difficulty, GameResult } from "@/lib/games";
 
-const STEP_COUNT: Record<Difficulty, number> = { easy: 3, medium: 4, hard: 5 };
-const TARGET: Record<Difficulty, number> = { easy: 4, medium: 5, hard: 6 };
-const TIME_LIMIT: Record<Difficulty, number> = { easy: 50, medium: 45, hard: 40 };
+const LETTERS = ["F", "R", "G", "L", "P", "Q", "J", "B"];
+const ANGLES = [0, 90, 180, 270];
+const TARGET: Record<Difficulty, number> = { easy: 7, medium: 9, hard: 11 };
+const TIME_LIMIT: Record<Difficulty, number> = { easy: 35, medium: 28, hard: 22 };
 
-interface Step {
-  op: "+" | "-" | "×";
-  n: number;
+interface Round {
+  letter: string;
+  angle: number;
+  mirrored: boolean;
 }
 
-function randInt(min: number, max: number): number {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+function newRound(): Round {
+  return {
+    letter: LETTERS[Math.floor(Math.random() * LETTERS.length)],
+    angle: ANGLES[Math.floor(Math.random() * ANGLES.length)],
+    mirrored: Math.random() < 0.5,
+  };
 }
 
-function generateChain(steps: number): { start: number; chain: Step[]; answer: number } {
-  const start = randInt(2, 10);
-  let total = start;
-  const chain: Step[] = [];
-  for (let i = 0; i < steps; i++) {
-    const ops: Step["op"][] = ["+", "-", "×"];
-    const op = ops[randInt(0, total > 5 ? 2 : 1)];
-    let n: number;
-    if (op === "×") n = randInt(2, 3);
-    else n = randInt(1, 9);
-    if (op === "+") total += n;
-    else if (op === "-") total -= n;
-    else total *= n;
-    chain.push({ op, n });
-  }
-  return { start, chain, answer: total };
-}
-
-export default function MathChain({
+export default function ShapeRotation({
   difficulty,
   onEnd,
 }: {
   difficulty: Difficulty;
   onEnd: (result: GameResult, score: number) => void;
 }) {
-  const steps = STEP_COUNT[difficulty];
   const [phase, setPhase] = useState<"idle" | "playing">("idle");
-  const [round, setRound] = useState(() => generateChain(steps));
-  const [input, setInput] = useState("");
+  const [round, setRound] = useState<Round>(() => newRound());
   const [score, setScore] = useState(0);
   const [secondsLeft, setSecondsLeft] = useState(TIME_LIMIT[difficulty]);
   const reportedRef = useRef(false);
@@ -72,43 +58,44 @@ export default function MathChain({
   function start() {
     setScore(0);
     setSecondsLeft(TIME_LIMIT[difficulty]);
-    setRound(generateChain(steps));
-    setInput("");
+    setRound(newRound());
     reportedRef.current = false;
     setPhase("playing");
   }
 
-  function submit() {
+  function answer(sameShape: boolean) {
     if (status !== "playing") return;
-    if (Number(input) === round.answer) setScore((s) => s + 1);
-    setRound(generateChain(steps));
-    setInput("");
+    if (sameShape === !round.mirrored) setScore((s) => s + 1);
+    setRound(newRound());
   }
 
   return (
     <div className="comic-panel flex flex-col items-center gap-4 p-6">
       <p className="text-sm font-bold text-ink/70">
-        {status === "idle" && `Follow the chain, compute the final result — ${target} correct to win`}
+        {status === "idle" && `Is the right letter just rotated, or mirrored? ${target} correct to win.`}
         {status === "playing" && `Score: ${score} / ${target} — ${secondsLeft}s left`}
         {status === "won" && `You won with ${score} correct! 🎉`}
         {status === "lost" && `Time's up — final score ${score}`}
       </p>
       {status === "playing" && (
         <>
-          <p className="max-w-md text-center text-lg font-bold">
-            Start with {round.start}. {round.chain.map((s) => `${s.op} ${s.n}`).join(", then ")}. What&apos;s the result?
-          </p>
-          <input
-            autoFocus
-            type="number"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && submit()}
-            className="comic-input w-32 px-3 py-2 text-center text-lg"
-          />
-          <button onClick={submit} className="comic-btn bg-comic-blue px-5 py-2 text-chip-ink">
-            Submit
-          </button>
+          <div className="flex items-center gap-8">
+            <span className="font-heading text-6xl">{round.letter}</span>
+            <span
+              className="font-heading text-6xl"
+              style={{ display: "inline-block", transform: `rotate(${round.angle}deg) scaleX(${round.mirrored ? -1 : 1})` }}
+            >
+              {round.letter}
+            </span>
+          </div>
+          <div className="flex gap-3">
+            <button onClick={() => answer(true)} className="comic-btn bg-comic-green px-6 py-3 text-chip-ink">
+              Same (rotated)
+            </button>
+            <button onClick={() => answer(false)} className="comic-btn bg-comic-red px-6 py-3 text-chip-ink">
+              Mirrored
+            </button>
+          </div>
         </>
       )}
       {(status === "idle" || status === "won" || status === "lost") && (

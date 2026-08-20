@@ -32,12 +32,17 @@ export default function BubblePop({
 
   useEffect(() => {
     if (status !== "playing") return;
-    setLane(Math.floor(Math.random() * LANES));
-    spawnRef.current = setTimeout(() => {
-      setMisses((m) => m + 1);
-      setLane(null);
-    }, lifespan);
+    // Deferred via setTimeout(0) so the spawn itself isn't a synchronous
+    // setState call inside the effect body.
+    const spawnTimer = setTimeout(() => {
+      setLane(Math.floor(Math.random() * LANES));
+      spawnRef.current = setTimeout(() => {
+        setMisses((m) => m + 1);
+        setLane(null);
+      }, lifespan);
+    }, 0);
     return () => {
+      clearTimeout(spawnTimer);
       if (spawnRef.current) clearTimeout(spawnRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- re-spawns whenever `lane` resets to null below

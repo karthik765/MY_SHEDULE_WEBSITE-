@@ -8,8 +8,19 @@ const FLASH_MS: Record<Difficulty, number> = { easy: 2200, medium: 1600, hard: 1
 const TARGET_ROUNDS: Record<Difficulty, number> = { easy: 4, medium: 5, hard: 6 };
 const TIME_LIMIT: Record<Difficulty, number> = { easy: 45, medium: 40, hard: 35 };
 
-function newRound(count: number): number[] {
-  return Array.from({ length: count }, () => Math.floor(Math.random() * 9) + 1);
+interface Round {
+  numbers: number[];
+  sum: number;
+  options: number[];
+}
+
+function newRound(count: number): Round {
+  const numbers = Array.from({ length: count }, () => Math.floor(Math.random() * 9) + 1);
+  const sum = numbers.reduce((a, b) => a + b, 0);
+  const options = [sum, sum + 2, Math.max(1, sum - 2), sum + 5]
+    .filter((v, i, arr) => arr.indexOf(v) === i)
+    .sort(() => Math.random() - 0.5);
+  return { numbers, sum, options };
 }
 
 export default function QuickSum({
@@ -21,12 +32,11 @@ export default function QuickSum({
 }) {
   const count = NUMBER_COUNT[difficulty];
   const [phase, setPhase] = useState<"idle" | "flash" | "answer">("idle");
-  const [numbers, setNumbers] = useState<number[]>(() => newRound(count));
+  const [round, setRound] = useState<Round>(() => newRound(count));
   const [score, setScore] = useState(0);
   const [secondsLeft, setSecondsLeft] = useState(TIME_LIMIT[difficulty]);
   const reportedRef = useRef(false);
   const target = TARGET_ROUNDS[difficulty];
-  const sum = numbers.reduce((a, b) => a + b, 0);
 
   const won = phase !== "idle" && score >= target;
   const lost = phase !== "idle" && !won && secondsLeft <= 0;
@@ -56,22 +66,17 @@ export default function QuickSum({
   function start() {
     setScore(0);
     setSecondsLeft(TIME_LIMIT[difficulty]);
-    setNumbers(newRound(count));
+    setRound(newRound(count));
     reportedRef.current = false;
     setPhase("flash");
   }
 
   function answer(n: number) {
     if (phase !== "answer") return;
-    if (n === sum) setScore((s) => s + 1);
-    setNumbers(newRound(count));
+    if (n === round.sum) setScore((s) => s + 1);
+    setRound(newRound(count));
     setPhase("flash");
   }
-
-  const options =
-    phase === "answer"
-      ? [sum, sum + 2, Math.max(1, sum - 2), sum + 5].filter((v, i, arr) => arr.indexOf(v) === i).sort(() => Math.random() - 0.5)
-      : [];
 
   return (
     <div className="comic-panel flex flex-col items-center gap-4 p-6">
@@ -79,10 +84,10 @@ export default function QuickSum({
         {phase === "idle" && `Memorize the numbers, then pick their sum — ${target} correct to win.`}
         {phase !== "idle" && `Score: ${score} / ${target} — ${secondsLeft}s left`}
       </p>
-      {phase === "flash" && <p className="font-heading text-4xl">{numbers.join("  ")}</p>}
+      {phase === "flash" && <p className="font-heading text-4xl">{round.numbers.join("  ")}</p>}
       {phase === "answer" && (
         <div className="flex gap-2">
-          {options.map((n) => (
+          {round.options.map((n) => (
             <button key={n} onClick={() => answer(n)} className="comic-btn bg-panel px-4 py-2 text-sm">
               {n}
             </button>

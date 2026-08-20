@@ -8,7 +8,14 @@ const GRID_SIZE: Record<Difficulty, number> = { easy: 12, medium: 16, hard: 20 }
 const TARGET_ROUNDS: Record<Difficulty, number> = { easy: 4, medium: 5, hard: 6 };
 const TIME_LIMIT: Record<Difficulty, number> = { easy: 40, medium: 35, hard: 30 };
 
-function newRound(gridSize: number): { grid: string[]; target: string; count: number } {
+interface Round {
+  grid: string[];
+  target: string;
+  count: number;
+  options: number[];
+}
+
+function newRound(gridSize: number): Round {
   const target = SHAPES[Math.floor(Math.random() * SHAPES.length)];
   const others = SHAPES.filter((s) => s !== target);
   const targetCount = Math.floor(Math.random() * 5) + 3;
@@ -18,7 +25,10 @@ function newRound(gridSize: number): { grid: string[]; target: string; count: nu
     const j = Math.floor(Math.random() * (i + 1));
     [grid[i], grid[j]] = [grid[j], grid[i]];
   }
-  return { grid, target, count: targetCount };
+  const options = [targetCount, targetCount + 1, Math.max(1, targetCount - 1), targetCount + 2]
+    .filter((v, i, arr) => arr.indexOf(v) === i)
+    .sort(() => Math.random() - 0.5);
+  return { grid, target, count: targetCount, options };
 }
 
 export default function CountTheShapes({
@@ -69,10 +79,6 @@ export default function CountTheShapes({
     setRound(newRound(gridSize));
   }
 
-  const options = [round.count, round.count + 1, Math.max(1, round.count - 1), round.count + 2]
-    .filter((v, i, arr) => arr.indexOf(v) === i)
-    .sort(() => Math.random() - 0.5);
-
   return (
     <div className="comic-panel flex flex-col items-center gap-4 p-6">
       <p className="text-sm font-bold text-ink/70">
@@ -90,7 +96,7 @@ export default function CountTheShapes({
             ))}
           </div>
           <div className="flex gap-2">
-            {options.map((n) => (
+            {round.options.map((n) => (
               <button key={n} onClick={() => answer(n)} className="comic-btn bg-panel px-4 py-2 text-sm">
                 {n}
               </button>
