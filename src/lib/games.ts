@@ -1,4 +1,4 @@
-export type GameKind = "minigame" | "puzzle" | "riddle" | "iq";
+export type GameKind = "minigame" | "puzzle" | "riddle" | "iq" | "qmaster";
 export type Difficulty = "easy" | "medium" | "hard";
 export type GameResult = "won" | "lost" | "draw";
 
@@ -433,6 +433,63 @@ export function iqLevelMechanic(id: string): { level: number; mechanic: IQMechan
   const idx = IQ_GAMES.findIndex((g) => g.id === id);
   if (idx === -1) return undefined;
   return { level: idx + 1, mechanic: IQ_LEVEL_MECHANICS[idx] };
+}
+
+// --- Q Mastered Games: a 57-level track dedicated entirely to Q
+// Remastered's core hook — freehand-draw a line and let gravity solve it —
+// unlike the deliberately mixed IQ Levels track. Levels 1-5 are always
+// available; starting the following Monday, one more unlocks every week for
+// a full year (57 = 5 + 52). Variety comes from rotating through 4 sibling
+// "draw and solve" goal types (never twice in a row) rather than from
+// different mechanics altogether, since every level here is meant to feel
+// like the same game, just a new stage — the way Q Remastered itself does
+// across 1200+ stages.
+export type QMasterMechanic = "guideBall" | "catchBall" | "blockBall" | "bridgeGap";
+
+const QMASTER_MECHANIC_META: Record<QMasterMechanic, { title: string; emoji: string; description: string }> = {
+  guideBall: { title: "Guide the Ball", emoji: "🎯", description: "Draw a path to guide the ball into the goal." },
+  catchBall: { title: "Catch the Ball", emoji: "🥅", description: "Draw a shape to catch the falling ball before it drops." },
+  blockBall: { title: "Block the Ball", emoji: "🧱", description: "Draw a wall to keep the ball away from the hazard." },
+  bridgeGap: { title: "Bridge the Gap", emoji: "🌉", description: "Draw a bridge so the ball can cross the pit." },
+};
+
+const QMASTER_LEVEL_COUNT = 57;
+const QMASTER_MECHANIC_ORDER: QMasterMechanic[] = ["guideBall", "catchBall", "blockBall", "bridgeGap"];
+
+function qmasterDifficulty(level: number): Difficulty {
+  if (level <= 19) return "easy";
+  if (level <= 38) return "medium";
+  return "hard";
+}
+
+function qmasterRewardMinutes(level: number, difficulty: Difficulty): number {
+  if (difficulty === "easy") return 8 + Math.floor((level - 1) / 6); // 8-11
+  if (difficulty === "medium") return 12 + Math.floor((level - 20) / 4); // 12-16
+  return 17 + Math.floor((level - 39) / 3); // 17-23
+}
+
+export const QMASTER_GAMES: GameDef[] = Array.from({ length: QMASTER_LEVEL_COUNT }, (_, i) => {
+  const level = i + 1;
+  const mechanic = QMASTER_MECHANIC_ORDER[i % QMASTER_MECHANIC_ORDER.length];
+  const meta = QMASTER_MECHANIC_META[mechanic];
+  const difficulty = qmasterDifficulty(level);
+  return {
+    id: `qm-level-${String(level).padStart(2, "0")}`,
+    kind: "qmaster",
+    title: `Q Level ${level}: ${meta.title}`,
+    emoji: meta.emoji,
+    difficulty,
+    rewardMinutes: qmasterRewardMinutes(level, difficulty),
+    description: meta.description,
+    unlock: level <= 5 ? undefined : weeklyUnlock(level - 5),
+  };
+});
+
+// Looks up which goal-type (and level number) a "qm-level-NN" id maps to.
+export function qmasterLevelMechanic(id: string): { level: number; mechanic: QMasterMechanic } | undefined {
+  const idx = QMASTER_GAMES.findIndex((g) => g.id === id);
+  if (idx === -1) return undefined;
+  return { level: idx + 1, mechanic: QMASTER_MECHANIC_ORDER[idx % QMASTER_MECHANIC_ORDER.length] };
 }
 
 export const PUZZLES: AnswerDef[] = [
@@ -2516,7 +2573,8 @@ export function findGameDef(id: string): GameDef | AnswerDef | undefined {
     MINIGAMES.find((g) => g.id === id) ||
     PUZZLES.find((g) => g.id === id) ||
     RIDDLES.find((g) => g.id === id) ||
-    IQ_GAMES.find((g) => g.id === id)
+    IQ_GAMES.find((g) => g.id === id) ||
+    QMASTER_GAMES.find((g) => g.id === id)
   );
 }
 

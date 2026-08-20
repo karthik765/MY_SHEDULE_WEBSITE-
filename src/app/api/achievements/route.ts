@@ -46,6 +46,7 @@ export async function GET() {
       games.filter((g) => g.kind === "minigame").map((g) => [g.game, g.timesCompleted])
     ),
     iqLevelsSolved: games.filter((g) => g.kind === "iq" && g.solved).length,
+    qmasterLevelsSolved: games.filter((g) => g.kind === "qmaster" && g.solved).length,
   };
 
   const computed = computeUnlocked(stats);

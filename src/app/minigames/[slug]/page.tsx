@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import {
   findGameDef,
   iqLevelMechanic,
+  qmasterLevelMechanic,
   DIFFICULTY_BONUS_PCT,
   DIFFICULTY_COLOR,
   type AnswerDef,
@@ -84,6 +85,10 @@ import IQSetDeduction from "@/components/games/IQSetDeduction";
 import IQNumberSeries from "@/components/games/IQNumberSeries";
 import IQHiddenShape from "@/components/games/IQHiddenShape";
 import IQLogicGrid from "@/components/games/IQLogicGrid";
+import QMGuideBall from "@/components/games/QMGuideBall";
+import QMCatchBall from "@/components/games/QMCatchBall";
+import QMBlockBall from "@/components/games/QMBlockBall";
+import QMBridgeGap from "@/components/games/QMBridgeGap";
 
 interface GameRecordRow {
   game: string;
@@ -357,6 +362,43 @@ export default function GameDetailPage() {
             {mechanic === "numberSeries" && <IQNumberSeries level={level} onEnd={handleEnd} />}
             {mechanic === "hiddenShape" && <IQHiddenShape level={level} onEnd={handleEnd} />}
             {mechanic === "logicGrid" && <IQLogicGrid level={level} onEnd={handleEnd} />}
+            <button onClick={() => setStarted(false)} className="comic-btn bg-panel px-4 py-1.5 text-sm">
+              ← Back
+            </button>
+          </>
+        );
+      })()}
+
+      {def.kind === "qmaster" && !started && (
+        <div className="comic-panel-sm space-y-3 p-4 text-center">
+          <span
+            className="comic-badge inline-block px-2 py-0.5 text-xs text-chip-ink capitalize"
+            style={{ backgroundColor: DIFFICULTY_COLOR[def.difficulty] }}
+          >
+            {def.difficulty}
+          </span>
+          <button
+            onClick={() => {
+              setReward(null);
+              setStarted(true);
+            }}
+            className="comic-btn bg-comic-blue px-5 py-2 text-chip-ink"
+          >
+            Start
+          </button>
+        </div>
+      )}
+
+      {def.kind === "qmaster" && started && (() => {
+        const info = qmasterLevelMechanic(def.id);
+        if (!info) return null;
+        const { level, mechanic } = info;
+        return (
+          <>
+            {mechanic === "guideBall" && <QMGuideBall level={level} onEnd={handleEnd} />}
+            {mechanic === "catchBall" && <QMCatchBall level={level} onEnd={handleEnd} />}
+            {mechanic === "blockBall" && <QMBlockBall level={level} onEnd={handleEnd} />}
+            {mechanic === "bridgeGap" && <QMBridgeGap level={level} onEnd={handleEnd} />}
             <button onClick={() => setStarted(false)} className="comic-btn bg-panel px-4 py-1.5 text-sm">
               ← Back
             </button>

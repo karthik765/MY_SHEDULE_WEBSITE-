@@ -27,9 +27,10 @@ const CATEGORY_META: Record<AchievementCategory, { label: string; color: string 
   media: { label: "Movies, Web Series & Games", color: "var(--comic-purple)" },
   minigames: { label: "Minigames, Puzzles & Riddles", color: "var(--comic-pink)" },
   iq: { label: "IQ Levels", color: "var(--comic-red)" },
+  qmaster: { label: "Q Mastered Games", color: "var(--comic-blue)" },
 };
 
-const CATEGORY_ORDER: AchievementCategory[] = ["timer", "habits", "tasks", "goals", "media", "minigames", "iq"];
+const CATEGORY_ORDER: AchievementCategory[] = ["timer", "habits", "tasks", "goals", "media", "minigames", "iq", "qmaster"];
 
 const TIER_META: Record<AchievementTier, { emoji: string; label: string; color: string }> = {
   bronze: { emoji: "🥉", label: "Bronze", color: "#cd7f32" },

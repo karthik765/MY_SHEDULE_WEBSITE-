@@ -7,6 +7,7 @@ import {
   PUZZLES,
   RIDDLES,
   IQ_GAMES,
+  QMASTER_GAMES,
   DIFFICULTY_COLOR,
   currentContentWeek,
   weekUnlockDate,
@@ -23,24 +24,32 @@ interface LimitsResponse {
   timesFailedThisWeek: number;
 }
 
-type Tab = "minigames" | "puzzles" | "riddles" | "iq" | "stats";
+type Tab = "minigames" | "puzzles" | "riddles" | "iq" | "qmaster" | "stats";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "minigames", label: "🎮 Minigames" },
   { id: "puzzles", label: "🧩 Puzzles" },
   { id: "riddles", label: "🔍 Riddles" },
   { id: "iq", label: "🧠 IQ Levels" },
+  { id: "qmaster", label: "✏️ Q Mastered Games" },
   { id: "stats", label: "📊 Stats" },
 ];
 
-const KIND_LABEL: Record<"puzzle" | "riddle" | "minigame" | "iq", string> = {
+const KIND_LABEL: Record<"puzzle" | "riddle" | "minigame" | "iq" | "qmaster", string> = {
   puzzle: "Puzzle",
   riddle: "Riddle",
   minigame: "Minigame",
   iq: "IQ Level",
+  qmaster: "Q Mastered Level",
 };
 
-function NewThisWeekBanner({ kind, item }: { kind: "puzzle" | "riddle" | "minigame" | "iq"; item: GameDef | undefined }) {
+function NewThisWeekBanner({
+  kind,
+  item,
+}: {
+  kind: "puzzle" | "riddle" | "minigame" | "iq" | "qmaster";
+  item: GameDef | undefined;
+}) {
   if (!item) return null;
   return (
     <div className="comic-panel-sm flex items-center gap-3 bg-comic-yellow p-3 text-chip-ink">
@@ -193,6 +202,7 @@ export default function MinigamesPage() {
   const thisWeekRiddle = RIDDLES.find((r) => r.unlock?.type === "date" && r.unlock.after === thisWeekDate);
   const thisWeekMinigame = MINIGAMES.find((g) => g.unlock?.type === "date" && g.unlock.after === thisWeekDate);
   const thisWeekIQ = IQ_GAMES.find((g) => g.unlock?.type === "date" && g.unlock.after === thisWeekDate);
+  const thisWeekQMaster = QMASTER_GAMES.find((g) => g.unlock?.type === "date" && g.unlock.after === thisWeekDate);
 
   return (
     <div className="space-y-6">
@@ -248,6 +258,17 @@ export default function MinigamesPage() {
           </p>
           <NewThisWeekBanner kind="iq" item={thisWeekIQ} />
           <GameRow title="🧠 IQ Levels" color="var(--comic-red)" games={IQ_GAMES} records={recordMap} unlocks={unlocks} />
+        </div>
+      )}
+      {tab === "qmaster" && (
+        <div className="space-y-3">
+          <p className="text-sm text-ink/60">
+            57 levels, all built on one idea: draw a line and let gravity do the rest. Levels 1-5 are open now — one
+            more unlocks every Monday after that, for a full year. Every level pays once, the first time you solve
+            it.
+          </p>
+          <NewThisWeekBanner kind="qmaster" item={thisWeekQMaster} />
+          <GameRow title="✏️ Q Mastered Games" color="var(--comic-blue)" games={QMASTER_GAMES} records={recordMap} unlocks={unlocks} />
         </div>
       )}
 

@@ -1,7 +1,7 @@
 // PlayStation-style trophy case, computed live from current stats — nothing
 // is stored separately, so "unlocked" always reflects the current data.
 
-import { MINIGAMES, PUZZLES, RIDDLES, IQ_GAMES } from "./games";
+import { MINIGAMES, PUZZLES, RIDDLES, IQ_GAMES, QMASTER_GAMES } from "./games";
 
 export interface AchievementStats {
   studyStreak: number;
@@ -22,9 +22,10 @@ export interface AchievementStats {
   hardDifficultyWins: number; // rewarded minigame wins completed on Hard
   minigameWinsById: Record<string, number>; // per-game win counts, for "beat this specific new game" trophies
   iqLevelsSolved: number; // how many of the 52 IQ Levels have been solved
+  qmasterLevelsSolved: number; // how many of the 57 Q Mastered Games levels have been solved
 }
 
-export type AchievementCategory = "timer" | "habits" | "tasks" | "goals" | "media" | "minigames" | "iq";
+export type AchievementCategory = "timer" | "habits" | "tasks" | "goals" | "media" | "minigames" | "iq" | "qmaster";
 
 export type AchievementTier = "bronze" | "silver" | "gold";
 
@@ -538,6 +539,41 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     tier: "gold",
     category: "iq",
     check: (s) => s.iqLevelsSolved >= IQ_GAMES.length,
+  },
+
+  // Q Mastered Games — the 57-level draw-and-gravity track. Each level pays
+  // out once, the first time it's solved.
+  {
+    id: "qmaster-level-1",
+    title: "First Sketch",
+    description: "Solve your first Q Mastered Games level.",
+    tier: "bronze",
+    category: "qmaster",
+    check: (s) => s.qmasterLevelsSolved >= 1,
+  },
+  {
+    id: "qmaster-level-14",
+    title: "Steady Hand",
+    description: "Solve 14 Q Mastered Games levels.",
+    tier: "bronze",
+    category: "qmaster",
+    check: (s) => s.qmasterLevelsSolved >= 14,
+  },
+  {
+    id: "qmaster-level-28",
+    title: "Gravity's Apprentice",
+    description: "Solve 28 Q Mastered Games levels — the halfway point.",
+    tier: "silver",
+    category: "qmaster",
+    check: (s) => s.qmasterLevelsSolved >= 28,
+  },
+  {
+    id: "qmaster-level-all",
+    title: "Q Master",
+    description: "Solve every Q Mastered Games level, all the way to Level 57.",
+    tier: "gold",
+    category: "qmaster",
+    check: (s) => s.qmasterLevelsSolved >= QMASTER_GAMES.length,
   },
 ];
 
