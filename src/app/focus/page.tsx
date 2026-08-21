@@ -96,13 +96,9 @@ function effortOpacity(minutes: number, goal: number): number {
   return 0.35;
 }
 
-const BREAK_MS = 20 * 60 * 1000;
-const BREAK_STORAGE_KEY = "timer-break-ends-at";
 // Skipping a break banks its unused remainder here, added on top of the
 // next break's normal length instead of being lost. Each timer mode has its
 // own carry pool since their break lengths differ.
-const BREAK_CARRY_KEY = "timer-break-carry-ms";
-
 function bankBreakCarry(key: string, remainingMs: number) {
   if (remainingMs <= 0) return;
   const carried = Number(localStorage.getItem(key) ?? 0) + remainingMs;
@@ -205,45 +201,12 @@ function loadForceStopState(): ForceStopState {
   return { date: todayKey(), count: 0 };
 }
 
-// Optional extra round on top of the regular plan: up to 3 more hours of
-// focus, as many breaks as wanted, each break capped at 10 minutes.
-const BONUS_CAP_MINUTES = 3 * 60;
-const BONUS_BREAK_MAX_MINUTES = 10;
-const BONUS_STORAGE_KEY = "timer-bonus-state";
-const BONUS_BREAK_CARRY_KEY = "timer-bonus-break-carry-ms";
+type TimerMode = "free" | "focus";
+const MODE_STORAGE_KEY = "timer-mode";
 
-interface BonusState {
-  phase: PlanPhase;
-  phaseEndsAt: number;
-  // Focus seconds already banked from completed increments this bonus round
-  // (excludes whatever's currently live while phase === "focus").
-  usedFocusSeconds: number;
-}
-
-function loadBonusState(): BonusState | null {
-  const raw = localStorage.getItem(BONUS_STORAGE_KEY);
-  if (!raw) return null;
-  try {
-    const parsed = JSON.parse(raw) as BonusState;
-    if (
-      (parsed.phase === "focus" || parsed.phase === "break") &&
-      typeof parsed.phaseEndsAt === "number" &&
-      typeof parsed.usedFocusSeconds === "number"
-    ) {
-      return parsed;
-    }
-  } catch {
-    // fall through
-  }
-  return null;
-}
-
-function saveBonusState(state: BonusState | null) {
-  if (state) {
-    localStorage.setItem(BONUS_STORAGE_KEY, JSON.stringify(state));
-  } else {
-    localStorage.removeItem(BONUS_STORAGE_KEY);
-  }
+function loadMode(): TimerMode {
+  const raw = localStorage.getItem(MODE_STORAGE_KEY);
+  return raw === "free" ? "free" : "focus";
 }
 
 export default function FocusPage() {
@@ -251,11 +214,9 @@ export default function FocusPage() {
   const [sessions, setSessions] = useState<StudySession[]>([]);
   const [subject, setSubject] = useState("Study");
   const [now, setNow] = useState(() => Date.now());
-  const [breakEndsAt, setBreakEndsAt] = useState<number | null>(null);
   const [plan, setPlan] = useState<PlanState | null>(null);
   const [planJustFinished, setPlanJustFinished] = useState(false);
-  const [bonus, setBonus] = useState<BonusState | null>(null);
-  const [bonusFinishedMinutes, setBonusFinishedMinutes] = useState<number | null>(null);
+  const [mode, setMode] = useState<TimerMode>("focus");
   const [forceStops, setForceStops] = useState<ForceStopState>({ date: todayKey(), count: 0 });
   const [unit, setUnit] = useState<DisplayUnit>("hours");
   const [historyView, setHistoryView] = useState<"daily" | "weekly">("daily");
@@ -283,32 +244,37 @@ export default function FocusPage() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time fetch on mount
     load();
-    const storedBreak = Number(localStorage.getItem(BREAK_STORAGE_KEY));
-    if (storedBreak && storedBreak > Date.now()) {
-      setBreakEndsAt(storedBreak);
-    } else if (storedBreak) {
-      localStorage.removeItem(BREAK_STORAGE_KEY);
-    }
     setPlan(loadPlanState());
-    setBonus(loadBonusState());
+    setMode(loadMode());
     setForceStops(loadForceStopState());
   }, []);
 
-  const breakActive = breakEndsAt !== null && now < breakEndsAt;
-
   useEffect(() => {
-    if (!active && !breakActive && !plan && !bonus) return;
+    if (!active && !plan) return;
     const interval = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(interval);
-  }, [active, breakActive, plan, bonus]);
+  }, [active, plan]);
+
+  function selectMode(next: TimerMode) {
+    setMode(next);
+    localStorage.setItem(MODE_STORAGE_KEY, next);
+  }
 
   function planLabel(blockIndex: number) {
     const base = subject.trim() || "Study";
     return `${base} (Session ${blockIndex + 1}/${STUDY_PLAN.length})`;
   }
 
-  async function stopActiveSession() {
-    await fetch("/api/timer/stop", { method: "POST" });
+  // `endTimeOverride` lets a scheduled phase transition (a Focus Mode block
+  // reaching its planned end) record that planned end time instead of
+  // whatever moment the tab happens to wake up and run this — otherwise time
+  // spent away while backgrounded/asleep would get logged as focus time.
+  async function stopActiveSession(endTimeOverride?: number) {
+    await fetch("/api/timer/stop", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(endTimeOverride != null ? { endTime: endTimeOverride } : {}),
+    });
   }
 
   // POSTs /api/timer/start, and if the server reports a session is already
@@ -366,7 +332,7 @@ export default function FocusPage() {
     const block = STUDY_PLAN[current.blockIndex];
     if (current.phase === "focus") {
       playFocusEndSound();
-      await stopActiveSession();
+      await stopActiveSession(current.phaseEndsAt);
       if (block.breakMinutes != null) {
         const carryMs = takeBreakCarry(PLAN_BREAK_CARRY_KEY);
         const next: PlanState = {
@@ -423,131 +389,18 @@ export default function FocusPage() {
     load();
   }
 
-  // Starts (or resumes into) a bonus focus increment. Its length is however
-  // much of the 3-hour cap is left at this moment — reached naturally when
-  // the cap runs out, same mechanism as a fixed-length plan block.
-  async function startBonusFocus(usedFocusSeconds: number) {
-    const capSeconds = BONUS_CAP_MINUTES * 60;
-    const remainingSeconds = capSeconds - usedFocusSeconds;
-    if (remainingSeconds <= 0) {
-      setBonus(null);
-      saveBonusState(null);
-      setBonusFinishedMinutes(BONUS_CAP_MINUTES);
-      load();
-      return;
-    }
-    const res = await startSessionWithRecovery(`${subject.trim() || "Study"} (Bonus Focus)`);
-    if (!res.ok) return;
-    const next: BonusState = {
-      phase: "focus",
-      phaseEndsAt: Date.now() + remainingSeconds * 1000,
-      usedFocusSeconds,
-    };
-    setBonus(next);
-    saveBonusState(next);
-    load();
-  }
-
-  async function startBonus(e: FormEvent) {
+  // Free Mode: study for as long as you want, stop whenever — no break is
+  // ever started automatically. The only breaks in this app come from Focus
+  // Mode's built-in plan.
+  async function startFree(e: FormEvent) {
     e.preventDefault();
-    setBonusFinishedMinutes(null);
-    await startBonusFocus(0);
-  }
-
-  async function transitionBonus(current: BonusState) {
-    if (current.phase === "focus") {
-      // Only fires once the 3-hour cap is fully used up — manual breaks are
-      // handled separately by takeBonusBreak.
-      await stopActiveSession();
-      setBonus(null);
-      saveBonusState(null);
-      setBonusFinishedMinutes(BONUS_CAP_MINUTES);
-      load();
-    } else {
-      await startBonusFocus(current.usedFocusSeconds);
-    }
-  }
-
-  useEffect(() => {
-    if (!bonus) return;
-    const delay = Math.max(0, bonus.phaseEndsAt - Date.now());
-    const timeout = setTimeout(() => transitionBonus(bonus), delay);
-    return () => clearTimeout(timeout);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the bonus round's own identity, not the closure
-  }, [bonus?.phase, bonus?.phaseEndsAt, bonus?.usedFocusSeconds]);
-
-  async function takeBonusBreak() {
-    if (!bonus || bonus.phase !== "focus" || !active) return;
-    const elapsedSeconds = Math.max(0, (Date.now() - new Date(active.startTime).getTime()) / 1000);
-    await stopActiveSession();
-    const capSeconds = BONUS_CAP_MINUTES * 60;
-    const usedFocusSeconds = Math.min(capSeconds, bonus.usedFocusSeconds + elapsedSeconds);
-    if (usedFocusSeconds >= capSeconds) {
-      setBonus(null);
-      saveBonusState(null);
-      setBonusFinishedMinutes(BONUS_CAP_MINUTES);
-      load();
-      return;
-    }
-    // Carry-over is allowed to push this past the normal 10-minute cap — it
-    // was earned by skipping a prior break, not part of the base allowance.
-    const carryMs = takeBreakCarry(BONUS_BREAK_CARRY_KEY);
-    const next: BonusState = {
-      phase: "break",
-      phaseEndsAt: Date.now() + BONUS_BREAK_MAX_MINUTES * 60_000 + carryMs,
-      usedFocusSeconds,
-    };
-    setBonus(next);
-    saveBonusState(next);
-    load();
-  }
-
-  async function resumeBonusNow() {
-    if (!bonus || bonus.phase !== "break") return;
-    bankBreakCarry(BONUS_BREAK_CARRY_KEY, bonus.phaseEndsAt - Date.now());
-    await startBonusFocus(bonus.usedFocusSeconds);
-  }
-
-  async function endBonus() {
-    if (!bonus) return;
-    let usedFocusSeconds = bonus.usedFocusSeconds;
-    if (bonus.phase === "focus" && active) {
-      const elapsedSeconds = Math.max(0, (Date.now() - new Date(active.startTime).getTime()) / 1000);
-      await stopActiveSession();
-      usedFocusSeconds += elapsedSeconds;
-    }
-    setBonus(null);
-    saveBonusState(null);
-    setBonusFinishedMinutes(Math.round(usedFocusSeconds / 60));
-    load();
-  }
-
-  async function start(e: FormEvent) {
-    e.preventDefault();
-    const res = await fetch("/api/timer/start", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ subject }),
-    });
-    if (res.ok) {
-      skipBreak();
-      load();
-    }
+    const res = await startSessionWithRecovery(subject.trim() || "Study");
+    if (res.ok) load();
   }
 
   async function stop() {
     await stopActiveSession();
-    const carryMs = takeBreakCarry(BREAK_CARRY_KEY);
-    const endsAt = Date.now() + BREAK_MS + carryMs;
-    setBreakEndsAt(endsAt);
-    localStorage.setItem(BREAK_STORAGE_KEY, String(endsAt));
     load();
-  }
-
-  function skipBreak() {
-    if (breakEndsAt) bankBreakCarry(BREAK_CARRY_KEY, breakEndsAt - Date.now());
-    setBreakEndsAt(null);
-    localStorage.removeItem(BREAK_STORAGE_KEY);
   }
 
   const elapsedSeconds = active ? Math.max(0, (now - new Date(active.startTime).getTime()) / 1000) : 0;
@@ -592,15 +445,7 @@ export default function FocusPage() {
     .sort((a, b) => (a[0] < b[0] ? 1 : -1))
     .slice(0, 12);
 
-  const breakRemainingSeconds = breakEndsAt ? Math.max(0, (breakEndsAt - now) / 1000) : 0;
   const planPhaseRemainingSeconds = plan ? Math.max(0, (plan.phaseEndsAt - now) / 1000) : 0;
-  const bonusPhaseRemainingSeconds = bonus ? Math.max(0, (bonus.phaseEndsAt - now) / 1000) : 0;
-  const bonusCapRemainingSeconds = bonus
-    ? Math.max(
-        0,
-        BONUS_CAP_MINUTES * 60 - bonus.usedFocusSeconds - (bonus.phase === "focus" ? elapsedSeconds : 0)
-      )
-    : 0;
 
   return (
     <div className="space-y-6">
@@ -654,39 +499,10 @@ export default function FocusPage() {
             for real emergencies.
           </p>
         </div>
-      ) : bonus ? (
-        <div
-          className="comic-panel p-6 text-center text-chip-ink"
-          style={{ backgroundColor: bonus.phase === "focus" ? "var(--comic-pink)" : "var(--comic-green)" }}
-        >
-          <p className="text-sm font-bold text-chip-ink/80">
-            {bonus.phase === "focus" ? "🔥 Bonus Focus" : "☕ Bonus Break (max 10m)"}
-          </p>
-          <p className="font-heading my-3 text-6xl tracking-wide tabular-nums">
-            {formatDuration(bonus.phase === "focus" ? elapsedSeconds : bonusPhaseRemainingSeconds)}
-          </p>
-          <p className="mb-3 text-xs font-bold text-chip-ink/80">
-            {formatMinutes(Math.round(bonusCapRemainingSeconds / 60))} of bonus focus left
-          </p>
-          <div className="flex items-center justify-center gap-2">
-            {bonus.phase === "focus" ? (
-              <button onClick={takeBonusBreak} className="comic-btn bg-panel px-4 py-2 text-sm">
-                Take a break
-              </button>
-            ) : (
-              <button onClick={resumeBonusNow} className="comic-btn bg-panel px-4 py-2 text-sm">
-                Resume now
-              </button>
-            )}
-            <button onClick={endBonus} className="comic-btn bg-comic-red px-4 py-2 text-sm text-chip-ink">
-              End Bonus
-            </button>
-          </div>
-        </div>
       ) : (
         <div
-          className={`comic-panel p-6 text-center ${active || breakActive ? "text-chip-ink" : ""}`}
-          style={{ backgroundColor: active ? "var(--comic-orange)" : breakActive ? "var(--comic-green)" : "var(--panel)" }}
+          className={`comic-panel p-6 text-center ${active ? "text-chip-ink" : ""}`}
+          style={{ backgroundColor: active ? "var(--comic-orange)" : "var(--panel)" }}
         >
           {active === undefined ? (
             <p className="text-ink/60">Loading...</p>
@@ -700,22 +516,12 @@ export default function FocusPage() {
                 Stop
               </button>
             </>
-          ) : breakActive ? (
-            <>
-              <p className="text-sm font-bold text-chip-ink/80">☕ Break time</p>
-              <p className="font-heading my-3 text-6xl tracking-wide tabular-nums">
-                {formatDuration(breakRemainingSeconds)}
-              </p>
-              <button onClick={skipBreak} className="comic-btn bg-panel px-6 py-2 text-sm">
-                Skip break
-              </button>
-            </>
           ) : (
             <div className="space-y-4">
               {planJustFinished && (
                 <div className="comic-panel-sm flex items-center justify-between gap-3 bg-comic-yellow p-3 text-chip-ink">
                   <span className="text-sm font-bold">
-                    🏆 Plan complete — {formatMinutes(PLAN_TOTAL_FOCUS_MINUTES)} of focus logged!
+                    🏆 Focus Mode complete — {formatMinutes(PLAN_TOTAL_FOCUS_MINUTES)} of focus logged!
                   </span>
                   <button
                     onClick={() => setPlanJustFinished(false)}
@@ -725,51 +531,55 @@ export default function FocusPage() {
                   </button>
                 </div>
               )}
-              {bonusFinishedMinutes !== null && (
-                <div className="comic-panel-sm flex items-center justify-between gap-3 bg-comic-pink p-3 text-chip-ink">
-                  <span className="text-sm font-bold">
-                    🔥 Bonus round done — {formatMinutes(bonusFinishedMinutes)} extra focus logged!
-                  </span>
-                  <button
-                    onClick={() => setBonusFinishedMinutes(null)}
-                    className="text-xs font-bold text-chip-ink/70 hover:underline"
-                  >
-                    Dismiss
-                  </button>
-                </div>
-              )}
-              <form onSubmit={start} className="flex items-center justify-center gap-2">
-                <input
-                  className="comic-input px-3 py-2 text-sm"
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                  placeholder="Subject"
-                />
-                <button type="submit" className="comic-btn bg-comic-green px-6 py-2 text-sm text-chip-ink">
-                  Start
+
+              <div className="flex overflow-hidden rounded-lg border-2 border-ink">
+                <button
+                  onClick={() => selectMode("free")}
+                  className="flex-1 px-3 py-2 text-sm font-bold"
+                  style={{
+                    backgroundColor: mode === "free" ? "var(--comic-green)" : "transparent",
+                    color: mode === "free" ? "var(--chip-ink)" : "var(--ink)",
+                  }}
+                >
+                  Free Mode
                 </button>
-              </form>
-              <div className="flex items-center justify-center gap-3 text-xs text-ink/50">
-                <span className="h-px flex-1 bg-ink/15" />
-                or
-                <span className="h-px flex-1 bg-ink/15" />
+                <button
+                  onClick={() => selectMode("focus")}
+                  className="flex-1 px-3 py-2 text-sm font-bold"
+                  style={{
+                    backgroundColor: mode === "focus" ? "var(--comic-purple)" : "transparent",
+                    color: mode === "focus" ? "var(--chip-ink)" : "var(--ink)",
+                  }}
+                >
+                  Focus Mode
+                </button>
               </div>
-              <form onSubmit={startPlan} className="space-y-1">
-                <button type="submit" className="comic-btn w-full bg-comic-purple px-6 py-3 text-sm text-chip-ink">
-                  Start Today&apos;s Study Plan ({formatMinutes(PLAN_TOTAL_FOCUS_MINUTES)} focus)
-                </button>
-                <p className="text-xs text-ink/50">
-                  9×1h focus/22m break · 1×1h focus (no break)
-                </p>
-              </form>
-              <form onSubmit={startBonus} className="space-y-1">
-                <button type="submit" className="comic-btn w-full bg-comic-pink px-6 py-3 text-sm text-chip-ink">
-                  Add Bonus Focus (up to {formatMinutes(BONUS_CAP_MINUTES)})
-                </button>
-                <p className="text-xs text-ink/50">
-                  As many breaks as you want, each capped at {BONUS_BREAK_MAX_MINUTES}m
-                </p>
-              </form>
+
+              {mode === "free" ? (
+                <form onSubmit={startFree} className="space-y-1">
+                  <div className="flex items-center justify-center gap-2">
+                    <input
+                      className="comic-input px-3 py-2 text-sm"
+                      value={subject}
+                      onChange={(e) => setSubject(e.target.value)}
+                      placeholder="Subject"
+                    />
+                    <button type="submit" className="comic-btn bg-comic-green px-6 py-2 text-sm text-chip-ink">
+                      Start
+                    </button>
+                  </div>
+                  <p className="text-xs text-ink/50">Study for as long as you want — no breaks, stop whenever.</p>
+                </form>
+              ) : (
+                <form onSubmit={startPlan} className="space-y-1">
+                  <button type="submit" className="comic-btn w-full bg-comic-purple px-6 py-3 text-sm text-chip-ink">
+                    Start Focus Mode ({formatMinutes(PLAN_TOTAL_FOCUS_MINUTES)} focus)
+                  </button>
+                  <p className="text-xs text-ink/50">
+                    9×1h focus/22m break · 1×1h focus (no break)
+                  </p>
+                </form>
+              )}
             </div>
           )}
         </div>
