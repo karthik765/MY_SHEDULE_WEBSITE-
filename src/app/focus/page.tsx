@@ -537,7 +537,7 @@ export default function FocusPage() {
                   onClick={() => selectMode("free")}
                   className="flex-1 px-3 py-2 text-sm font-bold"
                   style={{
-                    backgroundColor: mode === "free" ? "var(--comic-green)" : "transparent",
+                    backgroundColor: mode === "free" ? "var(--comic-red)" : "transparent",
                     color: mode === "free" ? "var(--chip-ink)" : "var(--ink)",
                   }}
                 >
@@ -547,7 +547,7 @@ export default function FocusPage() {
                   onClick={() => selectMode("focus")}
                   className="flex-1 px-3 py-2 text-sm font-bold"
                   style={{
-                    backgroundColor: mode === "focus" ? "var(--comic-purple)" : "transparent",
+                    backgroundColor: mode === "focus" ? "var(--comic-green)" : "transparent",
                     color: mode === "focus" ? "var(--chip-ink)" : "var(--ink)",
                   }}
                 >
@@ -564,7 +564,7 @@ export default function FocusPage() {
                       onChange={(e) => setSubject(e.target.value)}
                       placeholder="Subject"
                     />
-                    <button type="submit" className="comic-btn bg-comic-green px-6 py-2 text-sm text-chip-ink">
+                    <button type="submit" className="comic-btn bg-comic-red px-6 py-2 text-sm text-chip-ink">
                       Start
                     </button>
                   </div>
@@ -572,7 +572,7 @@ export default function FocusPage() {
                 </form>
               ) : (
                 <form onSubmit={startPlan} className="space-y-1">
-                  <button type="submit" className="comic-btn w-full bg-comic-purple px-6 py-3 text-sm text-chip-ink">
+                  <button type="submit" className="comic-btn w-full bg-comic-green px-6 py-3 text-sm text-chip-ink">
                     Start Focus Mode ({formatMinutes(PLAN_TOTAL_FOCUS_MINUTES)} focus)
                   </button>
                   <p className="text-xs text-ink/50">
