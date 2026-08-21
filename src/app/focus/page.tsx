@@ -448,78 +448,86 @@ export default function FocusPage() {
   const planPhaseRemainingSeconds = plan ? Math.max(0, (plan.phaseEndsAt - now) / 1000) : 0;
 
   return (
-    <div className="space-y-6">
-      <h1 className="font-heading text-4xl text-comic-orange" style={{ WebkitTextStroke: "1.5px var(--ink)" }}>
-        Focus
-      </h1>
+    <div className="space-y-8">
+      <div>
+        <h1 className="font-heading text-4xl text-comic-orange" style={{ WebkitTextStroke: "1.5px var(--ink)" }}>
+          Focus
+        </h1>
+        <p className="mt-1 text-sm text-ink/50">Run the 10-session Focus Mode plan, or go Free Mode for open-ended study.</p>
+      </div>
 
       {plan ? (
         <div
-          className="comic-panel p-6 text-center text-chip-ink"
+          className="comic-panel overflow-hidden text-center text-chip-ink"
           style={{ backgroundColor: plan.phase === "focus" ? "var(--comic-orange)" : "var(--comic-green)" }}
         >
-          <p className="text-sm font-bold text-chip-ink/80">
-            {plan.phase === "focus" ? "🎯 Focus" : "☕ Break"} · Session {plan.blockIndex + 1}/{STUDY_PLAN.length}
-          </p>
-          <p className="font-heading my-3 text-6xl tracking-wide tabular-nums">
-            {formatDuration(planPhaseRemainingSeconds)}
-          </p>
-          <div className="mb-3 flex justify-center gap-1.5">
-            {STUDY_PLAN.map((_, i) => (
-              <span
-                key={i}
-                className="h-2.5 w-2.5 rounded-full"
-                style={{
-                  backgroundColor:
-                    i < plan.blockIndex || (i === plan.blockIndex && plan.phase === "break")
-                      ? "var(--ink)"
-                      : i === plan.blockIndex
-                        ? "var(--panel)"
-                        : "rgba(20,18,26,0.25)",
-                }}
-              />
-            ))}
-          </div>
-          <div className="flex items-center justify-center gap-2">
-            {plan.phase === "break" && (
-              <button onClick={skipPlanBreak} className="comic-btn bg-panel px-4 py-2 text-sm">
-                Skip break
+          <div className="p-6 pb-5">
+            <p className="text-sm font-bold uppercase tracking-wide text-chip-ink/80">
+              {plan.phase === "focus" ? "🎯 Focus Mode" : "☕ Break"} · Session {plan.blockIndex + 1} of {STUDY_PLAN.length}
+            </p>
+            <p className="font-heading my-4 text-6xl tracking-wide tabular-nums">
+              {formatDuration(planPhaseRemainingSeconds)}
+            </p>
+            <div className="mb-5 flex justify-center gap-2">
+              {STUDY_PLAN.map((_, i) => (
+                <span
+                  key={i}
+                  className="h-3 w-3 rounded-full"
+                  style={{
+                    backgroundColor:
+                      i < plan.blockIndex || (i === plan.blockIndex && plan.phase === "break")
+                        ? "var(--ink)"
+                        : i === plan.blockIndex
+                          ? "var(--panel)"
+                          : "rgba(20,18,26,0.25)",
+                  }}
+                />
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {plan.phase === "break" && (
+                <button onClick={skipPlanBreak} className="comic-btn bg-panel px-4 py-2 text-sm">
+                  Skip break
+                </button>
+              )}
+              <button
+                onClick={forceStopPlan}
+                disabled={forceStops.count >= MAX_FORCE_STOPS_PER_DAY}
+                className="comic-btn bg-comic-red px-4 py-2 text-sm text-chip-ink disabled:opacity-50"
+              >
+                Force Stop ({Math.max(0, MAX_FORCE_STOPS_PER_DAY - forceStops.count)} left today)
               </button>
-            )}
-            <button
-              onClick={forceStopPlan}
-              disabled={forceStops.count >= MAX_FORCE_STOPS_PER_DAY}
-              className="comic-btn bg-comic-red px-4 py-2 text-sm text-chip-ink disabled:opacity-50"
-            >
-              Force Stop ({Math.max(0, MAX_FORCE_STOPS_PER_DAY - forceStops.count)} left today)
-            </button>
+            </div>
           </div>
-          <p className="mt-2 text-xs text-chip-ink/70">
+          <p className="border-t-2 border-ink/10 bg-black/5 px-6 py-2.5 text-xs text-chip-ink/70">
             No casual stopping — this plan runs the full {formatMinutes(PLAN_TOTAL_FOCUS_MINUTES)}. Force Stop is only
             for real emergencies.
           </p>
         </div>
       ) : (
         <div
-          className={`comic-panel p-6 text-center ${active ? "text-chip-ink" : ""}`}
+          className={`comic-panel overflow-hidden text-center ${active ? "text-chip-ink" : ""}`}
           style={{ backgroundColor: active ? "var(--comic-orange)" : "var(--panel)" }}
         >
           {active === undefined ? (
-            <p className="text-ink/60">Loading...</p>
+            <p className="p-6 text-ink/60">Loading...</p>
           ) : active ? (
-            <>
-              <p className="text-sm font-bold text-chip-ink/80">{active.subject}</p>
-              <p className="font-heading my-3 text-6xl tracking-wide tabular-nums">
+            <div className="p-6">
+              <p className="text-sm font-bold uppercase tracking-wide text-chip-ink/80">
+                {mode === "free" ? "🟢 Free Mode" : "🎯 Focus Mode"}
+              </p>
+              <p className="mt-1 text-sm font-bold text-chip-ink/90">{active.subject}</p>
+              <p className="font-heading my-4 text-6xl tracking-wide tabular-nums">
                 {formatDuration(elapsedSeconds)}
               </p>
               <button onClick={stop} className="comic-btn bg-comic-red px-6 py-2 text-sm text-chip-ink">
                 Stop
               </button>
-            </>
+            </div>
           ) : (
-            <div className="space-y-4">
+            <div className="p-6">
               {planJustFinished && (
-                <div className="comic-panel-sm flex items-center justify-between gap-3 bg-comic-yellow p-3 text-chip-ink">
+                <div className="comic-panel-sm mb-4 flex items-center justify-between gap-3 bg-comic-yellow p-3 text-chip-ink">
                   <span className="text-sm font-bold">
                     🏆 Focus Mode complete — {formatMinutes(PLAN_TOTAL_FOCUS_MINUTES)} of focus logged!
                   </span>
@@ -532,69 +540,73 @@ export default function FocusPage() {
                 </div>
               )}
 
-              <div className="flex overflow-hidden rounded-lg border-2 border-ink">
+              <div className="mx-auto flex max-w-sm overflow-hidden rounded-lg border-2 border-ink">
                 <button
                   onClick={() => selectMode("free")}
-                  className="flex-1 px-3 py-2 text-sm font-bold"
+                  className="flex-1 px-3 py-2.5 text-sm font-bold"
                   style={{
                     backgroundColor: mode === "free" ? "var(--comic-green)" : "transparent",
                     color: mode === "free" ? "var(--chip-ink)" : "var(--ink)",
                   }}
                 >
-                  Free Mode
+                  🟢 Free Mode
                 </button>
                 <button
                   onClick={() => selectMode("focus")}
-                  className="flex-1 px-3 py-2 text-sm font-bold"
+                  className="flex-1 px-3 py-2.5 text-sm font-bold"
                   style={{
                     backgroundColor: mode === "focus" ? "var(--comic-orange)" : "transparent",
                     color: mode === "focus" ? "var(--chip-ink)" : "var(--ink)",
                   }}
                 >
-                  Focus Mode
+                  🎯 Focus Mode
                 </button>
               </div>
 
-              {mode === "free" ? (
-                <form onSubmit={startFree} className="space-y-1">
-                  <div className="flex items-center justify-center gap-2">
-                    <input
-                      className="comic-input px-3 py-2 text-sm"
-                      value={subject}
-                      onChange={(e) => setSubject(e.target.value)}
-                      placeholder="Subject"
-                    />
-                    <button type="submit" className="comic-btn bg-comic-green px-6 py-2 text-sm text-chip-ink">
-                      Start
+              <div className="mx-auto mt-5 max-w-sm">
+                {mode === "free" ? (
+                  <form onSubmit={startFree} className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        className="comic-input min-w-0 flex-1 px-3 py-2 text-sm"
+                        value={subject}
+                        onChange={(e) => setSubject(e.target.value)}
+                        placeholder="Subject"
+                      />
+                      <button type="submit" className="comic-btn bg-comic-green px-6 py-2 text-sm text-chip-ink">
+                        Start
+                      </button>
+                    </div>
+                    <p className="text-center text-xs text-ink/50">
+                      Study for as long as you want — no breaks, stop whenever.
+                    </p>
+                  </form>
+                ) : (
+                  <form onSubmit={startPlan} className="space-y-2">
+                    <button type="submit" className="comic-btn w-full bg-comic-orange px-6 py-3 text-sm text-chip-ink">
+                      Start Focus Mode ({formatMinutes(PLAN_TOTAL_FOCUS_MINUTES)} focus)
                     </button>
-                  </div>
-                  <p className="text-xs text-ink/50">Study for as long as you want — no breaks, stop whenever.</p>
-                </form>
-              ) : (
-                <form onSubmit={startPlan} className="space-y-1">
-                  <button type="submit" className="comic-btn w-full bg-comic-orange px-6 py-3 text-sm text-chip-ink">
-                    Start Focus Mode ({formatMinutes(PLAN_TOTAL_FOCUS_MINUTES)} focus)
-                  </button>
-                  <p className="text-xs text-ink/50">
-                    9×1h focus/22m break · 1×1h focus (no break)
-                  </p>
-                </form>
-              )}
+                    <p className="text-center text-xs text-ink/50">
+                      9×1h focus/22m break · 1×1h focus (no break)
+                    </p>
+                  </form>
+                )}
+              </div>
             </div>
           )}
         </div>
       )}
 
-      <div className="comic-panel bg-comic-yellow p-4 text-chip-ink">
-        <div className="mb-3 flex items-center justify-between">
-          <p className="text-sm font-bold text-chip-ink/80">Your Focus</p>
+      <div className="comic-panel p-5">
+        <div className="mb-4 flex items-center justify-between">
+          <p className="font-heading text-lg tracking-wide text-comic-orange">Your Focus</p>
           <div className="flex overflow-hidden rounded-lg border-2 border-ink">
             <button
               onClick={() => setUnit("hours")}
               className="px-2 py-1 text-xs font-bold"
               style={{
                 backgroundColor: unit === "hours" ? "var(--ink)" : "transparent",
-                color: unit === "hours" ? "var(--paper)" : "var(--chip-ink)",
+                color: unit === "hours" ? "var(--paper)" : "var(--ink)",
               }}
             >
               Hours
@@ -604,25 +616,25 @@ export default function FocusPage() {
               className="px-2 py-1 text-xs font-bold"
               style={{
                 backgroundColor: unit === "minutes" ? "var(--ink)" : "transparent",
-                color: unit === "minutes" ? "var(--paper)" : "var(--chip-ink)",
+                color: unit === "minutes" ? "var(--paper)" : "var(--ink)",
               }}
             >
               Minutes
             </button>
           </div>
         </div>
-        <div className="grid grid-cols-3 gap-2 text-center">
-          <div>
-            <p className="text-xs font-bold text-chip-ink/70">Today</p>
-            <p className="font-heading text-2xl tracking-wide">{formatByUnit(todayMinutes, unit)}</p>
+        <div className="grid grid-cols-3 divide-x-2 divide-ink/10 text-center">
+          <div className="px-2">
+            <p className="text-xs font-bold uppercase tracking-wide text-ink/40">Today</p>
+            <p className="font-heading mt-1 text-3xl tracking-wide text-comic-orange">{formatByUnit(todayMinutes, unit)}</p>
           </div>
-          <div>
-            <p className="text-xs font-bold text-chip-ink/70">This Week</p>
-            <p className="font-heading text-2xl tracking-wide">{formatByUnit(weeklyLiveMinutes, unit)}</p>
+          <div className="px-2">
+            <p className="text-xs font-bold uppercase tracking-wide text-ink/40">This Week</p>
+            <p className="font-heading mt-1 text-3xl tracking-wide text-comic-green">{formatByUnit(weeklyLiveMinutes, unit)}</p>
           </div>
-          <div>
-            <p className="text-xs font-bold text-chip-ink/70">Daily Average</p>
-            <p className="font-heading text-2xl tracking-wide">{formatByUnit(dailyAverageMinutes, unit)}</p>
+          <div className="px-2">
+            <p className="text-xs font-bold uppercase tracking-wide text-ink/40">Daily Avg</p>
+            <p className="font-heading mt-1 text-3xl tracking-wide text-comic-purple">{formatByUnit(dailyAverageMinutes, unit)}</p>
           </div>
         </div>
       </div>
@@ -655,7 +667,7 @@ export default function FocusPage() {
         </div>
 
         {historyView === "daily" ? (
-          <div className="comic-panel p-3">
+          <div className="comic-panel p-4">
             <div className="mb-2 grid grid-cols-7 gap-1.5">
               {["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map((d) => (
                 <p key={d} className="text-center text-xs font-bold text-ink/40">
