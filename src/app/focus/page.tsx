@@ -79,7 +79,7 @@ const WEEKDAY_COLORS = [
   "var(--comic-purple)", // Saturday
 ];
 
-function effortEmoji(minutes: number, goal: number = PLAN_TOTAL_FOCUS_MINUTES): string {
+function effortEmoji(minutes: number, goal: number = DAILY_GOAL_MINUTES): string {
   if (minutes <= 0) return "💤";
   if (minutes >= goal) return "🔥";
   return "⏱️";
@@ -111,31 +111,64 @@ function takeBreakCarry(key: string): number {
   return carried;
 }
 
-// 10x(1h focus / 22m break), final block has no break after = 600 minutes
-// (10h) of focus for the day.
+// Each block is 1h focus / 22m break (last block in a plan has no break
+// after it), tagged with which half of your time it counts toward.
+type FocusCategory = "job" | "business";
+
+const CATEGORY_LABEL: Record<FocusCategory, string> = {
+  job: "Job Trials",
+  business: "Business & Passion",
+};
+
 interface PlanBlock {
   focusMinutes: number;
   breakMinutes: number | null;
+  category: FocusCategory;
 }
 
-const STUDY_PLAN: PlanBlock[] = [
-  { focusMinutes: 60, breakMinutes: 22 },
-  { focusMinutes: 60, breakMinutes: 22 },
-  { focusMinutes: 60, breakMinutes: 22 },
-  { focusMinutes: 60, breakMinutes: 22 },
-  { focusMinutes: 60, breakMinutes: 22 },
-  { focusMinutes: 60, breakMinutes: 22 },
-  { focusMinutes: 60, breakMinutes: 22 },
-  { focusMinutes: 60, breakMinutes: 22 },
-  { focusMinutes: 60, breakMinutes: 22 },
-  { focusMinutes: 60, breakMinutes: null },
-];
+type PlanStyle = "5-5" | "2x4";
 
-const PLAN_TOTAL_FOCUS_MINUTES = STUDY_PLAN.reduce((sum, b) => sum + b.focusMinutes, 0);
+const PLAN_STYLE_LABEL: Record<PlanStyle, string> = {
+  "5-5": "5h + 5h",
+  "2x4": "2h × 4",
+};
+
+// "5-5": 5x1h Job Trials, then 5x1h Business & Passion — same 1h/22m
+// pattern as before, just split down the middle by category.
+// "2x4": 4x2h blocks alternating category, 22m break between each.
+const PLAN_PRESETS: Record<PlanStyle, PlanBlock[]> = {
+  "5-5": [
+    { focusMinutes: 60, breakMinutes: 22, category: "job" },
+    { focusMinutes: 60, breakMinutes: 22, category: "job" },
+    { focusMinutes: 60, breakMinutes: 22, category: "job" },
+    { focusMinutes: 60, breakMinutes: 22, category: "job" },
+    { focusMinutes: 60, breakMinutes: 22, category: "job" },
+    { focusMinutes: 60, breakMinutes: 22, category: "business" },
+    { focusMinutes: 60, breakMinutes: 22, category: "business" },
+    { focusMinutes: 60, breakMinutes: 22, category: "business" },
+    { focusMinutes: 60, breakMinutes: 22, category: "business" },
+    { focusMinutes: 60, breakMinutes: null, category: "business" },
+  ],
+  "2x4": [
+    { focusMinutes: 120, breakMinutes: 22, category: "job" },
+    { focusMinutes: 120, breakMinutes: 22, category: "business" },
+    { focusMinutes: 120, breakMinutes: 22, category: "job" },
+    { focusMinutes: 120, breakMinutes: null, category: "business" },
+  ],
+};
+
+function planTotalMinutes(style: PlanStyle): number {
+  return PLAN_PRESETS[style].reduce((sum, b) => sum + b.focusMinutes, 0);
+}
+
+// Fixed full-day target used for the heatmap/goal displays, independent of
+// which plan style was actually run that day.
+const DAILY_GOAL_MINUTES = planTotalMinutes("5-5");
 
 type PlanPhase = "focus" | "break";
 
 interface PlanState {
+  style: PlanStyle;
   blockIndex: number;
   phase: PlanPhase;
   phaseEndsAt: number;
@@ -143,16 +176,24 @@ interface PlanState {
 
 const PLAN_STORAGE_KEY = "timer-plan-state";
 const PLAN_BREAK_CARRY_KEY = "timer-plan-break-carry-ms";
+const PLAN_STYLE_STORAGE_KEY = "timer-plan-style";
+
+function loadPlanStyle(): PlanStyle {
+  const raw = localStorage.getItem(PLAN_STYLE_STORAGE_KEY);
+  return raw === "2x4" ? "2x4" : "5-5";
+}
 
 function loadPlanState(): PlanState | null {
   const raw = localStorage.getItem(PLAN_STORAGE_KEY);
   if (!raw) return null;
   try {
     const parsed = JSON.parse(raw) as PlanState;
+    const blocks = PLAN_PRESETS[parsed.style];
     if (
+      blocks &&
       typeof parsed.blockIndex === "number" &&
       parsed.blockIndex >= 0 &&
-      parsed.blockIndex < STUDY_PLAN.length &&
+      parsed.blockIndex < blocks.length &&
       (parsed.phase === "focus" || parsed.phase === "break") &&
       typeof parsed.phaseEndsAt === "number"
     ) {
@@ -215,7 +256,9 @@ export default function FocusPage() {
   const [subject, setSubject] = useState("Study");
   const [now, setNow] = useState(() => Date.now());
   const [plan, setPlan] = useState<PlanState | null>(null);
+  const [planStyle, setPlanStyle] = useState<PlanStyle>("5-5");
   const [planJustFinished, setPlanJustFinished] = useState(false);
+  const [planJustFinishedMinutes, setPlanJustFinishedMinutes] = useState(0);
   const [mode, setMode] = useState<TimerMode>("focus");
   const [forceStops, setForceStops] = useState<ForceStopState>({ date: todayKey(), count: 0 });
   const [unit, setUnit] = useState<DisplayUnit>("hours");
@@ -245,6 +288,7 @@ export default function FocusPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time fetch on mount
     load();
     setPlan(loadPlanState());
+    setPlanStyle(loadPlanStyle());
     setMode(loadMode());
     setForceStops(loadForceStopState());
   }, []);
@@ -260,9 +304,14 @@ export default function FocusPage() {
     localStorage.setItem(MODE_STORAGE_KEY, next);
   }
 
-  function planLabel(blockIndex: number) {
-    const base = subject.trim() || "Study";
-    return `${base} (Session ${blockIndex + 1}/${STUDY_PLAN.length})`;
+  function selectPlanStyle(next: PlanStyle) {
+    setPlanStyle(next);
+    localStorage.setItem(PLAN_STYLE_STORAGE_KEY, next);
+  }
+
+  function planLabel(blockIndex: number, style: PlanStyle) {
+    const blocks = PLAN_PRESETS[style];
+    return `${CATEGORY_LABEL[blocks[blockIndex].category]} (Session ${blockIndex + 1}/${blocks.length})`;
   }
 
   // `endTimeOverride` lets a scheduled phase transition (a Focus Mode block
@@ -298,13 +347,14 @@ export default function FocusPage() {
     return res;
   }
 
-  async function startPlanFocus(blockIndex: number) {
-    const res = await startSessionWithRecovery(planLabel(blockIndex));
+  async function startPlanFocus(blockIndex: number, style: PlanStyle) {
+    const res = await startSessionWithRecovery(planLabel(blockIndex, style));
     if (!res.ok) return;
     const next: PlanState = {
+      style,
       blockIndex,
       phase: "focus",
-      phaseEndsAt: Date.now() + STUDY_PLAN[blockIndex].focusMinutes * 60_000,
+      phaseEndsAt: Date.now() + PLAN_PRESETS[style][blockIndex].focusMinutes * 60_000,
     };
     setPlan(next);
     savePlanState(next);
@@ -314,28 +364,30 @@ export default function FocusPage() {
   async function startPlan(e: FormEvent) {
     e.preventDefault();
     setPlanJustFinished(false);
-    await startPlanFocus(0);
+    await startPlanFocus(0, planStyle);
   }
 
-  async function advancePlan(nextIndex: number) {
-    if (nextIndex >= STUDY_PLAN.length) {
+  async function advancePlan(nextIndex: number, style: PlanStyle) {
+    if (nextIndex >= PLAN_PRESETS[style].length) {
       setPlan(null);
       savePlanState(null);
       setPlanJustFinished(true);
+      setPlanJustFinishedMinutes(planTotalMinutes(style));
       load();
       return;
     }
-    await startPlanFocus(nextIndex);
+    await startPlanFocus(nextIndex, style);
   }
 
   async function transitionPlan(current: PlanState) {
-    const block = STUDY_PLAN[current.blockIndex];
+    const block = PLAN_PRESETS[current.style][current.blockIndex];
     if (current.phase === "focus") {
       playFocusEndSound();
       await stopActiveSession(current.phaseEndsAt);
       if (block.breakMinutes != null) {
         const carryMs = takeBreakCarry(PLAN_BREAK_CARRY_KEY);
         const next: PlanState = {
+          style: current.style,
           blockIndex: current.blockIndex,
           phase: "break",
           phaseEndsAt: Date.now() + block.breakMinutes * 60_000 + carryMs,
@@ -344,11 +396,11 @@ export default function FocusPage() {
         savePlanState(next);
         load();
       } else {
-        await advancePlan(current.blockIndex + 1);
+        await advancePlan(current.blockIndex + 1, current.style);
       }
     } else {
       playBreakEndSound();
-      await advancePlan(current.blockIndex + 1);
+      await advancePlan(current.blockIndex + 1, current.style);
     }
   }
 
@@ -367,7 +419,7 @@ export default function FocusPage() {
     if (!plan || plan.phase !== "break") return;
     bankBreakCarry(PLAN_BREAK_CARRY_KEY, plan.phaseEndsAt - Date.now());
     playBreakEndSound();
-    await advancePlan(plan.blockIndex + 1);
+    await advancePlan(plan.blockIndex + 1, plan.style);
   }
 
   async function forceStopPlan() {
@@ -453,7 +505,7 @@ export default function FocusPage() {
         <h1 className="font-heading text-4xl text-comic-orange" style={{ WebkitTextStroke: "1.5px var(--ink)" }}>
           Focus
         </h1>
-        <p className="mt-1 text-sm text-ink/50">Run the 10-session Focus Mode plan, or go Free Mode for open-ended study.</p>
+        <p className="mt-1 text-sm text-ink/50">Run a Focus Mode plan split between Job Trials and Business &amp; Passion, or go Free Mode for open-ended study.</p>
       </div>
 
       {plan ? (
@@ -463,13 +515,16 @@ export default function FocusPage() {
         >
           <div className="p-6 pb-5">
             <p className="text-sm font-bold uppercase tracking-wide text-chip-ink/80">
-              {plan.phase === "focus" ? "🎯 Focus Mode" : "☕ Break"} · Session {plan.blockIndex + 1} of {STUDY_PLAN.length}
+              {plan.phase === "focus"
+                ? `🎯 ${CATEGORY_LABEL[PLAN_PRESETS[plan.style][plan.blockIndex].category]}`
+                : "☕ Break"}{" "}
+              · Session {plan.blockIndex + 1} of {PLAN_PRESETS[plan.style].length}
             </p>
             <p className="font-heading my-4 text-6xl tracking-wide tabular-nums">
               {formatDuration(planPhaseRemainingSeconds)}
             </p>
             <div className="mb-5 flex justify-center gap-2">
-              {STUDY_PLAN.map((_, i) => (
+              {PLAN_PRESETS[plan.style].map((_, i) => (
                 <span
                   key={i}
                   className="h-3 w-3 rounded-full"
@@ -500,8 +555,8 @@ export default function FocusPage() {
             </div>
           </div>
           <p className="border-t-2 border-ink/10 bg-black/5 px-6 py-2.5 text-xs text-chip-ink/70">
-            No casual stopping — this plan runs the full {formatMinutes(PLAN_TOTAL_FOCUS_MINUTES)}. Force Stop is only
-            for real emergencies.
+            No casual stopping — this plan runs the full {formatMinutes(planTotalMinutes(plan.style))}. Force Stop is
+            only for real emergencies.
           </p>
         </div>
       ) : (
@@ -529,7 +584,7 @@ export default function FocusPage() {
               {planJustFinished && (
                 <div className="comic-panel-sm mb-4 flex items-center justify-between gap-3 bg-comic-yellow p-3 text-chip-ink">
                   <span className="text-sm font-bold">
-                    🏆 Focus Mode complete — {formatMinutes(PLAN_TOTAL_FOCUS_MINUTES)} of focus logged!
+                    🏆 Focus Mode complete — {formatMinutes(planJustFinishedMinutes)} of focus logged!
                   </span>
                   <button
                     onClick={() => setPlanJustFinished(false)}
@@ -582,12 +637,30 @@ export default function FocusPage() {
                     </p>
                   </form>
                 ) : (
-                  <form onSubmit={startPlan} className="space-y-2">
+                  <form onSubmit={startPlan} className="space-y-3">
+                    <div className="flex overflow-hidden rounded-lg border-2 border-ink">
+                      {(["5-5", "2x4"] as const).map((style) => (
+                        <button
+                          key={style}
+                          type="button"
+                          onClick={() => selectPlanStyle(style)}
+                          className="flex-1 px-3 py-2 text-xs font-bold"
+                          style={{
+                            backgroundColor: planStyle === style ? "var(--ink)" : "transparent",
+                            color: planStyle === style ? "var(--paper)" : "var(--ink)",
+                          }}
+                        >
+                          {PLAN_STYLE_LABEL[style]}
+                        </button>
+                      ))}
+                    </div>
                     <button type="submit" className="comic-btn w-full bg-comic-orange px-6 py-3 text-sm text-chip-ink">
-                      Start Focus Mode ({formatMinutes(PLAN_TOTAL_FOCUS_MINUTES)} focus)
+                      Start Focus Mode ({formatMinutes(planTotalMinutes(planStyle))} focus)
                     </button>
                     <p className="text-center text-xs text-ink/50">
-                      9×1h focus/22m break · 1×1h focus (no break)
+                      {planStyle === "5-5"
+                        ? "5×1h focus/22m break (Job Trials) → 5×1h focus/22m break (Business & Passion)"
+                        : "2h Job → 2h Business → 2h Job → 2h Business · 22m breaks between"}
                     </p>
                   </form>
                 )}
@@ -599,7 +672,7 @@ export default function FocusPage() {
 
       <div className="comic-panel p-5">
         <div className="mb-4 flex items-center justify-between">
-          <p className="font-heading text-lg tracking-wide text-comic-orange">Your Focus</p>
+          <p className="font-heading text-lg tracking-wide text-ink">Your Focus</p>
           <div className="flex overflow-hidden rounded-lg border-2 border-ink">
             <button
               onClick={() => setUnit("hours")}
@@ -626,15 +699,15 @@ export default function FocusPage() {
         <div className="grid grid-cols-3 divide-x-2 divide-ink/10 text-center">
           <div className="px-2">
             <p className="text-xs font-bold uppercase tracking-wide text-ink/40">Today</p>
-            <p className="font-heading mt-1 text-3xl tracking-wide text-comic-orange">{formatByUnit(todayMinutes, unit)}</p>
+            <p className="font-heading mt-1 text-3xl tracking-wide text-ink">{formatByUnit(todayMinutes, unit)}</p>
           </div>
           <div className="px-2">
             <p className="text-xs font-bold uppercase tracking-wide text-ink/40">This Week</p>
-            <p className="font-heading mt-1 text-3xl tracking-wide text-comic-green">{formatByUnit(weeklyLiveMinutes, unit)}</p>
+            <p className="font-heading mt-1 text-3xl tracking-wide text-ink">{formatByUnit(weeklyLiveMinutes, unit)}</p>
           </div>
           <div className="px-2">
             <p className="text-xs font-bold uppercase tracking-wide text-ink/40">Daily Avg</p>
-            <p className="font-heading mt-1 text-3xl tracking-wide text-comic-purple">{formatByUnit(dailyAverageMinutes, unit)}</p>
+            <p className="font-heading mt-1 text-3xl tracking-wide text-ink">{formatByUnit(dailyAverageMinutes, unit)}</p>
           </div>
         </div>
       </div>
@@ -681,7 +754,7 @@ export default function FocusPage() {
               ))}
               {last30Days.map(({ key, date, minutes }) => {
                 const color = WEEKDAY_COLORS[date.getDay()];
-                const opacity = effortOpacity(minutes, PLAN_TOTAL_FOCUS_MINUTES);
+                const opacity = effortOpacity(minutes, DAILY_GOAL_MINUTES);
                 const isToday = key === todayLocalKey;
                 return (
                   <div
@@ -737,7 +810,7 @@ export default function FocusPage() {
                 <li key={weekKey} className="comic-panel-sm overflow-hidden p-0">
                   <div className="flex items-center justify-between px-3 pt-2.5">
                     <span className="text-sm font-bold">
-                      {effortEmoji(minutes, PLAN_TOTAL_FOCUS_MINUTES * 7)} {formatWeekLabel(weekKey)}
+                      {effortEmoji(minutes, DAILY_GOAL_MINUTES * 7)} {formatWeekLabel(weekKey)}
                     </span>
                     <span className="comic-badge px-2 py-0.5 text-xs text-chip-ink" style={{ backgroundColor: color }}>
                       {formatByUnit(minutes, unit)}
