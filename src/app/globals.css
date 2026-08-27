@@ -2,55 +2,62 @@
 
 :root {
   color-scheme: light;
-  --ink: #14121a;
-  /* Text sitting directly on a bright comic-color fill (badges, active nav
-     tab, stat cards) always stays dark, in both themes, so it stays legible
-     against pale fills like comic-yellow — only --ink flips with the theme. */
-  --chip-ink: #14121a;
-  --paper: #fff4d6;
-  --panel: #ffffff;
-  --halftone-dot: rgba(20, 18, 26, 0.12);
+  --ink: #1a130a;
+  /* Text sitting directly on a bright accent fill (badges, active nav tab,
+     stat cards) always stays dark, in both themes, so it stays legible
+     against light fills like comic-yellow — only --ink flips with the theme. */
+  --chip-ink: #140d06;
+  --paper: #e4dfd3;
+  --panel: #f3efe5;
+  /* Thin accent-tinted line used for panel/button/input borders — the
+     cyberpunk replacement for the old thick "ink" border. */
+  --line: rgba(255, 122, 26, 0.35);
+  /* Faint scan-line tint for the body background and .comic-halftone. */
+  --halftone-dot: rgba(26, 19, 10, 0.06);
   --comic-red: #e63946;
   --comic-blue: #1d75fb;
-  --comic-yellow: #ffc93c;
-  --comic-green: #2fbf71;
-  --comic-purple: #8b5cf6;
-  --comic-orange: #ff7a29;
-  --comic-pink: #ff5da2;
+  --comic-yellow: #e8a93d;
+  --comic-green: #1fae5c;
+  --comic-purple: #8b3fe0;
+  --comic-orange: #ff7a1a;
+  /* Was pink — repurposed as an electric teal, no magenta anywhere in the palette. */
+  --comic-pink: #17a398;
 }
 
 /* System dark preference, unless the user has explicitly picked light via the toggle */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --ink: #f4efe3;
-    --paper: #1b1824;
-    --panel: #272334;
-    --halftone-dot: rgba(244, 239, 227, 0.08);
-    --comic-red: #ff5b6b;
-    --comic-blue: #4c8dff;
-    --comic-yellow: #ffd166;
-    --comic-green: #3ddc91;
-    --comic-purple: #a78bfa;
-    --comic-orange: #ff9142;
-    --comic-pink: #ff7ab8;
+    --ink: #f5f1e6;
+    --paper: #0a0705;
+    --panel: #15100a;
+    --line: rgba(255, 122, 26, 0.22);
+    --halftone-dot: rgba(255, 122, 26, 0.05);
+    --comic-red: #ff4d4d;
+    --comic-blue: #2e9bff;
+    --comic-yellow: #ffc24d;
+    --comic-green: #39ff6a;
+    --comic-purple: #b14eff;
+    --comic-orange: #ff7a1a;
+    --comic-pink: #2ee6d6;
   }
 }
 
 /* Explicit toggle choice wins over system preference in both directions */
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --ink: #f4efe3;
-  --paper: #1b1824;
-  --panel: #272334;
-  --halftone-dot: rgba(244, 239, 227, 0.08);
-  --comic-red: #ff5b6b;
-  --comic-blue: #4c8dff;
-  --comic-yellow: #ffd166;
-  --comic-green: #3ddc91;
-  --comic-purple: #a78bfa;
-  --comic-orange: #ff9142;
-  --comic-pink: #ff7ab8;
+  --ink: #f5f1e6;
+  --paper: #0a0705;
+  --panel: #15100a;
+  --line: rgba(255, 122, 26, 0.22);
+  --halftone-dot: rgba(255, 122, 26, 0.05);
+  --comic-red: #ff4d4d;
+  --comic-blue: #2e9bff;
+  --comic-yellow: #ffc24d;
+  --comic-green: #39ff6a;
+  --comic-purple: #b14eff;
+  --comic-orange: #ff7a1a;
+  --comic-pink: #2ee6d6;
 }
 
 @theme inline {
@@ -67,14 +74,20 @@
   --color-comic-pink: var(--comic-pink);
   --font-sans: var(--font-comic-body);
   --font-heading: var(--font-comic-heading);
+  --font-mono: var(--font-comic-mono);
 }
 
 body {
   background-color: var(--color-paper);
   color: var(--color-ink);
   font-family: var(--font-comic-body), Arial, Helvetica, sans-serif;
-  background-image: radial-gradient(circle, var(--halftone-dot) 1.6px, transparent 1.6px);
-  background-size: 16px 16px;
+  background-image: repeating-linear-gradient(
+    0deg,
+    var(--halftone-dot) 0px,
+    var(--halftone-dot) 1px,
+    transparent 1px,
+    transparent 3px
+  );
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 
@@ -90,47 +103,50 @@ h3 {
    rules would otherwise always beat layered utility classes regardless of
    source order. */
 @layer components {
-  /* Hard-edged "panel" card: white background, thick ink border, offset drop shadow */
+  /* HUD-style panel: dark fill, thin accent-tinted border, soft ambient glow
+     instead of the old thick offset drop-shadow. */
   .comic-panel {
     background: var(--color-panel);
-    border: 3px solid var(--color-ink);
-    border-radius: 1rem;
-    box-shadow: 5px 5px 0 0 var(--color-ink);
+    border: 1px solid var(--line);
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35), 0 0 18px -10px var(--color-comic-orange);
     transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
   }
 
   .comic-panel-sm {
     background: var(--color-panel);
-    border: 2.5px solid var(--color-ink);
-    border-radius: 0.75rem;
-    box-shadow: 3px 3px 0 0 var(--color-ink);
+    border: 1px solid var(--line);
+    border-radius: 0.375rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
     transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
   }
 
-  /* Buttons: bold border + offset shadow, "presses in" on click */
+  /* Buttons: thin border, techy uppercase label, glow on hover, scale-press on click */
   .comic-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.4rem;
     background: var(--color-panel);
-    border: 3px solid var(--color-ink);
-    border-radius: 0.75rem;
+    border: 1.5px solid var(--line);
+    border-radius: 0.375rem;
     font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
     color: var(--color-ink);
-    box-shadow: 4px 4px 0 0 var(--color-ink);
-    transition: transform 0.08s ease, box-shadow 0.08s ease, background-color 0.15s ease,
-      border-color 0.15s ease, color 0.15s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    transition: transform 0.08s ease, box-shadow 0.15s ease, border-color 0.15s ease,
+      background-color 0.15s ease, color 0.15s ease;
     cursor: pointer;
   }
 
   .comic-btn:hover {
-    filter: brightness(1.05);
+    border-color: var(--color-comic-orange);
+    box-shadow: 0 0 16px -6px var(--color-comic-orange);
   }
 
   .comic-btn:active {
-    transform: translate(3px, 3px);
-    box-shadow: 1px 1px 0 0 var(--color-ink);
+    transform: scale(0.97);
   }
 
   .comic-btn:disabled {
@@ -138,34 +154,80 @@ h3 {
     cursor: not-allowed;
   }
 
-  /* Form controls: bold border, no default browser chrome */
+  /* Form controls: thin border, no default browser chrome, orange focus glow */
   .comic-input {
-    border: 2.5px solid var(--color-ink);
-    border-radius: 0.6rem;
+    border: 1.5px solid var(--line);
+    border-radius: 0.375rem;
     background: var(--color-panel);
     color: var(--color-ink);
     outline: none;
-    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease,
+      box-shadow 0.15s ease;
   }
 
   .comic-input:focus {
-    box-shadow: 3px 3px 0 0 var(--color-ink);
+    border-color: var(--color-comic-orange);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-comic-orange) 30%, transparent);
   }
 
-  /* Small bold pill, e.g. priority/status tags */
+  /* Small bold tag/chip, e.g. priority/status labels */
   .comic-badge {
     display: inline-flex;
     align-items: center;
     background: var(--color-panel);
-    border: 2px solid var(--color-ink);
-    border-radius: 9999px;
+    border: 1px solid var(--line);
+    border-radius: 0.25rem;
     font-weight: 700;
     color: var(--color-ink);
   }
 
-  /* Halftone dot texture, for accent strips / hero backgrounds */
+  /* Faint scan-line texture, for accent strips / hero backgrounds */
   .comic-halftone {
-    background-image: radial-gradient(circle, var(--halftone-dot) 1.8px, transparent 1.8px);
-    background-size: 10px 10px;
+    background-image: repeating-linear-gradient(
+      0deg,
+      var(--halftone-dot) 0px,
+      var(--halftone-dot) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+  }
+
+  /* Nav brand mark: a solid 3D "K", tilting gently in real CSS 3D. Deliberately
+     hardcoded to Arial Black rather than the heading font — a stylized display
+     face at this size reads ambiguously as a letter. */
+  .k-mark-stage {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    perspective: 400px;
+  }
+
+  .k-mark {
+    display: inline-block;
+    font-family: "Arial Black", Arial, sans-serif;
+    font-weight: 900;
+    line-height: 1;
+    color: var(--color-comic-orange);
+    text-shadow: 1px 1px 0 color-mix(in srgb, var(--color-comic-orange) 65%, black),
+      2px 2px 0 color-mix(in srgb, var(--color-comic-orange) 40%, black),
+      3px 3px 5px rgba(0, 0, 0, 0.5);
+    animation: k-tilt 6s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .k-mark {
+      animation: none;
+      transform: rotateY(-10deg);
+    }
+  }
+}
+
+@keyframes k-tilt {
+  0%,
+  100% {
+    transform: rotateY(-16deg);
+  }
+  50% {
+    transform: rotateY(16deg);
   }
 }

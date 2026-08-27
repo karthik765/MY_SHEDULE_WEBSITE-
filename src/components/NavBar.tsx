@@ -139,12 +139,18 @@ export default function NavBar() {
     <nav className="border-b-4 border-ink bg-panel">
       <div className="mx-auto max-w-5xl px-4 py-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <Link
-            href="/"
-            className="font-heading text-2xl tracking-wide text-comic-red"
-            style={{ WebkitTextStroke: "1px var(--ink)" }}
-          >
-            LIFE HQ
+          <Link href="/" className="flex items-center gap-2">
+            <span className="k-mark-stage" aria-hidden="true">
+              <span className="k-mark" style={{ fontSize: "26px" }}>
+                K
+              </span>
+            </span>
+            <span
+              className="font-heading text-xl tracking-wide text-comic-orange"
+              style={{ WebkitTextStroke: "1px var(--ink)" }}
+            >
+              KARTHIK
+            </span>
           </Link>
 
           <div className="flex flex-wrap items-center gap-2">
