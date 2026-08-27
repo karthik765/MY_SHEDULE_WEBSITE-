@@ -130,12 +130,13 @@ type PlanStyle = "5-5" | "2x4";
 
 const PLAN_STYLE_LABEL: Record<PlanStyle, string> = {
   "5-5": "5h + 5h",
-  "2x4": "2h × 4",
+  "2x4": "2.5h × 4",
 };
 
 // "5-5": 5x1h Job Trials, then 5x1h Business & Passion — same 1h/22m
 // pattern as before, just split down the middle by category.
-// "2x4": 4x2h blocks alternating category, 22m break between each.
+// "2x4": 4x2h30m blocks alternating category, 22m break between each —
+// 4 x 2.5h = 10h total, matching "5-5"'s daily total.
 const PLAN_PRESETS: Record<PlanStyle, PlanBlock[]> = {
   "5-5": [
     { focusMinutes: 60, breakMinutes: 22, category: "job" },
@@ -150,10 +151,10 @@ const PLAN_PRESETS: Record<PlanStyle, PlanBlock[]> = {
     { focusMinutes: 60, breakMinutes: null, category: "business" },
   ],
   "2x4": [
-    { focusMinutes: 120, breakMinutes: 22, category: "job" },
-    { focusMinutes: 120, breakMinutes: 22, category: "business" },
-    { focusMinutes: 120, breakMinutes: 22, category: "job" },
-    { focusMinutes: 120, breakMinutes: null, category: "business" },
+    { focusMinutes: 150, breakMinutes: 22, category: "job" },
+    { focusMinutes: 150, breakMinutes: 22, category: "business" },
+    { focusMinutes: 150, breakMinutes: 22, category: "job" },
+    { focusMinutes: 150, breakMinutes: null, category: "business" },
   ],
 };
 
@@ -660,7 +661,7 @@ export default function FocusPage() {
                     <p className="text-center text-xs text-ink/50">
                       {planStyle === "5-5"
                         ? "5×1h focus/22m break (Job Trials) → 5×1h focus/22m break (Business & Passion)"
-                        : "2h Job → 2h Business → 2h Job → 2h Business · 22m breaks between"}
+                        : "2.5h Job → 2.5h Business → 2.5h Job → 2.5h Business · 22m breaks between"}
                     </p>
                   </form>
                 )}
