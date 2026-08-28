@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { startOfWeek } from "@/lib/schedule";
 import SimpleBarChart from "@/components/charts/SimpleBarChart";
+import FocusHistoryCard from "@/components/FocusHistoryCard";
 
 export const dynamic = "force-dynamic";
 
@@ -59,18 +60,18 @@ export default async function AnalyticsPage() {
 
   return (
     <div className="space-y-8">
-      <h1 className="font-heading text-4xl text-comic-blue" style={{ WebkitTextStroke: "1.5px var(--ink)" }}>
+      <h1 className="font-heading text-4xl text-comic-orange" style={{ WebkitTextStroke: "1.5px var(--ink)" }}>
         Analytics
       </h1>
 
       <section className="comic-panel p-4">
-        <h2 className="font-heading mb-3 text-lg tracking-wide text-comic-blue">
+        <h2 className="font-heading mb-3 text-lg tracking-wide text-comic-orange">
           Study hours per week (last {WEEKS} weeks)
         </h2>
         {studyHoursData.every((d) => d.hours === 0) ? (
           <p className="text-sm text-ink/60">No study sessions logged yet.</p>
         ) : (
-          <SimpleBarChart data={studyHoursData} xKey="week" yKey="hours" color="#2a78d6" unit=" hrs" />
+          <SimpleBarChart data={studyHoursData} xKey="week" yKey="hours" color="#ff7a1a" unit=" hrs" />
         )}
       </section>
 
@@ -81,12 +82,12 @@ export default async function AnalyticsPage() {
         {tasksCompletedData.every((d) => d.completed === 0) ? (
           <p className="text-sm text-ink/60">No completed tasks in this range yet.</p>
         ) : (
-          <SimpleBarChart data={tasksCompletedData} xKey="week" yKey="completed" color="#eb6834" />
+          <SimpleBarChart data={tasksCompletedData} xKey="week" yKey="completed" color="#ff7a1a" />
         )}
       </section>
 
       <section className="comic-panel p-4">
-        <h2 className="font-heading mb-3 text-lg tracking-wide text-comic-green">
+        <h2 className="font-heading mb-3 text-lg tracking-wide text-comic-orange">
           Habit consistency (% of last 30 days)
         </h2>
         {habitConsistencyData.length === 0 ? (
@@ -96,11 +97,15 @@ export default async function AnalyticsPage() {
             data={habitConsistencyData}
             xKey="habit"
             yKey="percent"
-            color="#1baf7a"
+            color="#ff7a1a"
             unit="%"
             layout="vertical"
           />
         )}
+      </section>
+
+      <section className="comic-panel p-4">
+        <FocusHistoryCard />
       </section>
     </div>
   );

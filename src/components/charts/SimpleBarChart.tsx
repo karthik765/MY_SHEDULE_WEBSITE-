@@ -20,9 +20,12 @@ interface SimpleBarChartProps {
   layout?: "horizontal" | "vertical";
 }
 
+// Matches the app's own tokens (src/app/globals.css --ink/--panel) — this
+// chart predates the cyberpunk reskin and was never updated, which is why
+// it still looked like the old comic theme regardless of the bar color.
 const CHART_COLORS = {
-  light: { grid: "#e1e0d9", axis: "#14121a", mutedTick: "#52514e", tick: "#14121a", panel: "#ffffff", cursor: "rgba(20,18,26,0.06)" },
-  dark: { grid: "#3a3550", axis: "#f4efe3", mutedTick: "#c9c3d6", tick: "#f4efe3", panel: "#272334", cursor: "rgba(244,239,227,0.08)" },
+  light: { grid: "#ddd2bd", axis: "#1a130a", mutedTick: "#6b5f4a", tick: "#1a130a", panel: "#f3efe5", cursor: "rgba(26,19,10,0.06)" },
+  dark: { grid: "#2e2210", axis: "#f5f1e6", mutedTick: "#c4b8a0", tick: "#f5f1e6", panel: "#201709", cursor: "rgba(245,241,230,0.08)" },
 };
 
 export default function SimpleBarChart({
