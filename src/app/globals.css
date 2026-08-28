@@ -83,6 +83,20 @@ html {
   overflow-x: hidden;
 }
 
+.ambient-bg-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.ambient-trail-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  pointer-events: none;
+}
+
 body {
   overflow-x: hidden;
   background-color: var(--color-paper);
@@ -113,24 +127,26 @@ h3 {
   /* HUD-style panel: dark fill, thin accent-tinted border, soft ambient glow
      instead of the old thick offset drop-shadow. */
   .comic-panel {
-    background: var(--color-panel);
+    background: linear-gradient(165deg, color-mix(in srgb, var(--color-panel) 100%, white 4%), var(--color-panel) 55%);
     border: 1px solid var(--line);
     border-radius: 0.5rem;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 2px 6px rgba(0, 0, 0, 0.4),
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 2px 6px rgba(0, 0, 0, 0.4),
       0 0 22px -9px var(--color-comic-orange);
     transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
   }
 
   .comic-panel-sm {
-    background: var(--color-panel);
+    background: linear-gradient(165deg, color-mix(in srgb, var(--color-panel) 100%, white 4%), var(--color-panel) 55%);
     border: 1px solid var(--line);
     border-radius: 0.375rem;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 1px 2px rgba(0, 0, 0, 0.3);
     transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
   }
 
-  /* Buttons: thin border, techy uppercase label, glow on hover, scale-press on click */
+  /* Buttons: thin border, techy uppercase label, sheen sweep + lift on hover,
+     scale-press on click — the "modern interactive" pass. */
   .comic-btn {
+    position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -143,23 +159,54 @@ h3 {
     letter-spacing: 0.04em;
     color: var(--color-ink);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-    transition: transform 0.08s ease, box-shadow 0.15s ease, border-color 0.15s ease,
+    overflow: hidden;
+    transition: transform 0.12s ease, box-shadow 0.15s ease, border-color 0.15s ease,
       background-color 0.15s ease, color 0.15s ease;
     cursor: pointer;
+  }
+
+  .comic-btn::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      115deg,
+      transparent 40%,
+      color-mix(in srgb, var(--color-comic-orange) 45%, transparent) 50%,
+      transparent 60%
+    );
+    transform: translateX(-120%);
+    transition: transform 0.5s ease;
+    pointer-events: none;
   }
 
   .comic-btn:hover {
     border-color: var(--color-comic-orange);
     box-shadow: 0 0 16px -6px var(--color-comic-orange);
+    transform: translateY(-1px);
+  }
+
+  .comic-btn:hover::before {
+    transform: translateX(120%);
   }
 
   .comic-btn:active {
-    transform: scale(0.97);
+    transform: scale(0.97) translateY(0);
+  }
+
+  .comic-btn:focus-visible {
+    outline: 2px solid var(--color-comic-orange);
+    outline-offset: 2px;
   }
 
   .comic-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+    transform: none;
+  }
+
+  .comic-btn:disabled::before {
+    display: none;
   }
 
   /* Form controls: thin border, no default browser chrome, orange focus glow */
@@ -202,12 +249,22 @@ h3 {
 
   /* Nav brand mark: a solid 3D "K", tilting gently in real CSS 3D. Deliberately
      hardcoded to Arial Black rather than the heading font — a stylized display
-     face at this size reads ambiguously as a letter. */
+     face at this size reads ambiguously as a letter.
+
+     The badge is a FIXED dark tile, independent of --panel/--paper — an
+     orange glow reads as a glow on dark and as a dirty smudge on a light
+     page background, so the mark carries its own permanent dark backdrop
+     rather than depending on the page theme to look right. */
   .k-mark-stage {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     perspective: 400px;
+    padding: 0.3em 0.42em;
+    border-radius: 0.5rem;
+    background: linear-gradient(155deg, #1c1108, #0a0603);
+    border: 1px solid rgba(255, 150, 60, 0.4);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 0 16px -4px rgba(255, 122, 26, 0.7);
   }
 
   .k-mark {
@@ -215,10 +272,8 @@ h3 {
     font-family: "Arial Black", Arial, sans-serif;
     font-weight: 900;
     line-height: 1;
-    color: var(--color-comic-orange);
-    text-shadow: 1px 1px 0 color-mix(in srgb, var(--color-comic-orange) 65%, black),
-      2px 2px 0 color-mix(in srgb, var(--color-comic-orange) 40%, black),
-      3px 3px 5px rgba(0, 0, 0, 0.5);
+    color: #ff9142;
+    text-shadow: 1px 1px 0 #b3450a, 2px 2px 0 #7a2e06, 0 0 10px rgba(255, 145, 66, 0.8);
     animation: k-tilt 6s ease-in-out infinite;
   }
 
@@ -245,7 +300,7 @@ h3 {
 
   .rail-panel-label {
     font-family: var(--font-comic-mono), monospace;
-    font-size: 0.65rem;
+    font-size: 0.72rem;
     letter-spacing: 0.18em;
     text-transform: uppercase;
     color: var(--color-comic-orange);
@@ -255,7 +310,7 @@ h3 {
   .rail-panel-hint {
     text-align: center;
     font-family: var(--font-comic-mono), monospace;
-    font-size: 0.65rem;
+    font-size: 0.7rem;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--color-ink);
@@ -310,7 +365,7 @@ h3 {
   }
 
   .widget-quote-text {
-    font-size: 0.85rem;
+    font-size: 0.92rem;
     line-height: 1.5;
     font-style: italic;
     color: var(--color-ink);
@@ -319,21 +374,21 @@ h3 {
   }
 
   .widget-joke-setup {
-    font-size: 0.85rem;
+    font-size: 0.92rem;
     line-height: 1.45;
     font-weight: 600;
     color: var(--color-ink);
   }
 
   .widget-joke-punchline {
-    font-size: 0.85rem;
+    font-size: 0.92rem;
     line-height: 1.45;
     color: var(--color-comic-orange);
     font-weight: 700;
   }
 
   .widget-puzzle-intro {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     color: var(--color-ink);
     opacity: 0.8;
   }
@@ -346,7 +401,7 @@ h3 {
   .widget-puzzle-input {
     width: 4.5rem;
     padding: 0.3rem 0.5rem;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     text-align: center;
   }
 
@@ -355,7 +410,7 @@ h3 {
     flex-direction: column;
     gap: 0.15rem;
     font-family: var(--font-comic-mono), monospace;
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     color: var(--color-ink);
     opacity: 0.65;
     max-height: 6rem;
@@ -363,7 +418,7 @@ h3 {
   }
 
   .widget-puzzle-result {
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     font-weight: 700;
   }
 
@@ -389,10 +444,22 @@ h3 {
 
   .mobile-strip-k {
     flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.15em 0.32em;
+    border-radius: 0.35rem;
+    background: linear-gradient(155deg, #1c1108, #0a0603);
+    border: 1px solid rgba(255, 150, 60, 0.4);
+  }
+
+  .mobile-strip-k span {
     font-family: "Arial Black", Arial, sans-serif;
     font-weight: 900;
-    font-size: 1.1rem;
-    color: var(--color-comic-orange);
+    font-size: 0.9rem;
+    line-height: 1;
+    color: #ff9142;
+    text-shadow: 1px 1px 0 #b3450a, 0 0 8px rgba(255, 145, 66, 0.8);
     animation: k-tilt 6s ease-in-out infinite;
     display: inline-block;
   }
@@ -400,7 +467,7 @@ h3 {
   .mobile-strip-text {
     flex: 1 1 auto;
     min-width: 0;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     font-style: italic;
     color: var(--color-ink);
     opacity: 0.85;

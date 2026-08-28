@@ -6,6 +6,7 @@ import NavBar from "@/components/NavBar";
 import LeftRail from "@/components/rails/LeftRail";
 import RightRail from "@/components/rails/RightRail";
 import MobileStrip from "@/components/rails/MobileStrip";
+import AmbientEffects from "@/components/effects/AmbientEffects";
 
 // Variable names kept as --font-comic-heading/--font-comic-body (rather than
 // renamed) so every page's existing font-heading/font-sans utility classes
@@ -58,6 +59,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <Script id="theme-init" strategy="beforeInteractive">
           {THEME_INIT_SCRIPT}
         </Script>
+        <AmbientEffects />
         <NavBar />
         <MobileStrip />
         <div className="mx-auto w-full min-w-0 max-w-[1720px] flex-1 px-4 py-6">

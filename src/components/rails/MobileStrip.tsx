@@ -23,7 +23,9 @@ export default function MobileStrip() {
 
   return (
     <div className="mobile-strip lg:hidden">
-      <span className="mobile-strip-k">K</span>
+      <span className="mobile-strip-k">
+        <span>K</span>
+      </span>
       <p className="mobile-strip-text" style={{ opacity: visible ? 1 : 0 }}>
         {QUOTES[index]}
       </p>

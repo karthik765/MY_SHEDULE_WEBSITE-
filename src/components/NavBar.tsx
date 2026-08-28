@@ -140,12 +140,8 @@ export default function NavBar() {
       <div className="mx-auto min-w-0 max-w-[1720px] px-4 py-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           <Link href="/" className="flex items-center gap-3">
-            <span
-              className="k-mark-stage"
-              aria-hidden="true"
-              style={{ filter: "drop-shadow(0 0 14px color-mix(in srgb, var(--comic-orange) 55%, transparent))" }}
-            >
-              <span className="k-mark" style={{ fontSize: "clamp(24px, 6vw, 38px)" }}>
+            <span className="k-mark-stage" aria-hidden="true">
+              <span className="k-mark" style={{ fontSize: "clamp(22px, 5.5vw, 34px)" }}>
                 K
               </span>
             </span>
