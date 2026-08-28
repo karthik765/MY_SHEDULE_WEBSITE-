@@ -29,10 +29,12 @@
   :root:not([data-theme="light"]) {
     color-scheme: dark;
     --ink: #f5f1e6;
-    --paper: #0a0705;
-    --panel: #15100a;
-    --line: rgba(255, 122, 26, 0.22);
-    --halftone-dot: rgba(255, 122, 26, 0.05);
+    --paper: #060402;
+    /* Meaningfully lighter than --paper (was nearly the same value, which is
+       why panels used to disappear into the background). */
+    --panel: #201709;
+    --line: rgba(255, 150, 60, 0.32);
+    --halftone-dot: rgba(255, 122, 26, 0.07);
     --comic-red: #ff4d4d;
     --comic-blue: #2e9bff;
     --comic-yellow: #ffc24d;
@@ -47,10 +49,10 @@
 :root[data-theme="dark"] {
   color-scheme: dark;
   --ink: #f5f1e6;
-  --paper: #0a0705;
-  --panel: #15100a;
-  --line: rgba(255, 122, 26, 0.22);
-  --halftone-dot: rgba(255, 122, 26, 0.05);
+  --paper: #060402;
+  --panel: #201709;
+  --line: rgba(255, 150, 60, 0.32);
+  --halftone-dot: rgba(255, 122, 26, 0.07);
   --comic-red: #ff4d4d;
   --comic-blue: #2e9bff;
   --comic-yellow: #ffc24d;
@@ -77,17 +79,22 @@
   --font-mono: var(--font-comic-mono);
 }
 
+html {
+  overflow-x: hidden;
+}
+
 body {
+  overflow-x: hidden;
   background-color: var(--color-paper);
   color: var(--color-ink);
   font-family: var(--font-comic-body), Arial, Helvetica, sans-serif;
-  background-image: repeating-linear-gradient(
-    0deg,
-    var(--halftone-dot) 0px,
-    var(--halftone-dot) 1px,
-    transparent 1px,
-    transparent 3px
-  );
+  background-image: radial-gradient(
+      ellipse 1200px 700px at 50% -10%,
+      color-mix(in srgb, var(--color-comic-orange) 10%, transparent),
+      transparent 60%
+    ),
+    repeating-linear-gradient(0deg, var(--halftone-dot) 0px, var(--halftone-dot) 1px, transparent 1px, transparent 3px);
+  background-attachment: fixed;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 
@@ -109,7 +116,8 @@ h3 {
     background: var(--color-panel);
     border: 1px solid var(--line);
     border-radius: 0.5rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35), 0 0 18px -10px var(--color-comic-orange);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 2px 6px rgba(0, 0, 0, 0.4),
+      0 0 22px -9px var(--color-comic-orange);
     transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
   }
 
@@ -219,6 +227,187 @@ h3 {
       animation: none;
       transform: rotateY(-10deg);
     }
+  }
+
+  /* ---- Side rails + widgets ------------------------------------------ */
+
+  .rail-panel {
+    background: var(--color-panel);
+    border: 1px solid var(--line);
+    border-radius: 0.5rem;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 2px 6px rgba(0, 0, 0, 0.4),
+      0 0 22px -9px var(--color-comic-orange);
+    padding: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .rail-panel-label {
+    font-family: var(--font-comic-mono), monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-comic-orange);
+    opacity: 0.85;
+  }
+
+  .rail-panel-hint {
+    text-align: center;
+    font-family: var(--font-comic-mono), monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-ink);
+    opacity: 0.45;
+  }
+
+  .k-scene-panel {
+    position: sticky;
+    top: 5.5rem;
+  }
+
+  .k-scene-stage {
+    height: 260px;
+    border-radius: 0.375rem;
+    overflow: hidden;
+    background: radial-gradient(
+      circle at 50% 45%,
+      color-mix(in srgb, var(--color-comic-orange) 12%, transparent),
+      transparent 70%
+    );
+    cursor: grab;
+  }
+
+  .k-scene-stage:active {
+    cursor: grabbing;
+  }
+
+  .k-scene-loading {
+    height: 260px;
+    border-radius: 0.375rem;
+    background: linear-gradient(
+      100deg,
+      transparent 30%,
+      color-mix(in srgb, var(--color-comic-orange) 14%, transparent) 50%,
+      transparent 70%
+    );
+    background-size: 200% 100%;
+    animation: k-scene-shimmer 1.6s ease-in-out infinite;
+  }
+
+  @keyframes k-scene-shimmer {
+    0% {
+      background-position: 120% 0;
+    }
+    100% {
+      background-position: -20% 0;
+    }
+  }
+
+  .widget-panel {
+    position: relative;
+  }
+
+  .widget-quote-text {
+    font-size: 0.85rem;
+    line-height: 1.5;
+    font-style: italic;
+    color: var(--color-ink);
+    transition: opacity 0.22s ease, transform 0.22s ease;
+    min-height: 4.5em;
+  }
+
+  .widget-joke-setup {
+    font-size: 0.85rem;
+    line-height: 1.45;
+    font-weight: 600;
+    color: var(--color-ink);
+  }
+
+  .widget-joke-punchline {
+    font-size: 0.85rem;
+    line-height: 1.45;
+    color: var(--color-comic-orange);
+    font-weight: 700;
+  }
+
+  .widget-puzzle-intro {
+    font-size: 0.8rem;
+    color: var(--color-ink);
+    opacity: 0.8;
+  }
+
+  .widget-puzzle-form {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .widget-puzzle-input {
+    width: 4.5rem;
+    padding: 0.3rem 0.5rem;
+    font-size: 0.85rem;
+    text-align: center;
+  }
+
+  .widget-puzzle-history {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    font-family: var(--font-comic-mono), monospace;
+    font-size: 0.7rem;
+    color: var(--color-ink);
+    opacity: 0.65;
+    max-height: 6rem;
+    overflow-y: auto;
+  }
+
+  .widget-puzzle-result {
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+
+  .widget-puzzle-result.won {
+    color: var(--color-comic-green);
+  }
+
+  .widget-puzzle-result.lost {
+    color: var(--color-comic-red);
+  }
+
+  /* ---- Mobile-only motion strip (rails are lg+ only) ------------------ */
+
+  .mobile-strip {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid var(--line);
+    background: var(--color-panel);
+    overflow: hidden;
+  }
+
+  .mobile-strip-k {
+    flex-shrink: 0;
+    font-family: "Arial Black", Arial, sans-serif;
+    font-weight: 900;
+    font-size: 1.1rem;
+    color: var(--color-comic-orange);
+    animation: k-tilt 6s ease-in-out infinite;
+    display: inline-block;
+  }
+
+  .mobile-strip-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 0.75rem;
+    font-style: italic;
+    color: var(--color-ink);
+    opacity: 0.85;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: opacity 0.22s ease;
   }
 }
 

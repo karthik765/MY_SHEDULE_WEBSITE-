@@ -136,18 +136,22 @@ export default function NavBar() {
   }
 
   return (
-    <nav className="border-b-4 border-ink bg-panel">
-      <div className="mx-auto max-w-5xl px-4 py-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="k-mark-stage" aria-hidden="true">
-              <span className="k-mark" style={{ fontSize: "26px" }}>
+    <nav className="min-w-0 border-b-4 border-ink bg-panel">
+      <div className="mx-auto min-w-0 max-w-[1720px] px-4 py-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+          <Link href="/" className="flex items-center gap-3">
+            <span
+              className="k-mark-stage"
+              aria-hidden="true"
+              style={{ filter: "drop-shadow(0 0 14px color-mix(in srgb, var(--comic-orange) 55%, transparent))" }}
+            >
+              <span className="k-mark" style={{ fontSize: "clamp(24px, 6vw, 38px)" }}>
                 K
               </span>
             </span>
             <span
-              className="font-heading text-xl tracking-wide text-comic-orange"
-              style={{ WebkitTextStroke: "1px var(--ink)" }}
+              className="font-heading tracking-wide text-comic-orange"
+              style={{ WebkitTextStroke: "1px var(--ink)", fontSize: "clamp(1.1rem, 4vw, 1.875rem)" }}
             >
               KARTHIK
             </span>
@@ -204,7 +208,7 @@ export default function NavBar() {
       </div>
 
       {toast && (
-        <div className="comic-panel fixed bottom-4 right-4 z-50 max-w-[280px] bg-comic-yellow p-3 text-chip-ink">
+        <div className="comic-panel fixed bottom-4 right-4 left-4 z-50 max-w-[280px] sm:left-auto bg-comic-yellow p-3 text-chip-ink">
           <p className="font-heading text-sm tracking-wide">🏆 Trophy Unlocked!</p>
           <ul className="mt-1 space-y-0.5">
             {toast.map((a) => (
@@ -217,7 +221,7 @@ export default function NavBar() {
       )}
 
       {!unlockNoticeDismissed && unlockItems.length > 0 && (
-        <div className="comic-panel fixed top-20 right-4 z-50 max-w-[300px] bg-comic-blue p-3 text-chip-ink">
+        <div className="comic-panel fixed top-20 right-4 left-4 z-50 max-w-[300px] sm:left-auto bg-comic-blue p-3 text-chip-ink">
           <p className="font-heading text-sm tracking-wide">🆕 New This Week</p>
           <ul className="mt-1 space-y-0.5">
             {unlockItems.map((item) => (

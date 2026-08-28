@@ -698,17 +698,17 @@ export default function FocusPage() {
           </div>
         </div>
         <div className="grid grid-cols-3 divide-x-2 divide-ink/10 text-center">
-          <div className="px-2">
+          <div className="min-w-0 px-1 sm:px-2">
             <p className="text-xs font-bold uppercase tracking-wide text-ink/40">Today</p>
-            <p className="font-heading mt-1 text-3xl tracking-wide text-ink">{formatByUnit(todayMinutes, unit)}</p>
+            <p className="font-heading mt-1 truncate text-xl tracking-wide text-ink sm:text-3xl">{formatByUnit(todayMinutes, unit)}</p>
           </div>
-          <div className="px-2">
+          <div className="min-w-0 px-1 sm:px-2">
             <p className="text-xs font-bold uppercase tracking-wide text-ink/40">This Week</p>
-            <p className="font-heading mt-1 text-3xl tracking-wide text-ink">{formatByUnit(weeklyLiveMinutes, unit)}</p>
+            <p className="font-heading mt-1 truncate text-xl tracking-wide text-ink sm:text-3xl">{formatByUnit(weeklyLiveMinutes, unit)}</p>
           </div>
-          <div className="px-2">
+          <div className="min-w-0 px-1 sm:px-2">
             <p className="text-xs font-bold uppercase tracking-wide text-ink/40">Daily Avg</p>
-            <p className="font-heading mt-1 text-3xl tracking-wide text-ink">{formatByUnit(dailyAverageMinutes, unit)}</p>
+            <p className="font-heading mt-1 truncate text-xl tracking-wide text-ink sm:text-3xl">{formatByUnit(dailyAverageMinutes, unit)}</p>
           </div>
         </div>
       </div>
