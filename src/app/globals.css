@@ -14,14 +14,17 @@
   --line: rgba(255, 122, 26, 0.35);
   /* Faint scan-line tint for the body background and .comic-halftone. */
   --halftone-dot: rgba(26, 19, 10, 0.06);
-  --comic-red: #e63946;
-  --comic-blue: #1d75fb;
-  --comic-yellow: #e8a93d;
-  --comic-green: #1fae5c;
-  --comic-purple: #8b3fe0;
   --comic-orange: #ff7a1a;
-  /* Was pink — repurposed as an electric teal, no magenta anywhere in the palette. */
-  --comic-pink: #17a398;
+  /* Orange-only palette: every other accent name still exists (so every
+     className referencing it keeps working, across every page and every
+     minigame) but now resolves to orange too — nothing but orange, black,
+     and white anywhere in the app. */
+  --comic-red: var(--comic-orange);
+  --comic-blue: var(--comic-orange);
+  --comic-yellow: var(--comic-orange);
+  --comic-green: var(--comic-orange);
+  --comic-purple: var(--comic-orange);
+  --comic-pink: var(--comic-orange);
 }
 
 /* System dark preference, unless the user has explicitly picked light via the toggle */
@@ -35,13 +38,13 @@
     --panel: #201709;
     --line: rgba(255, 150, 60, 0.32);
     --halftone-dot: rgba(255, 122, 26, 0.07);
-    --comic-red: #ff4d4d;
-    --comic-blue: #2e9bff;
-    --comic-yellow: #ffc24d;
-    --comic-green: #39ff6a;
-    --comic-purple: #b14eff;
     --comic-orange: #ff7a1a;
-    --comic-pink: #2ee6d6;
+    --comic-red: var(--comic-orange);
+    --comic-blue: var(--comic-orange);
+    --comic-yellow: var(--comic-orange);
+    --comic-green: var(--comic-orange);
+    --comic-purple: var(--comic-orange);
+    --comic-pink: var(--comic-orange);
   }
 }
 
@@ -53,13 +56,13 @@
   --panel: #201709;
   --line: rgba(255, 150, 60, 0.32);
   --halftone-dot: rgba(255, 122, 26, 0.07);
-  --comic-red: #ff4d4d;
-  --comic-blue: #2e9bff;
-  --comic-yellow: #ffc24d;
-  --comic-green: #39ff6a;
-  --comic-purple: #b14eff;
   --comic-orange: #ff7a1a;
-  --comic-pink: #2ee6d6;
+  --comic-red: var(--comic-orange);
+  --comic-blue: var(--comic-orange);
+  --comic-yellow: var(--comic-orange);
+  --comic-green: var(--comic-orange);
+  --comic-purple: var(--comic-orange);
+  --comic-pink: var(--comic-orange);
 }
 
 @theme inline {
@@ -87,13 +90,6 @@ html {
   position: fixed;
   inset: 0;
   z-index: -1;
-  pointer-events: none;
-}
-
-.ambient-trail-canvas {
-  position: fixed;
-  inset: 0;
-  z-index: 200;
   pointer-events: none;
 }
 

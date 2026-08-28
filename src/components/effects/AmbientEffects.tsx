@@ -2,15 +2,14 @@
 
 import { useEffect, useRef } from "react";
 
-// Two canvases, one RAF loop, both plain 2D (no WebGL — this runs on every
-// page, so it has to be cheap):
-//  - a backdrop with SEVERAL distinct ambient motions layered together
-//    (rising embers, falling ash, stationary twinkles, and periodic
-//    expanding pulse-ring "shockwaves") — fixed, behind content, sparse —
-//    "not the complete background", just atmosphere in the gaps
-//  - a mouse-move ember trail — fixed, above content, pointer-events:none
-// Both read the page's own --comic-orange/--comic-yellow tokens so they
-// stay on-theme in light or dark mode without duplicating color logic.
+// One canvas, one RAF loop, plain 2D (no WebGL — this runs on every page, so
+// it has to be cheap): a backdrop with SEVERAL distinct ambient motions
+// layered together (rising embers, falling ash, stationary twinkles, and
+// periodic expanding pulse-ring "shockwaves") — fixed, behind content,
+// sparse — "not the complete background", just atmosphere in the gaps.
+// No mouse-following effect — the cursor stays a plain, normal cursor.
+// Reads the page's own --comic-orange/--comic-yellow tokens, which are now
+// both orange, so this is orange-only too without any special-casing.
 
 interface Particle {
   x: number;
@@ -42,18 +41,15 @@ function pick<T>(a: T, b: T): T {
 
 export default function AmbientEffects() {
   const bgRef = useRef<HTMLCanvasElement>(null);
-  const trailRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduceMotion) return;
 
     const bgCanvas = bgRef.current;
-    const trailCanvas = trailRef.current;
-    if (!bgCanvas || !trailCanvas) return;
+    if (!bgCanvas) return;
     const bgCtx = bgCanvas.getContext("2d");
-    const trailCtx = trailCanvas.getContext("2d");
-    if (!bgCtx || !trailCtx) return;
+    if (!bgCtx) return;
 
     let width = window.innerWidth;
     let height = window.innerHeight;
@@ -62,15 +58,11 @@ export default function AmbientEffects() {
     function resize() {
       width = window.innerWidth;
       height = window.innerHeight;
-      for (const c of [bgCanvas, trailCanvas]) {
-        if (!c) continue;
-        c.width = width * dpr;
-        c.height = height * dpr;
-        c.style.width = `${width}px`;
-        c.style.height = `${height}px`;
-        const ctx = c.getContext("2d");
-        ctx?.setTransform(dpr, 0, 0, dpr, 0, 0);
-      }
+      bgCanvas!.width = width * dpr;
+      bgCanvas!.height = height * dpr;
+      bgCanvas!.style.width = `${width}px`;
+      bgCanvas!.style.height = `${height}px`;
+      bgCtx!.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
     resize();
     window.addEventListener("resize", resize);
@@ -128,30 +120,6 @@ export default function AmbientEffects() {
     // ---- layer 4: periodic expanding pulse rings — the "shockwave" beat ----
     const pulses: Pulse[] = [];
     let nextPulseAt = performance.now() + 400 + Math.random() * 800;
-
-    // ---- cursor trail: short-lived sparks spawned on mousemove ----
-    const trail: Particle[] = [];
-    let lastSpawn = 0;
-
-    function onPointerMove(e: PointerEvent) {
-      const now = performance.now();
-      if (now - lastSpawn < 10) return; // throttle spawn rate
-      lastSpawn = now;
-      for (let i = 0; i < 6; i++) {
-        trail.push({
-          x: e.clientX + (Math.random() - 0.5) * 6,
-          y: e.clientY + (Math.random() - 0.5) * 6,
-          vx: (Math.random() - 0.5) * 0.6,
-          vy: -0.3 - Math.random() * 0.5,
-          life: 0,
-          maxLife: 34 + Math.random() * 20,
-          size: 1.2 + Math.random() * 1.8,
-          hue: pick("orange", "amber"),
-        });
-      }
-      if (trail.length > 500) trail.splice(0, trail.length - 500);
-    }
-    window.addEventListener("pointermove", onPointerMove, { passive: true });
 
     let rafId: number;
     function frame() {
@@ -236,28 +204,6 @@ export default function AmbientEffects() {
 
       bgCtx!.globalAlpha = 1;
 
-      // Trail layer
-      trailCtx!.clearRect(0, 0, width, height);
-      for (let i = trail.length - 1; i >= 0; i--) {
-        const p = trail[i];
-        p.life++;
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vy -= 0.006; // slight upward accel, like rising heat
-        const t = p.life / p.maxLife;
-        if (t >= 1) {
-          trail.splice(i, 1);
-          continue;
-        }
-        const alpha = 1 - t;
-        trailCtx!.beginPath();
-        trailCtx!.fillStyle = colorFor(p.hue);
-        trailCtx!.globalAlpha = alpha * 0.85;
-        trailCtx!.arc(p.x, p.y, p.size * (1 - t * 0.4), 0, Math.PI * 2);
-        trailCtx!.fill();
-      }
-      trailCtx!.globalAlpha = 1;
-
       rafId = requestAnimationFrame(frame);
     }
     rafId = requestAnimationFrame(frame);
@@ -265,14 +211,8 @@ export default function AmbientEffects() {
     return () => {
       cancelAnimationFrame(rafId);
       window.removeEventListener("resize", resize);
-      window.removeEventListener("pointermove", onPointerMove);
     };
   }, []);
 
-  return (
-    <>
-      <canvas ref={bgRef} className="ambient-bg-canvas" aria-hidden="true" />
-      <canvas ref={trailRef} className="ambient-trail-canvas" aria-hidden="true" />
-    </>
-  );
+  return <canvas ref={bgRef} className="ambient-bg-canvas" aria-hidden="true" />;
 }
