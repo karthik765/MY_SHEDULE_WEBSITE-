@@ -210,16 +210,20 @@ h3 {
   }
 
   /* Form controls: thin border, no default browser chrome, orange focus glow.
-     color-scheme inherits from :root (set per-theme above), which is what
-     tells the browser to render NATIVE popups — a <select>'s dropdown list,
-     a <input type="date">'s calendar/picker — in a dark palette; without
-     that, those popups can default to the OS's light theme regardless of
-     the page's own colors, reading as invisible dark text on a white popup. */
+     appearance:none is the actual fix — <select> and <input type="date"/
+     "time"> otherwise keep their own OS-native chrome (a plain white box)
+     UNDERNEATH whatever background/color CSS sets, since those properties
+     only paint around the native widget, not through it. That native box is
+     what was reading as "black text I can't see" — dark text rendered by
+     the OS on its own default light widget, sitting inside our dark page. */
   .comic-input {
+    appearance: none;
+    -webkit-appearance: none;
     border: 1.5px solid var(--line);
     border-radius: 0.375rem;
     background: var(--color-panel);
     color: var(--color-ink);
+    color-scheme: inherit;
     outline: none;
     transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease,
       box-shadow 0.15s ease;
@@ -237,6 +241,32 @@ h3 {
   .comic-input option {
     background: var(--color-panel);
     color: var(--color-ink);
+  }
+
+  /* appearance:none drops the native dropdown arrow — redraw a minimal one
+     so a <select> still reads as a dropdown. */
+  select.comic-input {
+    padding-right: 1.75rem;
+    background-image: linear-gradient(45deg, transparent 50%, var(--color-ink) 52%),
+      linear-gradient(135deg, var(--color-ink) 48%, transparent 50%);
+    background-position: calc(100% - 16px) center, calc(100% - 11px) center;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+  }
+
+  /* appearance:none also drops the calendar/clock picker icon on date/time
+     inputs in most browsers, but where it survives (the indicator is a
+     separate pseudo-element some engines still render) it defaults to a
+     dark glyph — invert it in dark mode so it stays visible against our
+     dark input background instead of turning invisible-on-dark itself. */
+  :root[data-theme="dark"] .comic-input::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(1.3);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .comic-input::-webkit-calendar-picker-indicator {
+      filter: invert(1) brightness(1.3);
+    }
   }
 
   input[type="checkbox"],

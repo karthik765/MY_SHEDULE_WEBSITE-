@@ -80,7 +80,7 @@ export default function AmbientEffects() {
     const colorFor = (h: "orange" | "amber") => (h === "orange" ? orange : amber);
 
     // ---- layer 1: embers rising from below ----
-    const RISERS = 20;
+    const RISERS = 200;
     function spawnRiser(w: number, h: number): Particle {
       return {
         x: Math.random() * w,
@@ -96,7 +96,7 @@ export default function AmbientEffects() {
     const risers: Particle[] = Array.from({ length: RISERS }, () => spawnRiser(width, height));
 
     // ---- layer 2: fine ash drifting down from above, opposite motion ----
-    const FALLERS = 16;
+    const FALLERS = 160;
     function spawnFaller(w: number): Particle {
       return {
         x: Math.random() * w,
@@ -112,7 +112,7 @@ export default function AmbientEffects() {
     const fallers: Particle[] = Array.from({ length: FALLERS }, () => spawnFaller(width));
 
     // ---- layer 3: stationary twinkles, fade in/out in place ----
-    const TWINKLES = 22;
+    const TWINKLES = 220;
     function spawnTwinkle(w: number, h: number) {
       return {
         x: Math.random() * w,
@@ -127,7 +127,7 @@ export default function AmbientEffects() {
 
     // ---- layer 4: periodic expanding pulse rings — the "shockwave" beat ----
     const pulses: Pulse[] = [];
-    let nextPulseAt = performance.now() + 2000 + Math.random() * 3000;
+    let nextPulseAt = performance.now() + 400 + Math.random() * 800;
 
     // ---- cursor trail: short-lived sparks spawned on mousemove ----
     const trail: Particle[] = [];
@@ -135,9 +135,9 @@ export default function AmbientEffects() {
 
     function onPointerMove(e: PointerEvent) {
       const now = performance.now();
-      if (now - lastSpawn < 26) return; // throttle spawn rate
+      if (now - lastSpawn < 10) return; // throttle spawn rate
       lastSpawn = now;
-      for (let i = 0; i < 2; i++) {
+      for (let i = 0; i < 6; i++) {
         trail.push({
           x: e.clientX + (Math.random() - 0.5) * 6,
           y: e.clientY + (Math.random() - 0.5) * 6,
@@ -149,7 +149,7 @@ export default function AmbientEffects() {
           hue: pick("orange", "amber"),
         });
       }
-      if (trail.length > 160) trail.splice(0, trail.length - 160);
+      if (trail.length > 500) trail.splice(0, trail.length - 500);
     }
     window.addEventListener("pointermove", onPointerMove, { passive: true });
 
@@ -215,7 +215,7 @@ export default function AmbientEffects() {
           maxLife: 90,
           maxRadius: 70 + Math.random() * 60,
         });
-        nextPulseAt = now + 4000 + Math.random() * 5000;
+        nextPulseAt = now + 800 + Math.random() * 1200;
       }
       for (let i = pulses.length - 1; i >= 0; i--) {
         const pu = pulses[i];
