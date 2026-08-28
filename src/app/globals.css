@@ -86,6 +86,18 @@ html {
   overflow-x: hidden;
 }
 
+/* Site-wide page-size modes (ZoomControl, top-right on every page). `zoom`
+   scales layout, text, spacing, and images together — the WebGL/canvas
+   effects just get compositing-scaled along with everything else, so
+   "everything minimized/maximized" holds for the whole page, not just text. */
+html[data-zoom="minimize"] {
+  zoom: 0.82;
+}
+
+html[data-zoom="maximize"] {
+  zoom: 1.18;
+}
+
 .ambient-bg-canvas {
   position: fixed;
   inset: 0;

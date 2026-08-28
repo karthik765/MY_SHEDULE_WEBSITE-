@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import ThemeToggle from "./ThemeToggle";
+import ZoomControl from "./ZoomControl";
 import { getAudioContext, playChime } from "@/lib/sound";
 import { MINIGAMES, PUZZLES, RIDDLES, IQ_GAMES, QMASTER_GAMES, currentContentWeek, weekUnlockDate, type GameDef } from "@/lib/games";
 
@@ -172,6 +173,7 @@ export default function NavBar() {
                 🏆 {trophies.bronze + trophies.silver + trophies.gold} Trophies
               </Link>
             )}
+            <ZoomControl />
             <ThemeToggle />
             <button
               onClick={handleLogout}

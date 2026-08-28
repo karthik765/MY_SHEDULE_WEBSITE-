@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Orbitron, Rajdhani, Share_Tech_Mono } from "next/font/google";
+import { Chakra_Petch, Rajdhani, Share_Tech_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import NavBar from "@/components/NavBar";
@@ -11,8 +11,13 @@ import AmbientEffects from "@/components/effects/AmbientEffects";
 // Variable names kept as --font-comic-heading/--font-comic-body (rather than
 // renamed) so every page's existing font-heading/font-sans utility classes
 // keep working unchanged — only the actual typefaces changed here.
-const comicHeading = Orbitron({
-  weight: ["700", "800", "900"],
+// Was Orbitron — its very rounded, spaced-out letterforms read as an odd
+// mismatch against the rest of the site (most visible on "KARTHIK"). Chakra
+// Petch is the same angular/technical territory but reads as plain, legible
+// letters at a glance, everywhere this font is used (every heading + the
+// nav wordmark).
+const comicHeading = Chakra_Petch({
+  weight: ["600", "700"],
   variable: "--font-comic-heading",
   subsets: ["latin"],
 });
@@ -41,6 +46,10 @@ const THEME_INIT_SCRIPT = `
     if (stored === "light" || stored === "dark") {
       document.documentElement.dataset.theme = stored;
     }
+    var zoom = localStorage.getItem("zoom-mode");
+    if (zoom === "minimize" || zoom === "maximize") {
+      document.documentElement.dataset.zoom = zoom;
+    }
   } catch (e) {}
 })();
 `;
@@ -49,8 +58,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      // The theme-init script below sets data-theme on this element before React
-      // hydrates, based on localStorage — an intentional, controlled mismatch.
+      // The init script below sets data-theme/data-zoom on this element
+      // before React hydrates, based on localStorage — an intentional,
+      // controlled mismatch.
       suppressHydrationWarning
       className={`${comicHeading.variable} ${comicBody.variable} ${comicMono.variable} h-full antialiased`}
     >
