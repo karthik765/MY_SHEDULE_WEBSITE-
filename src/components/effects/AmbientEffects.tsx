@@ -2,11 +2,13 @@
 
 import { useEffect, useRef } from "react";
 
-// Two lightweight canvases, one RAF loop each, both plain 2D canvas (no
-// WebGL — this runs on every page, so it has to be cheap):
-//  - a sparse drifting-ember backdrop (fixed, behind content, low density —
-//    "not the complete background", just atmosphere in the gaps)
-//  - a mouse-move ember trail (fixed, above content, pointer-events:none)
+// Two canvases, one RAF loop, both plain 2D (no WebGL — this runs on every
+// page, so it has to be cheap):
+//  - a backdrop with SEVERAL distinct ambient motions layered together
+//    (rising embers, falling ash, stationary twinkles, and periodic
+//    expanding pulse-ring "shockwaves") — fixed, behind content, sparse —
+//    "not the complete background", just atmosphere in the gaps
+//  - a mouse-move ember trail — fixed, above content, pointer-events:none
 // Both read the page's own --comic-orange/--comic-yellow tokens so they
 // stay on-theme in light or dark mode without duplicating color logic.
 
@@ -21,9 +23,21 @@ interface Particle {
   hue: "orange" | "amber";
 }
 
+interface Pulse {
+  x: number;
+  y: number;
+  life: number;
+  maxLife: number;
+  maxRadius: number;
+}
+
 function readAccent(name: string): string {
   if (typeof window === "undefined") return "#ff7a1a";
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || "#ff7a1a";
+}
+
+function pick<T>(a: T, b: T): T {
+  return Math.random() > 0.5 ? a : b;
 }
 
 export default function AmbientEffects() {
@@ -61,11 +75,13 @@ export default function AmbientEffects() {
     resize();
     window.addEventListener("resize", resize);
 
-    // ---- ambient backdrop: sparse, slow, always-on embers ----
-    const AMBIENT_COUNT = 26;
-    const ambient: Particle[] = Array.from({ length: AMBIENT_COUNT }, () => spawnAmbient(width, height));
+    const orange = readAccent("--comic-orange");
+    const amber = readAccent("--comic-yellow");
+    const colorFor = (h: "orange" | "amber") => (h === "orange" ? orange : amber);
 
-    function spawnAmbient(w: number, h: number): Particle {
+    // ---- layer 1: embers rising from below ----
+    const RISERS = 20;
+    function spawnRiser(w: number, h: number): Particle {
       return {
         x: Math.random() * w,
         y: h + Math.random() * 100,
@@ -74,9 +90,44 @@ export default function AmbientEffects() {
         life: 0,
         maxLife: 900 + Math.random() * 900,
         size: 1 + Math.random() * 2.2,
-        hue: Math.random() > 0.5 ? "orange" : "amber",
+        hue: pick("orange", "amber"),
       };
     }
+    const risers: Particle[] = Array.from({ length: RISERS }, () => spawnRiser(width, height));
+
+    // ---- layer 2: fine ash drifting down from above, opposite motion ----
+    const FALLERS = 16;
+    function spawnFaller(w: number): Particle {
+      return {
+        x: Math.random() * w,
+        y: -20 - Math.random() * 100,
+        vx: (Math.random() - 0.5) * 0.35,
+        vy: 0.12 + Math.random() * 0.2,
+        life: 0,
+        maxLife: 1100 + Math.random() * 800,
+        size: 0.8 + Math.random() * 1.4,
+        hue: pick("amber", "orange"),
+      };
+    }
+    const fallers: Particle[] = Array.from({ length: FALLERS }, () => spawnFaller(width));
+
+    // ---- layer 3: stationary twinkles, fade in/out in place ----
+    const TWINKLES = 22;
+    function spawnTwinkle(w: number, h: number) {
+      return {
+        x: Math.random() * w,
+        y: Math.random() * h,
+        phase: Math.random() * Math.PI * 2,
+        speed: 0.4 + Math.random() * 0.8,
+        size: 0.8 + Math.random() * 1.6,
+        hue: pick("orange", "amber") as "orange" | "amber",
+      };
+    }
+    const twinkles = Array.from({ length: TWINKLES }, () => spawnTwinkle(width, height));
+
+    // ---- layer 4: periodic expanding pulse rings — the "shockwave" beat ----
+    const pulses: Pulse[] = [];
+    let nextPulseAt = performance.now() + 2000 + Math.random() * 3000;
 
     // ---- cursor trail: short-lived sparks spawned on mousemove ----
     const trail: Particle[] = [];
@@ -95,21 +146,20 @@ export default function AmbientEffects() {
           life: 0,
           maxLife: 34 + Math.random() * 20,
           size: 1.2 + Math.random() * 1.8,
-          hue: Math.random() > 0.4 ? "orange" : "amber",
+          hue: pick("orange", "amber"),
         });
       }
       if (trail.length > 160) trail.splice(0, trail.length - 160);
     }
     window.addEventListener("pointermove", onPointerMove, { passive: true });
 
-    const orange = readAccent("--comic-orange");
-    const amber = readAccent("--comic-yellow");
-
     let rafId: number;
     function frame() {
-      // Ambient layer
+      const now = performance.now();
       bgCtx!.clearRect(0, 0, width, height);
-      for (const p of ambient) {
+
+      // Risers
+      for (const p of risers) {
         p.life++;
         p.x += p.vx;
         p.y += p.vy;
@@ -118,13 +168,72 @@ export default function AmbientEffects() {
         const alpha = fade * 0.32;
         if (alpha > 0.01) {
           bgCtx!.beginPath();
-          bgCtx!.fillStyle = p.hue === "orange" ? orange : amber;
+          bgCtx!.fillStyle = colorFor(p.hue);
           bgCtx!.globalAlpha = alpha;
           bgCtx!.arc(p.x, p.y, p.size, 0, Math.PI * 2);
           bgCtx!.fill();
         }
-        if (p.life >= p.maxLife || p.y < -20) Object.assign(p, spawnAmbient(width, height));
+        if (p.life >= p.maxLife || p.y < -20) Object.assign(p, spawnRiser(width, height));
       }
+
+      // Fallers (ash) — opposite direction, slightly slower fade
+      for (const p of fallers) {
+        p.life++;
+        p.x += p.vx;
+        p.y += p.vy;
+        const t = p.life / p.maxLife;
+        const fade = t < 0.2 ? t / 0.2 : t > 0.75 ? Math.max(0, (1 - t) / 0.25) : 1;
+        const alpha = fade * 0.22;
+        if (alpha > 0.01) {
+          bgCtx!.beginPath();
+          bgCtx!.fillStyle = colorFor(p.hue);
+          bgCtx!.globalAlpha = alpha;
+          bgCtx!.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          bgCtx!.fill();
+        }
+        if (p.life >= p.maxLife || p.y > height + 20) Object.assign(p, spawnFaller(width));
+      }
+
+      // Twinkles — stationary, pulsing alpha
+      for (const tw of twinkles) {
+        const alpha = (0.15 + 0.15 * Math.sin(now * 0.001 * tw.speed + tw.phase)) * 0.9;
+        if (alpha > 0.03) {
+          bgCtx!.beginPath();
+          bgCtx!.fillStyle = colorFor(tw.hue);
+          bgCtx!.globalAlpha = alpha;
+          bgCtx!.arc(tw.x, tw.y, tw.size, 0, Math.PI * 2);
+          bgCtx!.fill();
+        }
+      }
+
+      // Pulse rings — rare expanding shockwaves
+      if (now >= nextPulseAt) {
+        pulses.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          life: 0,
+          maxLife: 90,
+          maxRadius: 70 + Math.random() * 60,
+        });
+        nextPulseAt = now + 4000 + Math.random() * 5000;
+      }
+      for (let i = pulses.length - 1; i >= 0; i--) {
+        const pu = pulses[i];
+        pu.life++;
+        const t = pu.life / pu.maxLife;
+        if (t >= 1) {
+          pulses.splice(i, 1);
+          continue;
+        }
+        const r = pu.maxRadius * t;
+        bgCtx!.beginPath();
+        bgCtx!.strokeStyle = orange;
+        bgCtx!.globalAlpha = (1 - t) * 0.28;
+        bgCtx!.lineWidth = 1.5;
+        bgCtx!.arc(pu.x, pu.y, r, 0, Math.PI * 2);
+        bgCtx!.stroke();
+      }
+
       bgCtx!.globalAlpha = 1;
 
       // Trail layer
@@ -142,7 +251,7 @@ export default function AmbientEffects() {
         }
         const alpha = 1 - t;
         trailCtx!.beginPath();
-        trailCtx!.fillStyle = p.hue === "orange" ? orange : amber;
+        trailCtx!.fillStyle = colorFor(p.hue);
         trailCtx!.globalAlpha = alpha * 0.85;
         trailCtx!.arc(p.x, p.y, p.size * (1 - t * 0.4), 0, Math.PI * 2);
         trailCtx!.fill();

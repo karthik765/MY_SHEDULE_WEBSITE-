@@ -209,7 +209,12 @@ h3 {
     display: none;
   }
 
-  /* Form controls: thin border, no default browser chrome, orange focus glow */
+  /* Form controls: thin border, no default browser chrome, orange focus glow.
+     color-scheme inherits from :root (set per-theme above), which is what
+     tells the browser to render NATIVE popups — a <select>'s dropdown list,
+     a <input type="date">'s calendar/picker — in a dark palette; without
+     that, those popups can default to the OS's light theme regardless of
+     the page's own colors, reading as invisible dark text on a white popup. */
   .comic-input {
     border: 1.5px solid var(--line);
     border-radius: 0.375rem;
@@ -223,6 +228,20 @@ h3 {
   .comic-input:focus {
     border-color: var(--color-comic-orange);
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-comic-orange) 30%, transparent);
+  }
+
+  /* <option> elements render in the native dropdown popup, which many
+     browsers don't fully theme from the <select>'s own background/color —
+     force it explicitly so the popup matches the page instead of defaulting
+     to a light system popup. */
+  .comic-input option {
+    background: var(--color-panel);
+    color: var(--color-ink);
+  }
+
+  input[type="checkbox"],
+  input[type="radio"] {
+    accent-color: var(--color-comic-orange);
   }
 
   /* Small bold tag/chip, e.g. priority/status labels */

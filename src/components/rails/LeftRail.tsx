@@ -11,14 +11,10 @@ const KScene = dynamic(() => import("@/components/three/KScene"), {
 
 export default function LeftRail() {
   return (
-    <aside className="rail-panel k-scene-panel hidden lg:flex lg:flex-col" aria-hidden="true">
-      <div className="rail-panel-label">
-        <span>SIGNAL // K</span>
-      </div>
+    <aside className="k-scene-panel hidden lg:block" aria-hidden="true">
       <div className="k-scene-stage">
         <KScene />
       </div>
-      <p className="rail-panel-hint">drag to rotate</p>
     </aside>
   );
 }
