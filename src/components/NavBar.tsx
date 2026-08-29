@@ -9,15 +9,15 @@ import { getAudioContext, playChime } from "@/lib/sound";
 import { MINIGAMES, PUZZLES, RIDDLES, IQ_GAMES, QMASTER_GAMES, currentContentWeek, weekUnlockDate, type GameDef } from "@/lib/games";
 
 const LINKS = [
-  { href: "/", label: "Dashboard", color: "var(--comic-blue)" },
-  { href: "/focus", label: "Focus", color: "var(--comic-orange)" },
-  { href: "/schedule", label: "Schedule", color: "var(--comic-purple)" },
-  { href: "/habits", label: "Habits", color: "var(--comic-green)" },
-  { href: "/goals", label: "Goals", color: "var(--comic-yellow)" },
-  { href: "/minigames", label: "Minigames", color: "var(--comic-pink)" },
-  { href: "/trophies", label: "Trophies", color: "var(--comic-orange)" },
-  { href: "/focus-points", label: "Focus Points", color: "var(--comic-green)" },
-  { href: "/analytics", label: "Analytics", color: "var(--comic-blue)" },
+  { href: "/", label: "Dashboard" },
+  { href: "/focus", label: "Focus" },
+  { href: "/schedule", label: "Schedule" },
+  { href: "/habits", label: "Habits" },
+  { href: "/goals", label: "Goals" },
+  { href: "/minigames", label: "Minigames" },
+  { href: "/trophies", label: "Trophies" },
+  { href: "/focus-points", label: "Focus Points" },
+  { href: "/analytics", label: "Analytics" },
 ];
 
 const UNLOCK_NOTICE_KEY = "unlock-notice-dismissed";
@@ -194,8 +194,8 @@ export default function NavBar() {
                 href={link.href}
                 className="shrink-0 rounded-lg px-4 py-1.5 text-sm font-bold transition-colors"
                 style={{
-                  backgroundColor: active ? link.color : "transparent",
-                  color: active ? "var(--chip-ink)" : "var(--ink)",
+                  backgroundColor: active ? "var(--ink)" : "transparent",
+                  color: active ? "var(--paper)" : "var(--ink)",
                 }}
               >
                 {link.label}

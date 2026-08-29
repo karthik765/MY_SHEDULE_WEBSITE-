@@ -41,12 +41,11 @@ export default async function DashboardPage() {
       </h1>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Total hours this week" value={`${weeklyHours.toFixed(1)} hrs`} color="var(--comic-blue)" />
-        <StatCard label="Tasks due" value={String(dueTodayOrOverdue.length)} color="var(--comic-red)" />
+        <StatCard label="Total hours this week" value={`${weeklyHours.toFixed(1)} hrs`} />
+        <StatCard label="Tasks due" value={String(dueTodayOrOverdue.length)} />
         <StatCard
           label="Focus"
           value={activeSession ? `Running: ${activeSession.subject}` : "Not running"}
-          color="var(--comic-orange)"
         />
       </div>
 
@@ -125,10 +124,10 @@ export default async function DashboardPage() {
   );
 }
 
-function StatCard({ label, value, color }: { label: string; value: string; color: string }) {
+function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="comic-panel p-4 text-chip-ink" style={{ backgroundColor: color }}>
-      <p className="text-xs font-bold text-chip-ink/70">{label}</p>
+    <div className="comic-panel p-4 text-ink">
+      <p className="text-xs font-bold text-ink/70">{label}</p>
       <p className="mt-1 text-xl font-bold">{value}</p>
     </div>
   );
