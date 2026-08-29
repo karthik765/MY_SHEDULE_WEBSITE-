@@ -127,7 +127,7 @@ export default async function DashboardPage() {
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
     <div className="comic-panel p-4 text-ink">
-      <p className="text-xs font-bold text-ink/70">{label}</p>
+      <p className="text-xs font-bold tracking-wide text-comic-orange">{label}</p>
       <p className="mt-1 text-xl font-bold">{value}</p>
     </div>
   );
