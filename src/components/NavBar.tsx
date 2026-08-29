@@ -206,8 +206,8 @@ export default function NavBar() {
       </div>
 
       {toast && (
-        <div className="comic-panel fixed bottom-4 right-4 left-4 z-50 max-w-[280px] sm:left-auto bg-comic-yellow p-3 text-chip-ink">
-          <p className="font-heading text-sm tracking-wide">🏆 Trophy Unlocked!</p>
+        <div className="comic-panel fixed bottom-4 right-4 left-4 z-50 max-w-[280px] sm:left-auto p-3 text-ink">
+          <p className="font-heading text-sm tracking-wide text-comic-orange">🏆 Trophy Unlocked!</p>
           <ul className="mt-1 space-y-0.5">
             {toast.map((a) => (
               <li key={a.id} className="text-xs font-bold">
