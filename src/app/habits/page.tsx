@@ -21,11 +21,11 @@ interface Habit {
 const todayKey = () => new Date().toISOString().slice(0, 10);
 
 const TABS = [
-  { value: "habits", label: "Habits", color: "var(--comic-green)" },
-  { value: "journal", label: "Journal", color: "var(--comic-pink)" },
-  { value: "movies", label: "Movies", color: "var(--comic-red)" },
-  { value: "webseries", label: "Web Series", color: "var(--comic-purple)" },
-  { value: "games", label: "Games", color: "var(--comic-blue)" },
+  { value: "habits", label: "Habits" },
+  { value: "journal", label: "Journal" },
+  { value: "movies", label: "Movies" },
+  { value: "webseries", label: "Web Series" },
+  { value: "games", label: "Games" },
 ] as const;
 
 export default function HabitsPage() {
@@ -82,8 +82,8 @@ export default function HabitsPage() {
           <button
             key={t.value}
             onClick={() => setTab(t.value)}
-            className={`comic-btn px-3 py-1.5 text-sm ${tab === t.value ? "text-chip-ink" : ""}`}
-            style={{ backgroundColor: tab === t.value ? t.color : "var(--panel)" }}
+            className={`comic-btn px-3 py-1.5 text-sm ${tab === t.value ? "text-paper" : ""}`}
+            style={{ backgroundColor: tab === t.value ? "var(--ink)" : "var(--panel)" }}
           >
             {t.label}
           </button>
