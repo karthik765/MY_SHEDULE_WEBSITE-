@@ -62,10 +62,10 @@ export default function TrophiesPage() {
         Trophies
       </h1>
 
-      <div className="comic-panel bg-comic-blue p-4 text-chip-ink">
+      <div className="comic-panel p-4 text-ink">
         <div className="mb-3 flex items-center justify-between">
-          <p className="text-sm font-bold text-chip-ink/80">Trophy Case</p>
-          <p className="text-xs font-bold text-chip-ink/80">
+          <p className="text-sm font-bold text-ink/80">Trophy Case</p>
+          <p className="text-xs font-bold text-ink/80">
             {unlockedCount}/{achievements.length} unlocked
           </p>
         </div>
@@ -97,7 +97,7 @@ export default function TrophiesPage() {
           </div>
         </div>
         {!trophies.platinum && (
-          <p className="mt-3 text-xs font-bold text-chip-ink/80">
+          <p className="mt-3 text-xs font-bold text-ink/80">
             Unlock every trophy to earn Platinum. 🏆
           </p>
         )}
