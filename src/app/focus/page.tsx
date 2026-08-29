@@ -434,8 +434,7 @@ export default function FocusPage() {
         <div
           className={`comic-panel overflow-hidden text-center ${plan.phase === "focus" ? "text-ink" : "text-chip-ink"}`}
           style={{
-            backgroundColor:
-              plan.phase === "focus" ? "color-mix(in srgb, var(--panel) 80%, var(--ink) 20%)" : "var(--comic-green)",
+            backgroundColor: plan.phase === "focus" ? "var(--panel)" : "var(--comic-green)",
           }}
         >
           <div className="p-6 pb-5">
@@ -489,12 +488,7 @@ export default function FocusPage() {
           </p>
         </div>
       ) : (
-        <div
-          className="comic-panel overflow-hidden text-center text-ink"
-          style={{
-            backgroundColor: active ? "color-mix(in srgb, var(--panel) 80%, var(--ink) 20%)" : "var(--panel)",
-          }}
-        >
+        <div className="comic-panel overflow-hidden text-center text-ink">
           {active === undefined ? (
             <p className="p-6 text-ink/60">Loading...</p>
           ) : active ? (
