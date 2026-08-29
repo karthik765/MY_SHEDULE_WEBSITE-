@@ -111,10 +111,10 @@ export default async function DashboardPage() {
               {habits.map((h) => (
                 <div
                   key={h.id}
-                  className="comic-panel-sm bg-comic-yellow px-3 py-2 text-sm text-chip-ink"
+                  className="comic-panel-sm px-3 py-2 text-sm text-ink"
                 >
                   <p className="font-bold">{h.name}</p>
-                  <p className="text-xs text-chip-ink/70">{computeStreak(h.logs)} day streak</p>
+                  <p className="text-xs text-ink/70">{computeStreak(h.logs)} day streak</p>
                 </div>
               ))}
             </div>

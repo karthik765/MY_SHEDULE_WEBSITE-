@@ -507,13 +507,13 @@ export default function FocusPage() {
           ) : (
             <div className="p-6">
               {planJustFinished && (
-                <div className="comic-panel-sm mb-4 flex items-center justify-between gap-3 bg-comic-yellow p-3 text-chip-ink">
+                <div className="comic-panel-sm mb-4 flex items-center justify-between gap-3 p-3 text-ink">
                   <span className="text-sm font-bold">
                     🏆 Focus Mode complete — {formatMinutes(planJustFinishedMinutes)} of focus logged!
                   </span>
                   <button
                     onClick={() => setPlanJustFinished(false)}
-                    className="text-xs font-bold text-chip-ink/70 hover:underline"
+                    className="text-xs font-bold text-ink/70 hover:underline"
                   >
                     Dismiss
                   </button>

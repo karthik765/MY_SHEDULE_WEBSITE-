@@ -42,10 +42,10 @@ export default function AnswerGame({
       )}
 
       {status === "correct" ? (
-        <div className="comic-panel-sm bg-comic-green p-4 text-center text-chip-ink">
+        <div className="comic-panel-sm p-4 text-center text-ink">
           <p className="font-heading text-2xl">Solved! 🎉</p>
           {alreadySolved && (
-            <p className="mt-1 text-xs font-bold text-chip-ink/80">
+            <p className="mt-1 text-xs font-bold text-ink/80">
               Already solved before — {replayPct}% focus time this time, but great job.
             </p>
           )}

@@ -76,7 +76,7 @@ function NewThisWeekBanner({
 }) {
   if (!item) return null;
   return (
-    <div className="comic-panel-sm flex items-center gap-3 bg-comic-yellow p-3 text-chip-ink">
+    <div className="comic-panel-sm flex items-center gap-3 p-3 text-ink">
       <span className="text-2xl">🆕</span>
       <p className="text-sm font-bold">
         New {KIND_LABEL[kind]} of the Week: {item.emoji} {item.title}
@@ -320,7 +320,7 @@ export default function MinigamesPage() {
       </p>
 
       {testMode ? (
-        <div className="comic-panel-sm flex flex-wrap items-center justify-between gap-2 bg-comic-purple p-3 text-chip-ink">
+        <div className="comic-panel-sm flex flex-wrap items-center justify-between gap-2 p-3 text-ink">
           <p className="text-sm font-bold">
             🧪 Beta Mode active — unlimited replays of anything already unlocked, no rewards. Locked content stays
             locked.

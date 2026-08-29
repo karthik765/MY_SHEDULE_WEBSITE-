@@ -225,13 +225,13 @@ export default function GameDetailPage() {
       </div>
 
       {testMode && (
-        <div className="comic-panel-sm bg-comic-purple p-2 text-center text-chip-ink">
+        <div className="comic-panel-sm p-2 text-center text-ink">
           <p className="text-xs font-bold">🧪 Beta Mode — unlimited replays, but this play won&apos;t earn any focus points.</p>
         </div>
       )}
 
       {reward !== null && (
-        <div className="comic-panel-sm bg-comic-yellow p-3 text-center text-chip-ink">
+        <div className="comic-panel-sm p-3 text-center text-ink">
           <p className="text-sm font-bold">
             {reward.minutes > 0
               ? `🎉 +${reward.minutes} focus points` +
@@ -245,7 +245,7 @@ export default function GameDetailPage() {
       )}
 
       {penalty !== null && (
-        <div className="comic-panel-sm bg-comic-red p-3 text-center text-chip-ink">
+        <div className="comic-panel-sm p-3 text-center text-ink">
           <p className="text-sm font-bold">😬 −{penalty} focus points for losing.</p>
         </div>
       )}

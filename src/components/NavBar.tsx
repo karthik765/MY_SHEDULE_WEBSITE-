@@ -219,7 +219,7 @@ export default function NavBar() {
       )}
 
       {!unlockNoticeDismissed && unlockItems.length > 0 && (
-        <div className="comic-panel fixed top-20 right-4 left-4 z-50 max-w-[300px] sm:left-auto bg-comic-blue p-3 text-chip-ink">
+        <div className="comic-panel fixed top-20 right-4 left-4 z-50 max-w-[300px] sm:left-auto p-3 text-ink">
           <p className="font-heading text-sm tracking-wide">🆕 New This Week</p>
           <ul className="mt-1 space-y-0.5">
             {unlockItems.map((item) => (
