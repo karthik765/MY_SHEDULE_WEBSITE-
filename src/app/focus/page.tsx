@@ -432,16 +432,15 @@ export default function FocusPage() {
 
       {plan ? (
         <div
-          className={`comic-panel overflow-hidden text-center ${plan.phase === "focus" ? "" : "text-chip-ink"}`}
+          className={`comic-panel overflow-hidden text-center ${plan.phase === "focus" ? "text-ink" : "text-chip-ink"}`}
           style={{
-            backgroundColor: plan.phase === "focus" ? "#0c0904" : "var(--comic-green)",
-            color: plan.phase === "focus" ? "#f2ecdc" : undefined,
+            backgroundColor:
+              plan.phase === "focus" ? "color-mix(in srgb, var(--panel) 80%, var(--ink) 20%)" : "var(--comic-green)",
           }}
         >
           <div className="p-6 pb-5">
             <p
-              className={`text-sm font-bold uppercase tracking-wide ${plan.phase === "focus" ? "" : "text-chip-ink/80"}`}
-              style={plan.phase === "focus" ? { color: "#f2ecdc", opacity: 0.8 } : undefined}
+              className={`text-sm font-bold uppercase tracking-wide ${plan.phase === "focus" ? "text-ink/70" : "text-chip-ink/80"}`}
             >
               {plan.phase === "focus"
                 ? `🎯 ${CATEGORY_LABEL[PLAN_PRESETS[plan.style][plan.blockIndex].category]}`
@@ -483,8 +482,7 @@ export default function FocusPage() {
             </div>
           </div>
           <p
-            className={`border-t-2 border-ink/10 px-6 py-2.5 text-xs ${plan.phase === "focus" ? "border-white/10 bg-white/5" : "bg-black/5 text-chip-ink/70"}`}
-            style={plan.phase === "focus" ? { color: "#f2ecdc", opacity: 0.7 } : undefined}
+            className={`border-t-2 border-ink/10 bg-black/5 px-6 py-2.5 text-xs ${plan.phase === "focus" ? "text-ink/60" : "text-chip-ink/70"}`}
           >
             No casual stopping — this plan runs the full {formatMinutes(planTotalMinutes(plan.style))}. Force Stop is
             only for real emergencies.
@@ -492,20 +490,19 @@ export default function FocusPage() {
         </div>
       ) : (
         <div
-          className="comic-panel overflow-hidden text-center"
+          className="comic-panel overflow-hidden text-center text-ink"
           style={{
-            backgroundColor: active ? "#0c0904" : "var(--panel)",
-            color: active ? "#f2ecdc" : undefined,
+            backgroundColor: active ? "color-mix(in srgb, var(--panel) 80%, var(--ink) 20%)" : "var(--panel)",
           }}
         >
           {active === undefined ? (
             <p className="p-6 text-ink/60">Loading...</p>
           ) : active ? (
             <div className="p-6">
-              <p className="text-sm font-bold uppercase tracking-wide" style={{ opacity: 0.8 }}>
+              <p className="text-sm font-bold uppercase tracking-wide text-ink/70">
                 {mode === "free" ? "🟢 Free Mode" : "🎯 Focus Mode"}
               </p>
-              <p className="mt-1 text-sm font-bold" style={{ opacity: 0.9 }}>{active.subject}</p>
+              <p className="mt-1 text-sm font-bold text-ink/90">{active.subject}</p>
               <p className="font-heading my-4 text-6xl tracking-wide tabular-nums">
                 {formatDuration(elapsedSeconds)}
               </p>
