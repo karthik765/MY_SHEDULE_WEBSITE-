@@ -79,7 +79,7 @@ function ShapeThumb({ name }: { name: string }) {
       {Array.from({ length: w * h }, (_, i) => {
         const r = Math.floor(i / w);
         const c = i % w;
-        return <div key={i} style={{ width: 12, height: 12, backgroundColor: set.has(`${r},${c}`) ? "var(--comic-orange)" : "transparent" }} />;
+        return <div key={i} style={{ width: 12, height: 12, backgroundColor: set.has(`${r},${c}`) ? "var(--ink)" : "transparent" }} />;
       })}
     </div>
   );
@@ -150,7 +150,7 @@ export default function IQHiddenShape({
         ))}
       </div>
       {status !== "playing" && (
-        <button onClick={reset} className="comic-btn bg-comic-purple px-5 py-2 text-chip-ink">
+        <button onClick={reset} className="comic-btn px-5 py-2 text-ink">
           Try Again
         </button>
       )}

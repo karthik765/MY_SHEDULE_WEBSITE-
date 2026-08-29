@@ -93,12 +93,12 @@ export default function SliderStop({
         />
       </div>
       {status === "playing" && (
-        <button onClick={stop} className="comic-btn bg-comic-blue px-6 py-3 text-lg text-chip-ink">
+        <button onClick={stop} className="comic-btn px-6 py-3 text-lg text-ink">
           STOP
         </button>
       )}
       {(status === "idle" || status === "won" || status === "lost") && (
-        <button onClick={start} className="comic-btn bg-comic-purple px-5 py-2 text-chip-ink">
+        <button onClick={start} className="comic-btn px-5 py-2 text-ink">
           {status === "idle" ? "Start" : "Play Again"}
         </button>
       )}

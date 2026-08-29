@@ -129,8 +129,8 @@ export default function TwentyFourGame({
             disabled={status !== "playing"}
             className="comic-btn px-4 py-3 text-lg disabled:opacity-60"
             style={{
-              backgroundColor: selected === i ? "var(--comic-orange)" : "var(--panel)",
-              color: selected === i ? "var(--chip-ink)" : "var(--ink)",
+              backgroundColor: selected === i ? "var(--ink)" : "var(--panel)",
+              color: selected === i ? "var(--paper)" : "var(--ink)",
             }}
           >
             {entry.value}
@@ -146,8 +146,8 @@ export default function TwentyFourGame({
               onClick={() => setOp(o)}
               className="comic-btn px-4 py-2 text-lg"
               style={{
-                backgroundColor: op === o ? "var(--comic-blue)" : "var(--panel)",
-                color: op === o ? "var(--chip-ink)" : "var(--ink)",
+                backgroundColor: op === o ? "var(--ink)" : "var(--panel)",
+                color: op === o ? "var(--paper)" : "var(--ink)",
               }}
             >
               {o}
@@ -157,7 +157,7 @@ export default function TwentyFourGame({
       )}
 
       {status !== "playing" && (
-        <button onClick={reset} className="comic-btn bg-comic-purple px-5 py-2 text-chip-ink">
+        <button onClick={reset} className="comic-btn px-5 py-2 text-ink">
           Play Again
         </button>
       )}

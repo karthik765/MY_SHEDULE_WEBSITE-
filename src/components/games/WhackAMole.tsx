@@ -90,7 +90,7 @@ export default function WhackAMole({
         ))}
       </div>
       {(status === "idle" || status === "won" || status === "lost") && (
-        <button onClick={start} className="comic-btn bg-comic-purple px-5 py-2 text-chip-ink">
+        <button onClick={start} className="comic-btn px-5 py-2 text-ink">
           {started ? "Play Again" : "Start"}
         </button>
       )}

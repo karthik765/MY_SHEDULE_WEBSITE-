@@ -88,14 +88,14 @@ export default function SpeedSort({
             onClick={() => click(w)}
             disabled={status !== "playing" || picked.includes(w)}
             className="comic-panel-sm px-3 py-2 text-sm font-bold disabled:cursor-default"
-            style={{ backgroundColor: picked.includes(w) ? "var(--comic-green)" : "var(--panel)" }}
+            style={{ backgroundColor: picked.includes(w) ? "var(--ink)" : "var(--panel)" }}
           >
             {w}
           </button>
         ))}
       </div>
       {(status === "idle" || status === "won" || status === "lost") && (
-        <button onClick={start} className="comic-btn bg-comic-purple px-5 py-2 text-chip-ink">
+        <button onClick={start} className="comic-btn px-5 py-2 text-ink">
           {status === "idle" ? "Start" : "Play Again"}
         </button>
       )}

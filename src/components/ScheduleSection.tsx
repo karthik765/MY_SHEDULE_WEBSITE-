@@ -15,15 +15,6 @@ interface ScheduleEvent {
 }
 
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const DAY_COLORS = [
-  "var(--comic-blue)",
-  "var(--comic-purple)",
-  "var(--comic-red)",
-  "var(--comic-orange)",
-  "var(--comic-green)",
-  "var(--comic-pink)",
-  "var(--comic-yellow)",
-];
 
 export default function ScheduleSection() {
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
@@ -135,7 +126,7 @@ export default function ScheduleSection() {
             onChange={(e) => setEndTime(e.target.value)}
           />
         </div>
-        <button type="submit" className="comic-btn bg-comic-blue px-4 py-2 text-sm text-chip-ink">
+        <button type="submit" className="comic-btn px-4 py-2 text-sm text-ink">
           Add
         </button>
       </form>
@@ -149,8 +140,8 @@ export default function ScheduleSection() {
             return (
               <div key={i} className="comic-panel-sm p-3">
                 <p
-                  className="font-heading mb-2 rounded px-2 py-0.5 text-xs tracking-wide text-chip-ink"
-                  style={{ backgroundColor: DAY_COLORS[i] }}
+                  className="font-heading mb-2 rounded px-2 py-0.5 text-xs tracking-wide text-paper"
+                  style={{ backgroundColor: "var(--ink)" }}
                 >
                   {DAY_LABELS[i]} {day.getDate()}
                 </p>

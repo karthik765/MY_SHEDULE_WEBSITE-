@@ -103,7 +103,7 @@ export default function MemoryGridNumbers({
       {status === "won" && <p className="font-heading text-xl text-comic-green">You won! 🎉</p>}
       {status === "lost" && <p className="font-heading text-xl text-comic-red">Time&apos;s up — final score {score}</p>}
       {(status === "idle" || status === "won" || status === "lost") && (
-        <button onClick={start} className="comic-btn bg-comic-purple px-5 py-2 text-chip-ink">
+        <button onClick={start} className="comic-btn px-5 py-2 text-ink">
           {status === "idle" ? "Start" : "Play Again"}
         </button>
       )}

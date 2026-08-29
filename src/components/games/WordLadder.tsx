@@ -105,7 +105,7 @@ export default function WordLadder({
               className="comic-input px-3 py-2 text-center text-lg uppercase"
               placeholder="Next word"
             />
-            <button onClick={submit} className="comic-btn bg-comic-blue px-5 py-2 text-chip-ink">
+            <button onClick={submit} className="comic-btn px-5 py-2 text-ink">
               Submit
             </button>
           </div>
@@ -113,7 +113,7 @@ export default function WordLadder({
         </>
       )}
       {(status === "idle" || status === "won" || status === "lost") && (
-        <button onClick={start} className="comic-btn bg-comic-purple px-5 py-2 text-chip-ink">
+        <button onClick={start} className="comic-btn px-5 py-2 text-ink">
           {status === "idle" ? "Start" : "Play Again"}
         </button>
       )}

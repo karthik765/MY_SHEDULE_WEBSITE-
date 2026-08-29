@@ -99,7 +99,7 @@ export default function HabitsPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
-            <button type="submit" className="comic-btn bg-comic-blue px-4 py-2 text-sm text-chip-ink">
+            <button type="submit" className="comic-btn px-4 py-2 text-sm text-ink">
               Add
             </button>
           </form>
@@ -119,7 +119,7 @@ export default function HabitsPage() {
                     <button
                       onClick={() => toggleToday(habit.id)}
                       className={`comic-btn h-9 w-9 rounded-full p-0 text-base ${doneToday ? "text-chip-ink" : ""}`}
-                      style={{ backgroundColor: doneToday ? "var(--comic-green)" : "var(--panel)" }}
+                      style={{ backgroundColor: doneToday ? "var(--ink)" : "var(--panel)" }}
                     >
                       {doneToday ? "✓" : ""}
                     </button>

@@ -146,7 +146,7 @@ function PosterGrid({
             {onMarkDone && (
               <button
                 onClick={() => onMarkDone(item.id)}
-                className="comic-btn w-full bg-comic-green py-1 text-xs text-chip-ink"
+                className="comic-btn w-full py-1 text-xs text-ink"
               >
                 {markDoneLabel ?? "Mark watched"}
               </button>

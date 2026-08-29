@@ -77,7 +77,7 @@ export default function HigherOrLower({
             onKeyDown={(e) => e.key === "Enter" && submit()}
             className="comic-input w-28 px-3 py-2 text-center text-lg"
           />
-          <button onClick={submit} className="comic-btn bg-comic-blue px-5 py-2 text-chip-ink">
+          <button onClick={submit} className="comic-btn px-5 py-2 text-ink">
             Guess
           </button>
         </div>
@@ -88,7 +88,7 @@ export default function HigherOrLower({
             <span
               key={i}
               className="comic-badge px-2 py-0.5 text-xs text-chip-ink"
-              style={{ backgroundColor: h.hint === "correct" ? "var(--comic-green)" : "var(--panel)" }}
+              style={{ backgroundColor: h.hint === "correct" ? "var(--ink)" : "var(--panel)" }}
             >
               {h.value} {h.hint === "higher" ? "↑" : h.hint === "lower" ? "↓" : "✓"}
             </span>
@@ -96,7 +96,7 @@ export default function HigherOrLower({
         </div>
       )}
       {status !== "playing" && (
-        <button onClick={reset} className="comic-btn bg-comic-purple px-5 py-2 text-chip-ink">
+        <button onClick={reset} className="comic-btn px-5 py-2 text-ink">
           Play Again
         </button>
       )}

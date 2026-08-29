@@ -69,16 +69,16 @@ export default function CoinFlipStreak({
       {lastFlip && <p className="text-2xl">{lastFlip === "heads" ? "🪙 Heads" : "🪙 Tails"}</p>}
       {status === "playing" && (
         <div className="flex gap-3">
-          <button onClick={() => guess("heads")} className="comic-btn bg-comic-blue px-6 py-3 text-chip-ink">
+          <button onClick={() => guess("heads")} className="comic-btn px-6 py-3 text-ink">
             Heads
           </button>
-          <button onClick={() => guess("tails")} className="comic-btn bg-comic-orange px-6 py-3 text-chip-ink">
+          <button onClick={() => guess("tails")} className="comic-btn px-6 py-3 text-ink">
             Tails
           </button>
         </div>
       )}
       {status !== "playing" && (
-        <button onClick={reset} className="comic-btn bg-comic-purple px-5 py-2 text-chip-ink">
+        <button onClick={reset} className="comic-btn px-5 py-2 text-ink">
           Play Again
         </button>
       )}

@@ -109,16 +109,16 @@ export default function IQSyllogismCheck({
       </div>
       {status === "playing" && (
         <div className="flex gap-3">
-          <button onClick={() => answer(true)} className="comic-btn bg-comic-green px-5 py-2 text-chip-ink">
+          <button onClick={() => answer(true)} className="comic-btn px-5 py-2 text-ink">
             Follows
           </button>
-          <button onClick={() => answer(false)} className="comic-btn bg-comic-red px-5 py-2 text-chip-ink">
+          <button onClick={() => answer(false)} className="comic-btn px-5 py-2 text-ink">
             Does Not Follow
           </button>
         </div>
       )}
       {status !== "playing" && (
-        <button onClick={reset} className="comic-btn bg-comic-purple px-5 py-2 text-chip-ink">
+        <button onClick={reset} className="comic-btn px-5 py-2 text-ink">
           Try Again
         </button>
       )}

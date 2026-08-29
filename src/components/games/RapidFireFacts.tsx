@@ -107,14 +107,14 @@ export default function RapidFireFacts({
               className="comic-input px-3 py-2 text-center text-lg"
               placeholder="Your answer"
             />
-            <button onClick={submit} className="comic-btn bg-comic-blue px-5 py-2 text-chip-ink">
+            <button onClick={submit} className="comic-btn px-5 py-2 text-ink">
               Submit
             </button>
           </div>
         </>
       )}
       {(status === "idle" || status === "won" || status === "lost") && (
-        <button onClick={start} className="comic-btn bg-comic-purple px-5 py-2 text-chip-ink">
+        <button onClick={start} className="comic-btn px-5 py-2 text-ink">
           {status === "idle" ? "Start" : "Play Again"}
         </button>
       )}

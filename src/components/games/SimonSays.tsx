@@ -115,7 +115,7 @@ export default function SimonSays({
         ))}
       </div>
       {(phase === "idle" || phase === "won" || phase === "lost") && (
-        <button onClick={start} className="comic-btn bg-comic-purple px-5 py-2 text-chip-ink">
+        <button onClick={start} className="comic-btn px-5 py-2 text-ink">
           {phase === "idle" ? "Start" : "Play Again"}
         </button>
       )}

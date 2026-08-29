@@ -63,12 +63,12 @@ export default function JournalSection() {
               key={m}
               onClick={() => setMood(mood === m ? null : m)}
               className="comic-btn px-2 py-1 text-lg"
-              style={{ backgroundColor: mood === m ? "var(--comic-yellow)" : "var(--panel)" }}
+              style={{ backgroundColor: mood === m ? "var(--ink)" : "var(--panel)" }}
             >
               {m}
             </button>
           ))}
-          <button type="submit" className="comic-btn ml-auto bg-comic-blue px-4 py-2 text-sm text-chip-ink">
+          <button type="submit" className="comic-btn ml-auto px-4 py-2 text-sm text-ink">
             Save entry
           </button>
         </div>

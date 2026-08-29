@@ -96,7 +96,7 @@ export default function DirectionsRecall({
           onClick={() => click("up")}
           disabled={phase !== "input"}
           className="comic-btn px-4 py-3 text-2xl disabled:opacity-50"
-          style={{ backgroundColor: activeDir === "up" ? "var(--comic-orange)" : "var(--panel)" }}
+          style={{ backgroundColor: activeDir === "up" ? "var(--ink)" : "var(--panel)" }}
         >
           ↑
         </button>
@@ -105,7 +105,7 @@ export default function DirectionsRecall({
           onClick={() => click("left")}
           disabled={phase !== "input"}
           className="comic-btn px-4 py-3 text-2xl disabled:opacity-50"
-          style={{ backgroundColor: activeDir === "left" ? "var(--comic-orange)" : "var(--panel)" }}
+          style={{ backgroundColor: activeDir === "left" ? "var(--ink)" : "var(--panel)" }}
         >
           ←
         </button>
@@ -113,7 +113,7 @@ export default function DirectionsRecall({
           onClick={() => click("down")}
           disabled={phase !== "input"}
           className="comic-btn px-4 py-3 text-2xl disabled:opacity-50"
-          style={{ backgroundColor: activeDir === "down" ? "var(--comic-orange)" : "var(--panel)" }}
+          style={{ backgroundColor: activeDir === "down" ? "var(--ink)" : "var(--panel)" }}
         >
           ↓
         </button>
@@ -121,14 +121,14 @@ export default function DirectionsRecall({
           onClick={() => click("right")}
           disabled={phase !== "input"}
           className="comic-btn px-4 py-3 text-2xl disabled:opacity-50"
-          style={{ backgroundColor: activeDir === "right" ? "var(--comic-orange)" : "var(--panel)" }}
+          style={{ backgroundColor: activeDir === "right" ? "var(--ink)" : "var(--panel)" }}
         >
           →
         </button>
       </div>
       {phase === "showing" && activeDir && <p className="text-3xl">{ARROW[activeDir]}</p>}
       {(phase === "idle" || phase === "won" || phase === "lost") && (
-        <button onClick={start} className="comic-btn bg-comic-purple px-5 py-2 text-chip-ink">
+        <button onClick={start} className="comic-btn px-5 py-2 text-ink">
           {phase === "idle" ? "Start" : "Play Again"}
         </button>
       )}

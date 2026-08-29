@@ -82,13 +82,13 @@ export default function DigitSpanMemory({
             onKeyDown={(e) => e.key === "Enter" && submit()}
             className="comic-input w-48 px-3 py-2 text-center text-2xl tracking-widest"
           />
-          <button onClick={submit} className="comic-btn bg-comic-blue px-5 py-2 text-chip-ink">
+          <button onClick={submit} className="comic-btn px-5 py-2 text-ink">
             Submit
           </button>
         </>
       )}
       {(phase === "idle" || phase === "won" || phase === "lost") && (
-        <button onClick={start} className="comic-btn bg-comic-purple px-5 py-2 text-chip-ink">
+        <button onClick={start} className="comic-btn px-5 py-2 text-ink">
           {phase === "idle" ? "Start" : "Play Again"}
         </button>
       )}

@@ -84,7 +84,7 @@ export default function PatternMemory({
               disabled={phase !== "input"}
               className="rounded disabled:cursor-default"
               style={{
-                backgroundColor: litNow || reveal ? "var(--comic-blue)" : chosen ? "var(--comic-orange)" : "var(--panel)",
+                backgroundColor: litNow || reveal ? "var(--comic-blue)" : chosen ? "var(--ink)" : "var(--panel)",
                 border: "1px solid var(--ink)",
               }}
             />
@@ -92,12 +92,12 @@ export default function PatternMemory({
         })}
       </div>
       {phase === "input" && (
-        <button onClick={submit} className="comic-btn bg-comic-blue px-5 py-2 text-chip-ink">
+        <button onClick={submit} className="comic-btn px-5 py-2 text-ink">
           Submit
         </button>
       )}
       {(phase === "idle" || phase === "won" || phase === "lost") && (
-        <button onClick={start} className="comic-btn bg-comic-purple px-5 py-2 text-chip-ink">
+        <button onClick={start} className="comic-btn px-5 py-2 text-ink">
           {phase === "idle" ? "Start" : "Play Again"}
         </button>
       )}

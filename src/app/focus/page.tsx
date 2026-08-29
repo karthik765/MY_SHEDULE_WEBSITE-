@@ -474,7 +474,7 @@ export default function FocusPage() {
               <button
                 onClick={forceStopPlan}
                 disabled={forceStops.count >= MAX_FORCE_STOPS_PER_DAY}
-                className="comic-btn bg-comic-red px-4 py-2 text-sm text-chip-ink disabled:opacity-50"
+                className="comic-btn px-4 py-2 text-sm text-ink disabled:opacity-50"
               >
                 Force Stop ({Math.max(0, MAX_FORCE_STOPS_PER_DAY - forceStops.count)} left today)
               </button>
@@ -500,7 +500,7 @@ export default function FocusPage() {
               <p className="font-heading my-4 text-6xl tracking-wide tabular-nums">
                 {formatDuration(elapsedSeconds)}
               </p>
-              <button onClick={stop} className="comic-btn bg-comic-red px-6 py-2 text-sm text-chip-ink">
+              <button onClick={stop} className="comic-btn px-6 py-2 text-sm text-ink">
                 Stop
               </button>
             </div>
@@ -525,8 +525,8 @@ export default function FocusPage() {
                   onClick={() => selectMode("free")}
                   className="flex-1 px-3 py-2.5 text-sm font-bold"
                   style={{
-                    backgroundColor: mode === "free" ? "var(--comic-green)" : "transparent",
-                    color: mode === "free" ? "var(--chip-ink)" : "var(--ink)",
+                    backgroundColor: mode === "free" ? "var(--ink)" : "transparent",
+                    color: mode === "free" ? "var(--paper)" : "var(--ink)",
                   }}
                 >
                   🟢 Free Mode
@@ -535,8 +535,8 @@ export default function FocusPage() {
                   onClick={() => selectMode("focus")}
                   className="flex-1 px-3 py-2.5 text-sm font-bold"
                   style={{
-                    backgroundColor: mode === "focus" ? "var(--comic-orange)" : "transparent",
-                    color: mode === "focus" ? "var(--chip-ink)" : "var(--ink)",
+                    backgroundColor: mode === "focus" ? "var(--ink)" : "transparent",
+                    color: mode === "focus" ? "var(--paper)" : "var(--ink)",
                   }}
                 >
                   🎯 Focus Mode
@@ -553,7 +553,7 @@ export default function FocusPage() {
                         onChange={(e) => setSubject(e.target.value)}
                         placeholder="Subject"
                       />
-                      <button type="submit" className="comic-btn bg-comic-green px-6 py-2 text-sm text-chip-ink">
+                      <button type="submit" className="comic-btn px-6 py-2 text-sm text-ink">
                         Start
                       </button>
                     </div>
@@ -579,7 +579,7 @@ export default function FocusPage() {
                         </button>
                       ))}
                     </div>
-                    <button type="submit" className="comic-btn w-full bg-comic-orange px-6 py-3 text-sm text-chip-ink">
+                    <button type="submit" className="comic-btn w-full px-6 py-3 text-sm text-ink">
                       Start Focus Mode ({formatMinutes(planTotalMinutes(planStyle))} focus)
                     </button>
                     <p className="text-center text-xs text-ink/50">

@@ -191,7 +191,7 @@ export default function GameDetailPage() {
     return (
       <div className="comic-panel p-6 text-center">
         <p className="font-bold">Game not found.</p>
-        <Link href="/minigames" className="comic-btn mt-3 inline-block bg-comic-blue px-4 py-2 text-chip-ink">
+        <Link href="/minigames" className="comic-btn mt-3 inline-block px-4 py-2 text-ink">
           Back to Minigames
         </Link>
       </div>
@@ -206,7 +206,7 @@ export default function GameDetailPage() {
           {def.emoji} {def.title}
         </h1>
         <p className="text-sm font-bold text-ink/70">{unlockInfo.requirement}</p>
-        <Link href="/minigames" className="comic-btn mt-2 inline-block bg-comic-blue px-4 py-2 text-chip-ink">
+        <Link href="/minigames" className="comic-btn mt-2 inline-block px-4 py-2 text-ink">
           Back to Minigames
         </Link>
       </div>
@@ -265,8 +265,8 @@ export default function GameDetailPage() {
                   disabled={disabled}
                   className="comic-btn px-4 py-2 text-sm disabled:opacity-40"
                   style={{
-                    backgroundColor: difficulty === d ? "var(--comic-orange)" : "var(--panel)",
-                    color: difficulty === d ? "var(--chip-ink)" : "var(--ink)",
+                    backgroundColor: difficulty === d ? "var(--ink)" : "var(--panel)",
+                    color: difficulty === d ? "var(--paper)" : "var(--ink)",
                   }}
                 >
                   {DIFFICULTY_LABEL[d]}
@@ -281,7 +281,7 @@ export default function GameDetailPage() {
               setReward(null);
               setStarted(true);
             }}
-            className="comic-btn bg-comic-blue px-5 py-2 text-chip-ink"
+            className="comic-btn px-5 py-2 text-ink"
           >
             Start
           </button>
@@ -364,7 +364,7 @@ export default function GameDetailPage() {
             {def.difficulty}
           </span>
           {alreadySolved && (
-            <p className="comic-badge inline-block bg-comic-yellow px-2 py-0.5 text-xs text-chip-ink">
+            <p className="comic-badge inline-block px-2 py-0.5 text-xs text-ink">
               🔁 Replay — already solved, pays {Math.round(REPLAY_REWARD_PCT[def.difficulty] * 100)}% this time
             </p>
           )}
@@ -373,7 +373,7 @@ export default function GameDetailPage() {
               setReward(null);
               setStarted(true);
             }}
-            className="comic-btn bg-comic-blue px-5 py-2 text-chip-ink"
+            className="comic-btn px-5 py-2 text-ink"
           >
             Start
           </button>
@@ -416,7 +416,7 @@ export default function GameDetailPage() {
             {def.difficulty}
           </span>
           {alreadySolved && (
-            <p className="comic-badge inline-block bg-comic-yellow px-2 py-0.5 text-xs text-chip-ink">
+            <p className="comic-badge inline-block px-2 py-0.5 text-xs text-ink">
               🔁 Replay — already solved, pays {Math.round(REPLAY_REWARD_PCT[def.difficulty] * 100)}% this time
             </p>
           )}
@@ -425,7 +425,7 @@ export default function GameDetailPage() {
               setReward(null);
               setStarted(true);
             }}
-            className="comic-btn bg-comic-blue px-5 py-2 text-chip-ink"
+            className="comic-btn px-5 py-2 text-ink"
           >
             Start
           </button>

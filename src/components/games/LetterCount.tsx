@@ -84,7 +84,7 @@ export default function LetterCount({
                 key={i}
                 onClick={() => click(i, ch)}
                 className="cursor-pointer rounded px-0.5"
-                style={{ backgroundColor: found.has(i) ? "var(--comic-green)" : "transparent" }}
+                style={{ backgroundColor: found.has(i) ? "var(--ink)" : "transparent" }}
               >
                 {ch}
               </span>
@@ -93,7 +93,7 @@ export default function LetterCount({
         </p>
       )}
       {(status === "idle" || status === "won" || status === "lost") && (
-        <button onClick={start} className="comic-btn bg-comic-purple px-5 py-2 text-chip-ink">
+        <button onClick={start} className="comic-btn px-5 py-2 text-ink">
           {status === "idle" ? "Start" : "Play Again"}
         </button>
       )}

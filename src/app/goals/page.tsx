@@ -222,7 +222,7 @@ export default function GoalsPage() {
               <p className="font-heading text-xl tracking-wide text-comic-orange">
                 🔥 Study Streak: 10 hrs/day
               </p>
-              <span className="comic-badge bg-comic-orange px-2 py-0.5 text-xs text-chip-ink">
+              <span className="comic-badge px-2 py-0.5 text-xs text-ink">
                 {capped}/{STUDY_STREAK_GOAL_DAYS} days
               </span>
             </div>
@@ -276,7 +276,7 @@ export default function GoalsPage() {
             />
           </div>
         )}
-        <button type="submit" className="comic-btn bg-comic-blue px-4 py-2 text-sm text-chip-ink">
+        <button type="submit" className="comic-btn px-4 py-2 text-sm text-ink">
           Add
         </button>
       </form>
@@ -327,7 +327,7 @@ export default function GoalsPage() {
                         {goal.targetDate && !goal.locked && (
                           <button
                             onClick={() => finalizeGoal(goal)}
-                            className="comic-btn bg-comic-purple px-2 py-1 text-xs text-chip-ink"
+                            className="comic-btn px-2 py-1 text-xs text-ink"
                           >
                             Finalize
                           </button>
@@ -362,7 +362,7 @@ export default function GoalsPage() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => submitProof(goal)}
-                        className="comic-btn bg-comic-green px-3 py-1 text-xs text-chip-ink"
+                        className="comic-btn px-3 py-1 text-xs text-ink"
                       >
                         Submit & Complete
                       </button>
@@ -448,7 +448,7 @@ export default function GoalsPage() {
                     />
                     <button
                       onClick={() => addMilestone(goal.id)}
-                      className="comic-btn bg-comic-yellow px-2 py-1 text-xs text-chip-ink"
+                      className="comic-btn px-2 py-1 text-xs text-ink"
                     >
                       Add
                     </button>

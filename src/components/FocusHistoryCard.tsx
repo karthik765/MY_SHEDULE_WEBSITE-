@@ -139,8 +139,8 @@ export default function FocusHistoryCard() {
             onClick={() => setHistoryView("daily")}
             className="comic-btn px-3 py-1 text-xs"
             style={{
-              backgroundColor: historyView === "daily" ? "var(--comic-orange)" : "var(--panel)",
-              color: historyView === "daily" ? "var(--chip-ink)" : "var(--ink)",
+              backgroundColor: historyView === "daily" ? "var(--ink)" : "var(--panel)",
+              color: historyView === "daily" ? "var(--paper)" : "var(--ink)",
             }}
           >
             Daily
@@ -149,8 +149,8 @@ export default function FocusHistoryCard() {
             onClick={() => setHistoryView("weekly")}
             className="comic-btn px-3 py-1 text-xs"
             style={{
-              backgroundColor: historyView === "weekly" ? "var(--comic-orange)" : "var(--panel)",
-              color: historyView === "weekly" ? "var(--chip-ink)" : "var(--ink)",
+              backgroundColor: historyView === "weekly" ? "var(--ink)" : "var(--panel)",
+              color: historyView === "weekly" ? "var(--paper)" : "var(--ink)",
             }}
           >
             Weekly
@@ -180,7 +180,7 @@ export default function FocusHistoryCard() {
                   title={`${formatDayLabel(date, key, todayLocalKey)}: ${formatByUnit(minutes, unit)}`}
                   className="comic-panel-sm flex aspect-square flex-col items-center justify-center gap-0.5 p-1"
                   style={{
-                    backgroundColor: opacity > 0 ? "var(--comic-orange)" : "var(--panel)",
+                    backgroundColor: opacity > 0 ? "var(--ink)" : "var(--panel)",
                     opacity: opacity > 0 ? opacity : 1,
                     outline: isToday ? "2px solid var(--ink)" : undefined,
                     outlineOffset: isToday ? "-2px" : undefined,
@@ -188,14 +188,14 @@ export default function FocusHistoryCard() {
                 >
                   <span
                     className="text-sm font-bold leading-none sm:text-base"
-                    style={{ color: opacity >= 0.55 ? "var(--chip-ink)" : "var(--ink)" }}
+                    style={{ color: opacity >= 0.55 ? "var(--paper)" : "var(--ink)" }}
                   >
                     {date.getDate()}
                   </span>
                   {minutes > 0 && (
                     <span
                       className="text-sm font-extrabold leading-none sm:text-base"
-                      style={{ color: opacity >= 0.55 ? "var(--chip-ink)" : "var(--ink)" }}
+                      style={{ color: opacity >= 0.55 ? "var(--paper)" : "var(--ink)" }}
                     >
                       {formatCompactByUnit(minutes, unit)}
                     </span>
@@ -210,7 +210,7 @@ export default function FocusHistoryCard() {
               <span
                 key={o}
                 className="h-3 w-3 rounded"
-                style={{ backgroundColor: o > 0 ? "var(--comic-orange)" : "var(--panel)", opacity: o || 1, border: "1.5px solid var(--ink)" }}
+                style={{ backgroundColor: o > 0 ? "var(--ink)" : "var(--panel)", opacity: o || 1, border: "1.5px solid var(--ink)" }}
               />
             ))}
             <span>More</span>

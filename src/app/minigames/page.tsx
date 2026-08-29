@@ -175,7 +175,7 @@ function GameRow({
               >
                 <span className="text-3xl">{g.emoji}</span>
                 <span className="text-sm font-bold">{g.title}</span>
-                <span className="comic-badge bg-comic-yellow px-2 py-0.5 text-xs text-chip-ink">
+                <span className="comic-badge px-2 py-0.5 text-xs text-ink">
                   🔁 Replay · {Math.round(REPLAY_REWARD_PCT[g.difficulty] * 100)}% reward
                 </span>
               </Link>
@@ -198,7 +198,7 @@ function GameRow({
               </span>
               <span className="text-xs text-ink/50">+{g.rewardMinutes}m focus</span>
               {testMode && (
-                <span className="comic-badge bg-comic-purple px-2 py-0.5 text-xs text-chip-ink">🧪 no reward</span>
+                <span className="comic-badge px-2 py-0.5 text-xs text-ink">🧪 no reward</span>
               )}
               {done && (
                 <span className="text-xs font-bold text-comic-green">
@@ -232,8 +232,8 @@ function CompletedToggle({
           onClick={() => onChange(o.id)}
           className="rounded-lg px-3 py-1 text-xs font-bold transition-colors"
           style={{
-            backgroundColor: view === o.id ? "var(--comic-blue)" : "var(--panel)",
-            color: view === o.id ? "var(--chip-ink)" : "var(--ink)",
+            backgroundColor: view === o.id ? "var(--ink)" : "var(--panel)",
+            color: view === o.id ? "var(--paper)" : "var(--ink)",
           }}
         >
           {o.label}
@@ -354,8 +354,8 @@ export default function MinigamesPage() {
             onClick={() => setTab(t.id)}
             className="shrink-0 rounded-lg px-4 py-1.5 text-sm font-bold transition-colors"
             style={{
-              backgroundColor: tab === t.id ? "var(--comic-pink)" : "transparent",
-              color: tab === t.id ? "var(--chip-ink)" : "var(--ink)",
+              backgroundColor: tab === t.id ? "var(--ink)" : "transparent",
+              color: tab === t.id ? "var(--paper)" : "var(--ink)",
             }}
           >
             {t.label}

@@ -108,7 +108,7 @@ export default function TasksSection() {
             </option>
           ))}
         </select>
-        <button type="submit" className="comic-btn bg-comic-blue px-4 py-2 text-sm text-chip-ink">
+        <button type="submit" className="comic-btn px-4 py-2 text-sm text-ink">
           Add
         </button>
       </form>

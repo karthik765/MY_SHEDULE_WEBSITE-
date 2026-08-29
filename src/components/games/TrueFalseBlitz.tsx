@@ -97,17 +97,17 @@ export default function TrueFalseBlitz({
         <>
           <p className="max-w-md text-center text-lg font-bold">{statement.text}</p>
           <div className="flex gap-3">
-            <button onClick={() => answer(true)} className="comic-btn bg-comic-green px-6 py-3 text-chip-ink">
+            <button onClick={() => answer(true)} className="comic-btn px-6 py-3 text-ink">
               True
             </button>
-            <button onClick={() => answer(false)} className="comic-btn bg-comic-red px-6 py-3 text-chip-ink">
+            <button onClick={() => answer(false)} className="comic-btn px-6 py-3 text-ink">
               False
             </button>
           </div>
         </>
       )}
       {(status === "idle" || status === "won" || status === "lost") && (
-        <button onClick={start} className="comic-btn bg-comic-purple px-5 py-2 text-chip-ink">
+        <button onClick={start} className="comic-btn px-5 py-2 text-ink">
           {status === "idle" ? "Start" : "Play Again"}
         </button>
       )}

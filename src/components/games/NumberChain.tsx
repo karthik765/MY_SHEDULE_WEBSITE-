@@ -76,14 +76,14 @@ export default function NumberChain({
             onClick={() => click(n + 1)}
             disabled={status !== "playing" || n + 1 < next}
             className="comic-panel-sm flex h-12 w-12 items-center justify-center text-lg font-bold disabled:cursor-default"
-            style={{ backgroundColor: n + 1 < next ? "var(--comic-green)" : "var(--panel)" }}
+            style={{ backgroundColor: n + 1 < next ? "var(--ink)" : "var(--panel)" }}
           >
             {n + 1}
           </button>
         ))}
       </div>
       {(status === "idle" || status === "won" || status === "lost") && (
-        <button onClick={start} className="comic-btn bg-comic-purple px-5 py-2 text-chip-ink">
+        <button onClick={start} className="comic-btn px-5 py-2 text-ink">
           {status === "idle" ? "Start" : "Play Again"}
         </button>
       )}

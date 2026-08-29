@@ -150,7 +150,7 @@ export default function Snake({
                   : isSnake
                     ? "var(--comic-green)"
                     : isFood
-                      ? "var(--comic-red)"
+                      ? "var(--ink)"
                       : "transparent",
                 borderRadius: isFood ? "50%" : 2,
               }}
@@ -159,7 +159,7 @@ export default function Snake({
         })}
       </div>
       {(!started || gameOver) && (
-        <button onClick={start} className="comic-btn bg-comic-purple px-5 py-2 text-chip-ink">
+        <button onClick={start} className="comic-btn px-5 py-2 text-ink">
           {started ? "Play Again" : "Start"}
         </button>
       )}

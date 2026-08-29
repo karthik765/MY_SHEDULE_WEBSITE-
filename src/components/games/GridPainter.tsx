@@ -90,7 +90,7 @@ export default function GridPainter({
                 <div
                   key={i}
                   className="rounded"
-                  style={{ backgroundColor: pattern.has(i) ? "var(--comic-blue)" : "var(--panel)", border: "1px solid var(--ink)" }}
+                  style={{ backgroundColor: pattern.has(i) ? "var(--ink)" : "var(--panel)", border: "1px solid var(--ink)" }}
                 />
               ))}
             </div>
@@ -106,7 +106,7 @@ export default function GridPainter({
                   key={i}
                   onClick={() => toggle(i)}
                   className="rounded"
-                  style={{ backgroundColor: painted.has(i) ? "var(--comic-orange)" : "var(--panel)", border: "1px solid var(--ink)" }}
+                  style={{ backgroundColor: painted.has(i) ? "var(--ink)" : "var(--panel)", border: "1px solid var(--ink)" }}
                 />
               ))}
             </div>
@@ -114,7 +114,7 @@ export default function GridPainter({
         </div>
       )}
       {(status === "idle" || status === "won" || status === "lost") && (
-        <button onClick={start} className="comic-btn bg-comic-purple px-5 py-2 text-chip-ink">
+        <button onClick={start} className="comic-btn px-5 py-2 text-ink">
           {status === "idle" ? "Start" : "Play Again"}
         </button>
       )}

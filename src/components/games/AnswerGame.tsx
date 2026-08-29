@@ -36,7 +36,7 @@ export default function AnswerGame({
       <p className="text-lg leading-relaxed">{def.question}</p>
 
       {alreadySolved && status !== "correct" && (
-        <p className="comic-badge inline-block bg-comic-yellow px-2 py-0.5 text-xs text-chip-ink">
+        <p className="comic-badge inline-block px-2 py-0.5 text-xs text-ink">
           🔁 Replay — already solved, pays {replayPct}% this time
         </p>
       )}
@@ -62,7 +62,7 @@ export default function AnswerGame({
               if (status === "wrong") setStatus("idle");
             }}
           />
-          <button type="submit" className="comic-btn bg-comic-blue px-6 py-2 text-chip-ink">
+          <button type="submit" className="comic-btn px-6 py-2 text-ink">
             Submit
           </button>
         </form>

@@ -115,20 +115,20 @@ export default function SequenceSum({
                 key={i}
                 onClick={() => toggle(i)}
                 className="comic-panel-sm flex h-12 w-12 items-center justify-center text-lg font-bold"
-                style={{ backgroundColor: selected.has(i) ? "var(--comic-orange)" : "var(--panel)" }}
+                style={{ backgroundColor: selected.has(i) ? "var(--ink)" : "var(--panel)" }}
               >
                 {n}
               </button>
             ))}
           </div>
-          <button onClick={submit} className="comic-btn bg-comic-blue px-5 py-2 text-chip-ink">
+          <button onClick={submit} className="comic-btn px-5 py-2 text-ink">
             Submit
           </button>
           {message && <p className="text-xs font-bold text-ink/60">{message}</p>}
         </>
       )}
       {(status === "idle" || status === "won" || status === "lost") && (
-        <button onClick={start} className="comic-btn bg-comic-purple px-5 py-2 text-chip-ink">
+        <button onClick={start} className="comic-btn px-5 py-2 text-ink">
           {status === "idle" ? "Start" : "Play Again"}
         </button>
       )}

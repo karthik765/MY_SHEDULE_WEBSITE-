@@ -158,7 +158,7 @@ export default function NavBar() {
             {focusPoints !== null && (
               <Link
                 href="/focus"
-                className="comic-badge gap-1.5 bg-comic-orange px-3 py-1.5 text-sm text-chip-ink"
+                className="comic-badge gap-1.5 px-3 py-1.5 text-sm text-ink"
                 title="All-time Focus Points (1 minute of focus = 1 point)"
               >
                 🔥 {focusPoints} Focus Points

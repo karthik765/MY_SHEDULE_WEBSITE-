@@ -107,7 +107,7 @@ export default function Memory({
               onClick={() => flip(i)}
               disabled={shown}
               className="comic-panel-sm flex h-16 w-16 items-center justify-center text-2xl sm:h-20 sm:w-20 sm:text-3xl"
-              style={{ backgroundColor: card.matched ? "var(--comic-green)" : "var(--panel)" }}
+              style={{ backgroundColor: card.matched ? "var(--ink)" : "var(--panel)" }}
             >
               {shown ? card.emoji : "❓"}
             </button>
@@ -115,7 +115,7 @@ export default function Memory({
         })}
       </div>
       {allMatched && (
-        <button onClick={reset} className="comic-btn bg-comic-purple px-5 py-2 text-chip-ink">
+        <button onClick={reset} className="comic-btn px-5 py-2 text-ink">
           Play Again
         </button>
       )}

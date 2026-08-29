@@ -138,12 +138,12 @@ export default function QMBlockBall({
       </svg>
       <div className="flex gap-2">
         {phase === "draw" && (
-          <button onClick={launch} disabled={path.length < 2} className="comic-btn bg-comic-blue px-5 py-2 text-chip-ink disabled:opacity-40">
+          <button onClick={launch} disabled={path.length < 2} className="comic-btn px-5 py-2 text-ink disabled:opacity-40">
             Launch the ball
           </button>
         )}
         {(phase === "won" || phase === "lost") && (
-          <button onClick={reset} className="comic-btn bg-comic-purple px-5 py-2 text-chip-ink">
+          <button onClick={reset} className="comic-btn px-5 py-2 text-ink">
             {phase === "won" ? "Play Again" : "Try Again"}
           </button>
         )}

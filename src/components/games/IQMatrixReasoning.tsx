@@ -137,7 +137,7 @@ export default function IQMatrixReasoning({
         ))}
       </div>
       {status !== "playing" && (
-        <button onClick={reset} className="comic-btn bg-comic-purple px-5 py-2 text-chip-ink">
+        <button onClick={reset} className="comic-btn px-5 py-2 text-ink">
           Try Again
         </button>
       )}

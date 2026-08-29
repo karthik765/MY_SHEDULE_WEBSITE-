@@ -105,13 +105,13 @@ export default function IQNumberSeries({
             onKeyDown={(e) => e.key === "Enter" && submit()}
             className="comic-input w-32 px-3 py-2 text-center text-lg"
           />
-          <button onClick={submit} className="comic-btn bg-comic-blue px-5 py-2 text-chip-ink">
+          <button onClick={submit} className="comic-btn px-5 py-2 text-ink">
             Submit
           </button>
         </div>
       )}
       {status !== "playing" && (
-        <button onClick={reset} className="comic-btn bg-comic-purple px-5 py-2 text-chip-ink">
+        <button onClick={reset} className="comic-btn px-5 py-2 text-ink">
           Try Again
         </button>
       )}

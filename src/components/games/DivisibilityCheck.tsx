@@ -81,17 +81,17 @@ export default function DivisibilityCheck({
             Is {round.n} divisible by {round.divisor}?
           </p>
           <div className="flex gap-3">
-            <button onClick={() => answer(true)} className="comic-btn bg-comic-green px-6 py-3 text-chip-ink">
+            <button onClick={() => answer(true)} className="comic-btn px-6 py-3 text-ink">
               Yes
             </button>
-            <button onClick={() => answer(false)} className="comic-btn bg-comic-red px-6 py-3 text-chip-ink">
+            <button onClick={() => answer(false)} className="comic-btn px-6 py-3 text-ink">
               No
             </button>
           </div>
         </>
       )}
       {(status === "idle" || status === "won" || status === "lost") && (
-        <button onClick={start} className="comic-btn bg-comic-purple px-5 py-2 text-chip-ink">
+        <button onClick={start} className="comic-btn px-5 py-2 text-ink">
           {status === "idle" ? "Start" : "Play Again"}
         </button>
       )}

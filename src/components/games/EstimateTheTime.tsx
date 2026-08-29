@@ -83,22 +83,22 @@ export default function EstimateTheTime({
       )}
       {message && <p className="text-sm font-bold">{message}</p>}
       {status === "playing" && phase === "idle" && (
-        <button onClick={start} className="comic-btn bg-comic-blue px-6 py-3 text-chip-ink">
+        <button onClick={start} className="comic-btn px-6 py-3 text-ink">
           Start
         </button>
       )}
       {status === "playing" && phase === "waiting" && (
-        <button onClick={stop} className="comic-btn bg-comic-red px-6 py-3 text-chip-ink">
+        <button onClick={stop} className="comic-btn px-6 py-3 text-ink">
           Stop
         </button>
       )}
       {status === "playing" && phase === "roundDone" && (
-        <button onClick={beginRound} className="comic-btn bg-comic-blue px-6 py-3 text-chip-ink">
+        <button onClick={beginRound} className="comic-btn px-6 py-3 text-ink">
           Next Round
         </button>
       )}
       {status !== "playing" && (
-        <button onClick={start} className="comic-btn bg-comic-purple px-5 py-2 text-chip-ink">
+        <button onClick={start} className="comic-btn px-5 py-2 text-ink">
           Play Again
         </button>
       )}

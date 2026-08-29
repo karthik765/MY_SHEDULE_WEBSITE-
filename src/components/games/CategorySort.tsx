@@ -96,17 +96,17 @@ export default function CategorySort({
         <>
           <p className="font-heading text-3xl">{item.name}</p>
           <div className="flex gap-3">
-            <button onClick={() => choose("A")} className="comic-btn bg-comic-green px-6 py-3 text-chip-ink">
+            <button onClick={() => choose("A")} className="comic-btn px-6 py-3 text-ink">
               {CATEGORY_A_LABEL}
             </button>
-            <button onClick={() => choose("B")} className="comic-btn bg-comic-orange px-6 py-3 text-chip-ink">
+            <button onClick={() => choose("B")} className="comic-btn px-6 py-3 text-ink">
               {CATEGORY_B_LABEL}
             </button>
           </div>
         </>
       )}
       {(status === "idle" || status === "won" || status === "lost") && (
-        <button onClick={start} className="comic-btn bg-comic-purple px-5 py-2 text-chip-ink">
+        <button onClick={start} className="comic-btn px-5 py-2 text-ink">
           {status === "idle" ? "Start" : "Play Again"}
         </button>
       )}

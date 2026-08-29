@@ -88,8 +88,8 @@ export default function FocusPointsPage() {
             }}
             className="rounded-lg px-4 py-1.5 text-sm font-bold transition-colors"
             style={{
-              backgroundColor: filter === f.id ? "var(--comic-blue)" : "transparent",
-              color: filter === f.id ? "var(--chip-ink)" : "var(--ink)",
+              backgroundColor: filter === f.id ? "var(--ink)" : "transparent",
+              color: filter === f.id ? "var(--paper)" : "var(--ink)",
             }}
           >
             {f.label}
@@ -126,7 +126,7 @@ export default function FocusPointsPage() {
       {shown < filtered.length && (
         <button
           onClick={() => setShown((s) => s + PAGE_SIZE)}
-          className="comic-btn bg-comic-blue px-5 py-2 text-chip-ink"
+          className="comic-btn px-5 py-2 text-ink"
         >
           Load {Math.min(PAGE_SIZE, filtered.length - shown)} more
         </button>

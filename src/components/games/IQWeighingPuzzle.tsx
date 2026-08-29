@@ -94,7 +94,7 @@ export default function IQWeighingPuzzle({
         {phase === "lost" && `Wrong — it was ball #${round.oddIndex + 1}.`}
       </p>
       {result && phase === "playing" && (
-        <p className="comic-badge bg-comic-yellow px-3 py-1 text-xs text-chip-ink">
+        <p className="comic-badge px-3 py-1 text-xs text-ink">
           Last weighing: {result === "balanced" ? "Balanced ⚖️" : result === "left" ? "Left side heavier ⬅️" : "Right side heavier ➡️"}
         </p>
       )}
@@ -106,7 +106,7 @@ export default function IQWeighingPuzzle({
             disabled={phase !== "playing"}
             className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-ink text-xs font-bold transition disabled:opacity-50"
             style={{
-              backgroundColor: p === "left" ? "var(--comic-blue)" : p === "right" ? "var(--comic-orange)" : "var(--panel)",
+              backgroundColor: p === "left" ? "var(--comic-blue)" : p === "right" ? "var(--ink)" : "var(--panel)",
               color: p === "none" ? "var(--ink)" : "var(--chip-ink)",
             }}
           >
@@ -119,10 +119,10 @@ export default function IQWeighingPuzzle({
           <p className="text-xs text-ink/60">
             Left: {left.length ? left.map((i) => i + 1).join(", ") : "—"} · Right: {right.length ? right.map((i) => i + 1).join(", ") : "—"}
           </p>
-          <button onClick={weigh} disabled={!canWeigh} className="comic-btn bg-comic-blue px-4 py-1.5 text-sm text-chip-ink disabled:opacity-40">
+          <button onClick={weigh} disabled={!canWeigh} className="comic-btn px-4 py-1.5 text-sm text-ink disabled:opacity-40">
             Weigh
           </button>
-          <button onClick={() => setGuessMode(true)} className="comic-btn bg-comic-green px-4 py-1.5 text-sm text-chip-ink">
+          <button onClick={() => setGuessMode(true)} className="comic-btn px-4 py-1.5 text-sm text-ink">
             🔍 Guess the odd ball
           </button>
         </div>
@@ -131,7 +131,7 @@ export default function IQWeighingPuzzle({
         <p className="text-xs font-bold text-ink/70">Click the ball you think is the odd one out.</p>
       )}
       {phase !== "playing" && (
-        <button onClick={reset} className="comic-btn bg-comic-purple px-5 py-2 text-chip-ink">
+        <button onClick={reset} className="comic-btn px-5 py-2 text-ink">
           Try Again
         </button>
       )}

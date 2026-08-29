@@ -94,12 +94,12 @@ export default function MiniSudoku({
         })}
       </div>
       {status === "playing" && (
-        <button onClick={submit} className="comic-btn bg-comic-blue px-5 py-2 text-chip-ink">
+        <button onClick={submit} className="comic-btn px-5 py-2 text-ink">
           Submit
         </button>
       )}
       {status !== "playing" && (
-        <button onClick={reset} className="comic-btn bg-comic-purple px-5 py-2 text-chip-ink">
+        <button onClick={reset} className="comic-btn px-5 py-2 text-ink">
           Play Again
         </button>
       )}

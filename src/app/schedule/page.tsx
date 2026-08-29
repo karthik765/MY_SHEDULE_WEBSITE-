@@ -6,8 +6,8 @@ import ScheduleSection from "@/components/ScheduleSection";
 import TasksSection from "@/components/TasksSection";
 
 const TABS = [
-  { value: "schedule", label: "Schedule", color: "var(--comic-purple)" },
-  { value: "tasks", label: "Tasks", color: "var(--comic-red)" },
+  { value: "schedule", label: "Schedule" },
+  { value: "tasks", label: "Tasks" },
 ] as const;
 
 type Tab = (typeof TABS)[number]["value"];
@@ -19,8 +19,8 @@ function TabPicker({ tab, onChange }: { tab: Tab; onChange: (tab: Tab) => void }
         <button
           key={t.value}
           onClick={() => onChange(t.value)}
-          className={`comic-btn px-3 py-1.5 text-sm ${tab === t.value ? "text-chip-ink" : ""}`}
-          style={{ backgroundColor: tab === t.value ? t.color : "var(--panel)" }}
+          className={`comic-btn px-3 py-1.5 text-sm ${tab === t.value ? "text-paper" : ""}`}
+          style={{ backgroundColor: tab === t.value ? "var(--ink)" : "var(--panel)" }}
         >
           {t.label}
         </button>
