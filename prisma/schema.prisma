@@ -169,6 +169,22 @@ model GamePlay {
   @@index([playedAt])
 }
 
+// One row per "open" of a social platform from the Social tab. The budget
+// is 15 minutes (900s) COMBINED across X and Instagram, reset at the
+// server's local midnight (rows before today's start are simply ignored).
+// `seconds` is the accrued cost of that open. While a session is still
+// open (endedAt null) its live cost is (now - openedAt); getSocialState
+// clamps the running total so a tab left open can't exceed the budget.
+model SocialSession {
+  id       String    @id @default(cuid())
+  platform String // "x" | "instagram"
+  openedAt DateTime  @default(now())
+  endedAt  DateTime?
+  seconds  Int       @default(0)
+
+  @@index([openedAt])
+}
+
 // Ledger of focus-point bonuses/penalties that are NOT real logged study
 // time — minigame/puzzle/riddle rewards, and task/goal/habit failure
 // penalties. Focus Points = sum(StudySession.durationMinutes) + sum(amount)
