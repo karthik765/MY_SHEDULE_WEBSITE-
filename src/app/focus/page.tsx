@@ -55,7 +55,7 @@ function takeBreakCarry(key: string): number {
   return carried;
 }
 
-// Each block is 1h focus / 22m break (last block in a plan has no break
+// Each block is 1h focus / 15m break (last block in a plan has no break
 // after it), tagged with which half of your time it counts toward.
 type FocusCategory = "job" | "business";
 
@@ -77,27 +77,27 @@ const PLAN_STYLE_LABEL: Record<PlanStyle, string> = {
   "2x4": "2.5h × 4",
 };
 
-// "5-5": 5x1h Job Trials, then 5x1h Business & Passion — same 1h/22m
+// "5-5": 5x1h Job Trials, then 5x1h Business & Passion — same 1h/15m
 // pattern as before, just split down the middle by category.
-// "2x4": 4x2h30m blocks alternating category, 22m break between each —
+// "2x4": 4x2h30m blocks alternating category, 15m break between each —
 // 4 x 2.5h = 10h total, matching "5-5"'s daily total.
 const PLAN_PRESETS: Record<PlanStyle, PlanBlock[]> = {
   "5-5": [
-    { focusMinutes: 60, breakMinutes: 22, category: "job" },
-    { focusMinutes: 60, breakMinutes: 22, category: "job" },
-    { focusMinutes: 60, breakMinutes: 22, category: "job" },
-    { focusMinutes: 60, breakMinutes: 22, category: "job" },
-    { focusMinutes: 60, breakMinutes: 22, category: "job" },
-    { focusMinutes: 60, breakMinutes: 22, category: "business" },
-    { focusMinutes: 60, breakMinutes: 22, category: "business" },
-    { focusMinutes: 60, breakMinutes: 22, category: "business" },
-    { focusMinutes: 60, breakMinutes: 22, category: "business" },
+    { focusMinutes: 60, breakMinutes: 15, category: "job" },
+    { focusMinutes: 60, breakMinutes: 15, category: "job" },
+    { focusMinutes: 60, breakMinutes: 15, category: "job" },
+    { focusMinutes: 60, breakMinutes: 15, category: "job" },
+    { focusMinutes: 60, breakMinutes: 15, category: "job" },
+    { focusMinutes: 60, breakMinutes: 15, category: "business" },
+    { focusMinutes: 60, breakMinutes: 15, category: "business" },
+    { focusMinutes: 60, breakMinutes: 15, category: "business" },
+    { focusMinutes: 60, breakMinutes: 15, category: "business" },
     { focusMinutes: 60, breakMinutes: null, category: "business" },
   ],
   "2x4": [
-    { focusMinutes: 150, breakMinutes: 22, category: "job" },
-    { focusMinutes: 150, breakMinutes: 22, category: "business" },
-    { focusMinutes: 150, breakMinutes: 22, category: "job" },
+    { focusMinutes: 150, breakMinutes: 15, category: "job" },
+    { focusMinutes: 150, breakMinutes: 15, category: "business" },
+    { focusMinutes: 150, breakMinutes: 15, category: "job" },
     { focusMinutes: 150, breakMinutes: null, category: "business" },
   ],
 };
@@ -584,8 +584,8 @@ export default function FocusPage() {
                     </button>
                     <p className="text-center text-xs text-ink/50">
                       {planStyle === "5-5"
-                        ? "5×1h focus/22m break (Job Trials) → 5×1h focus/22m break (Business & Passion)"
-                        : "2.5h Job → 2.5h Business → 2.5h Job → 2.5h Business · 22m breaks between"}
+                        ? "5×1h focus/15m break (Job Trials) → 5×1h focus/15m break (Business & Passion)"
+                        : "2.5h Job → 2.5h Business → 2.5h Job → 2.5h Business · 15m breaks between"}
                     </p>
                   </form>
                 )}
