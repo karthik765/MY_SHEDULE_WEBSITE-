@@ -98,6 +98,9 @@ export default function SocialClient() {
   }, [state?.active]);
 
   async function open(platform: "x" | "instagram") {
+    // Open the tab synchronously, inside the click gesture — if we wait for
+    // the fetch to resolve first the browser blocks it as a popup.
+    const win = window.open("about:blank", "_blank");
     setBusy(true);
     setError(null);
     try {
@@ -106,14 +109,25 @@ export default function SocialClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ platform }),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error ?? "Could not open right now.");
-        if (data.state) applyState(data.state);
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data) {
+        win?.close();
+        setError(data?.error ?? `Could not open right now (server error ${res.status}).`);
+        if (data?.state) applyState(data.state);
         return;
       }
       applyState(data.state);
-      window.open(data.url, "_blank", "noopener");
+      if (win) {
+        win.opener = null;
+        win.location.href = data.url;
+      } else {
+        // Popup was blocked anyway — fall back to navigating this tab.
+        setError("Your browser blocked the new tab. Allow pop-ups for this site, or click again.");
+        window.location.assign(data.url);
+      }
+    } catch {
+      win?.close();
+      setError("Network error — could not reach the server.");
     } finally {
       setBusy(false);
     }

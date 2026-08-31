@@ -1,6 +1,5 @@
-import { NextResponse } from "next/server";
-import { getSocialState } from "@/lib/social";
+import { getSocialState, socialRoute } from "@/lib/social";
 
 export async function GET() {
-  return NextResponse.json(await getSocialState());
+  return socialRoute(() => getSocialState());
 }

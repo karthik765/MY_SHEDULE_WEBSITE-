@@ -1,4 +1,25 @@
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+
+// The SocialSession table is created by `npx prisma db push`. Until that's
+// run against the deployed database every query throws Prisma P2021 —
+// turn that into a clear message instead of an opaque 500.
+export async function socialRoute(fn: () => Promise<Response | unknown>): Promise<Response> {
+  try {
+    const result = await fn();
+    return result instanceof Response ? result : NextResponse.json(result);
+  } catch (err: unknown) {
+    const code = (err as { code?: string })?.code;
+    if (code === "P2021" || code === "P2022") {
+      return NextResponse.json(
+        { error: "Social isn't set up yet: run `npx prisma db push` on the database." },
+        { status: 503 }
+      );
+    }
+    console.error("social route error", err);
+    return NextResponse.json({ error: "Something went wrong." }, { status: 500 });
+  }
+}
 
 // 15 minutes, COMBINED across every platform, per local day.
 export const DAILY_BUDGET_SECONDS = 15 * 60;
