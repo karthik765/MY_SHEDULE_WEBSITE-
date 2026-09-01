@@ -14,6 +14,7 @@ const LINKS = [
   { href: "/schedule", label: "Schedule" },
   { href: "/habits", label: "Habits" },
   { href: "/goals", label: "Goals" },
+  { href: "/topics", label: "Completed Topics" },
   { href: "/minigames", label: "Minigames" },
   { href: "/social", label: "Social" },
   { href: "/trophies", label: "Trophies" },

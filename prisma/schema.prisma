@@ -185,6 +185,24 @@ model SocialSession {
   @@index([openedAt])
 }
 
+// Self-referencing tree for the Completed Topics tab. A root node (parentId
+// null) is a whole learning track ("Data Engineering", "Game Development
+// (Unreal/VFX)", "AI"); every other node is a subtopic hanging off a parent,
+// so the tree can go as many levels deep as the topic actually branches.
+model TopicNode {
+  id        String      @id @default(cuid())
+  name      String
+  status    String      @default("planned") // "planned" | "learning" | "completed" | "not_useful"
+  order     Int         @default(0)
+  parent    TopicNode?  @relation("TopicChildren", fields: [parentId], references: [id], onDelete: Cascade)
+  parentId  String?
+  children  TopicNode[] @relation("TopicChildren")
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@index([parentId])
+}
+
 // Ledger of focus-point bonuses/penalties that are NOT real logged study
 // time — minigame/puzzle/riddle rewards, and task/goal/habit failure
 // penalties. Focus Points = sum(StudySession.durationMinutes) + sum(amount)
