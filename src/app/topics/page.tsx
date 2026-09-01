@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 
 type TopicStatus = "planned" | "learning" | "completed" | "not_useful";
 
@@ -130,31 +130,36 @@ export default function TopicsPage() {
 
   const tree = buildTree(topics);
 
-  function renderNode(node: TreeNode) {
+  // The row itself (dot, name, status, add/delete) — shared by both a root
+  // card's header and every nested <li>, just at different text sizes.
+  function nodeRow(node: TreeNode, { root }: { root: boolean }): ReactNode {
     const meta = STATUS_META[node.status];
     const hasChildren = node.children.length > 0;
     const isCollapsed = collapsed.has(node.id);
     const isAddingChild = addingChildFor === node.id;
 
     return (
-      <li key={node.id}>
-        <div
-          className="flex flex-wrap items-center gap-1.5 rounded-lg border-2 p-1.5"
-          style={{ borderColor: meta.color }}
-        >
+      <>
+        <div className="flex flex-wrap items-center gap-1.5">
           {hasChildren ? (
             <button
               onClick={() => toggleCollapsed(node.id)}
-              className="w-5 shrink-0 text-xs font-bold text-ink/60"
+              className="w-4 shrink-0 text-xs font-bold text-ink/50"
               title={isCollapsed ? "Expand" : "Collapse"}
             >
               {isCollapsed ? "▸" : "▾"}
             </button>
           ) : (
-            <span className="w-5 shrink-0" />
+            <span className="w-4 shrink-0" />
           )}
+          <span
+            className="h-2.5 w-2.5 shrink-0 rounded-full"
+            style={{ backgroundColor: meta.color }}
+          />
           <input
-            className="comic-input min-w-0 flex-1 px-2 py-1 text-sm font-bold"
+            className={`min-w-0 flex-1 bg-transparent px-0.5 py-0.5 text-ink outline-none focus:underline ${
+              root ? "font-heading text-lg tracking-wide" : "text-sm font-bold"
+            }`}
             value={node.name}
             onChange={(e) => updateNameLocal(node.id, e.target.value)}
             onBlur={(e) => commitName(node.id, e.target.value)}
@@ -162,7 +167,7 @@ export default function TopicsPage() {
           <select
             value={node.status}
             onChange={(e) => setStatus(node.id, e.target.value as TopicStatus)}
-            className="comic-input px-2 py-1 text-xs font-bold"
+            className="comic-input px-1.5 py-1 text-xs font-bold"
             style={{ color: meta.color }}
           >
             {(Object.entries(STATUS_META) as [TopicStatus, (typeof STATUS_META)[TopicStatus]][]).map(
@@ -178,7 +183,7 @@ export default function TopicsPage() {
               setAddingChildFor(isAddingChild ? null : node.id);
               setChildDraft("");
             }}
-            className="comic-btn px-2 py-1 text-xs text-ink"
+            className="text-xs font-bold text-ink/60 hover:text-comic-orange hover:underline"
             title="Add subtopic"
           >
             + Sub
@@ -197,7 +202,7 @@ export default function TopicsPage() {
               e.preventDefault();
               addChild(node.id);
             }}
-            className="ml-7 mt-1.5 flex gap-1.5"
+            className="mt-1.5 flex gap-1.5 pl-6"
           >
             <input
               autoFocus
@@ -221,12 +226,17 @@ export default function TopicsPage() {
             </button>
           </form>
         )}
+      </>
+    );
+  }
 
-        {hasChildren && !isCollapsed && (
-          <ul className="ml-6 mt-1.5 space-y-1.5 border-l-2 border-ink/15 pl-3">
-            {node.children.map((c) => renderNode(c))}
-          </ul>
-        )}
+  function renderChild(node: TreeNode) {
+    const hasChildren = node.children.length > 0;
+    const isCollapsed = collapsed.has(node.id);
+    return (
+      <li key={node.id}>
+        {nodeRow(node, { root: false })}
+        {hasChildren && !isCollapsed && <ul>{node.children.map((c) => renderChild(c))}</ul>}
       </li>
     );
   }
@@ -271,7 +281,20 @@ export default function TopicsPage() {
       ) : tree.length === 0 ? (
         <p className="text-ink/60">No topics yet — add your first main topic above.</p>
       ) : (
-        <ul className="space-y-3">{tree.map((n) => renderNode(n))}</ul>
+        <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {tree.map((root) => {
+            const hasChildren = root.children.length > 0;
+            const isCollapsed = collapsed.has(root.id);
+            return (
+              <div key={root.id} className="comic-panel p-4">
+                {nodeRow(root, { root: true })}
+                {hasChildren && !isCollapsed && (
+                  <ul className="topic-tree mt-3">{root.children.map((c) => renderChild(c))}</ul>
+                )}
+              </div>
+            );
+          })}
+        </div>
       )}
     </div>
   );
