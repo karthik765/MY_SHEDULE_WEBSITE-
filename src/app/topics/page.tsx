@@ -35,11 +35,15 @@ function countDescendants(node: TreeNode): number {
 
 const STATUS_ORDER: TopicStatus[] = ["planned", "learning", "completed", "not_useful"];
 
+// Fixed hex values, not the shared --comic-* theme tokens — those all
+// alias to the same accent orange site-wide, which would make every status
+// render identically. Status color needs to stay distinguishable (done vs.
+// in-progress vs. skipped) regardless of whatever accent the theme uses.
 const STATUS_META: Record<TopicStatus, { label: string; color: string }> = {
-  planned: { label: "Planned", color: "var(--ink)" },
-  learning: { label: "Learning", color: "var(--comic-blue)" },
-  completed: { label: "Completed", color: "var(--comic-green)" },
-  not_useful: { label: "Not Useful", color: "var(--comic-red)" },
+  planned: { label: "Planned", color: "#9a95a8" },
+  learning: { label: "Learning", color: "#4c8dff" },
+  completed: { label: "Completed", color: "#3ddc91" },
+  not_useful: { label: "Not Useful", color: "#ff5b6b" },
 };
 
 // Fixed-geometry "skill tree" layout: every pill is the same size, so
