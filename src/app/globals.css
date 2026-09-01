@@ -546,44 +546,6 @@ h3 {
   }
 }
 
-/* Org-chart/file-explorer style connector lines for the Completed Topics
-   tree: a child <ul> carries a vertical line down its left edge (the
-   trunk), and each <li> draws a short horizontal stub from that trunk into
-   its own row — so subtopics visibly branch off their parent instead of
-   just being indented boxes. */
-@layer components {
-  .topic-tree,
-  .topic-tree ul {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-
-  .topic-tree ul {
-    margin-left: 0.6rem;
-    padding-left: 1.25rem;
-    border-left: 2px solid var(--line);
-  }
-
-  .topic-tree li {
-    position: relative;
-    padding-left: 0.9rem;
-  }
-
-  .topic-tree li + li {
-    margin-top: 0.375rem;
-  }
-
-  .topic-tree li::before {
-    content: "";
-    position: absolute;
-    top: 1.05rem;
-    left: -1.25rem;
-    width: 1.25rem;
-    border-top: 2px solid var(--line);
-  }
-}
-
 @keyframes k-tilt {
   0%,
   100% {

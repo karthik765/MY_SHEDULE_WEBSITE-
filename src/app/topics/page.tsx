@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 
 type TopicStatus = "planned" | "learning" | "completed" | "not_useful";
 
@@ -33,12 +33,64 @@ function countDescendants(node: TreeNode): number {
   return node.children.reduce((sum, c) => sum + 1 + countDescendants(c), 0);
 }
 
-const STATUS_META: Record<TopicStatus, { label: string; color: string; emoji: string }> = {
-  planned: { label: "Planned", color: "var(--ink)", emoji: "⚪" },
-  learning: { label: "Learning", color: "var(--comic-blue)", emoji: "🔵" },
-  completed: { label: "Completed", color: "var(--comic-green)", emoji: "✅" },
-  not_useful: { label: "Not Useful", color: "var(--comic-red)", emoji: "🚫" },
+const STATUS_ORDER: TopicStatus[] = ["planned", "learning", "completed", "not_useful"];
+
+const STATUS_META: Record<TopicStatus, { label: string; color: string }> = {
+  planned: { label: "Planned", color: "var(--ink)" },
+  learning: { label: "Learning", color: "var(--comic-blue)" },
+  completed: { label: "Completed", color: "var(--comic-green)" },
+  not_useful: { label: "Not Useful", color: "var(--comic-red)" },
 };
+
+// Fixed-geometry "skill tree" layout: every pill is the same size, so
+// connector-line endpoints can be computed from (depth, row) alone — no
+// DOM measuring needed. A node's row is the average of its children's rows
+// (leaves get the next sequential row), which is what keeps a parent
+// vertically centered on its branch.
+const PILL_W = 176;
+const PILL_H = 32;
+const ROW_H = 44;
+const COL_STEP = 236;
+const PAD = 16;
+const ROOTS_PER_PAGE = 5;
+
+interface Positioned {
+  node: TreeNode;
+  depth: number;
+  row: number;
+  hasChildren: boolean;
+}
+
+function layoutTree(root: TreeNode, collapsed: Set<string>) {
+  const positioned: Positioned[] = [];
+  let rowCounter = 0;
+  let maxDepth = 0;
+
+  function visit(node: TreeNode, depth: number): number {
+    maxDepth = Math.max(maxDepth, depth);
+    const children = collapsed.has(node.id) ? [] : node.children;
+    let row: number;
+    if (children.length === 0) {
+      row = rowCounter++;
+    } else {
+      const childRows = children.map((c) => visit(c, depth + 1));
+      row = childRows.reduce((a, b) => a + b, 0) / childRows.length;
+    }
+    positioned.push({ node, depth, row, hasChildren: node.children.length > 0 });
+    return row;
+  }
+
+  visit(root, 0);
+  return { positioned, rowCount: Math.max(1, rowCounter), maxDepth };
+}
+
+function centerY(row: number) {
+  return PAD + row * ROW_H + ROW_H / 2;
+}
+
+function leftX(depth: number) {
+  return PAD + depth * COL_STEP;
+}
 
 export default function TopicsPage() {
   const [topics, setTopics] = useState<TopicNode[]>([]);
@@ -47,6 +99,7 @@ export default function TopicsPage() {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [addingChildFor, setAddingChildFor] = useState<string | null>(null);
   const [childDraft, setChildDraft] = useState("");
+  const [page, setPage] = useState(1);
 
   async function load() {
     const res = await fetch("/api/topics");
@@ -59,14 +112,26 @@ export default function TopicsPage() {
     load();
   }, []);
 
+  const tree = useMemo(() => buildTree(topics), [topics]);
+  const totalPages = Math.max(1, Math.ceil(tree.length / ROOTS_PER_PAGE));
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- clamps to a valid page after a root is deleted
+    setPage((p) => Math.min(p, totalPages));
+  }, [totalPages]);
+
   async function addRoot(e: FormEvent) {
     e.preventDefault();
     if (!newRootName.trim()) return;
-    await fetch("/api/topics", {
+    const res = await fetch("/api/topics", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: newRootName }),
     });
+    if (res.ok) {
+      // Jump to whichever page the new tree lands on (roots fill 5 per page).
+      setPage(Math.floor(tree.length / ROOTS_PER_PAGE) + 1);
+    }
     setNewRootName("");
     load();
   }
@@ -108,6 +173,11 @@ export default function TopicsPage() {
     });
   }
 
+  function cycleStatus(id: string, current: TopicStatus) {
+    const next = STATUS_ORDER[(STATUS_ORDER.indexOf(current) + 1) % STATUS_ORDER.length];
+    setStatus(id, next);
+  }
+
   async function deleteNode(node: TreeNode) {
     const count = countDescendants(node);
     const msg =
@@ -128,82 +198,117 @@ export default function TopicsPage() {
     });
   }
 
-  const tree = buildTree(topics);
+  const pageRoots = tree.slice((page - 1) * ROOTS_PER_PAGE, page * ROOTS_PER_PAGE);
 
-  // The row itself (dot, name, status, add/delete) — shared by both a root
-  // card's header and every nested <li>, just at different text sizes.
-  function nodeRow(node: TreeNode, { root }: { root: boolean }): ReactNode {
-    const meta = STATUS_META[node.status];
-    const hasChildren = node.children.length > 0;
-    const isCollapsed = collapsed.has(node.id);
-    const isAddingChild = addingChildFor === node.id;
+  function renderLane(root: TreeNode) {
+    const { positioned, rowCount, maxDepth } = layoutTree(root, collapsed);
+    const byId = new Map(positioned.map((p) => [p.node.id, p]));
+    const width = PAD * 2 + maxDepth * COL_STEP + PILL_W;
+    const height = PAD * 2 + rowCount * ROW_H;
+    const addingTarget = positioned.find((p) => p.node.id === addingChildFor);
 
     return (
-      <>
-        <div className="flex flex-wrap items-center gap-1.5">
-          {hasChildren ? (
-            <button
-              onClick={() => toggleCollapsed(node.id)}
-              className="w-4 shrink-0 text-xs font-bold text-ink/50"
-              title={isCollapsed ? "Expand" : "Collapse"}
-            >
-              {isCollapsed ? "▸" : "▾"}
-            </button>
-          ) : (
-            <span className="w-4 shrink-0" />
-          )}
-          <span
-            className="h-2.5 w-2.5 shrink-0 rounded-full"
-            style={{ backgroundColor: meta.color }}
-          />
-          <input
-            className={`min-w-0 flex-1 bg-transparent px-0.5 py-0.5 text-ink outline-none focus:underline ${
-              root ? "font-heading text-lg tracking-wide" : "text-sm font-bold"
-            }`}
-            value={node.name}
-            onChange={(e) => updateNameLocal(node.id, e.target.value)}
-            onBlur={(e) => commitName(node.id, e.target.value)}
-          />
-          <select
-            value={node.status}
-            onChange={(e) => setStatus(node.id, e.target.value as TopicStatus)}
-            className="comic-input px-1.5 py-1 text-xs font-bold"
-            style={{ color: meta.color }}
-          >
-            {(Object.entries(STATUS_META) as [TopicStatus, (typeof STATUS_META)[TopicStatus]][]).map(
-              ([value, m]) => (
-                <option key={value} value={value}>
-                  {m.emoji} {m.label}
-                </option>
-              )
-            )}
-          </select>
-          <button
-            onClick={() => {
-              setAddingChildFor(isAddingChild ? null : node.id);
-              setChildDraft("");
-            }}
-            className="text-xs font-bold text-ink/60 hover:text-comic-orange hover:underline"
-            title="Add subtopic"
-          >
-            + Sub
-          </button>
-          <button
-            onClick={() => deleteNode(node)}
-            className="text-xs font-bold text-comic-red hover:underline"
-          >
-            Delete
-          </button>
+      <div key={root.id} className="comic-panel p-4">
+        <div className="overflow-x-auto">
+          <div style={{ position: "relative", width, height }}>
+            <svg width={width} height={height} style={{ position: "absolute", inset: 0, overflow: "visible" }}>
+              {positioned.map((p) => {
+                if (!p.node.parentId) return null;
+                const parent = byId.get(p.node.parentId);
+                if (!parent) return null;
+                const x1 = leftX(parent.depth) + PILL_W;
+                const y1 = centerY(parent.row);
+                const x2 = leftX(p.depth);
+                const y2 = centerY(p.row);
+                const midX = x1 + (x2 - x1) / 2;
+                return (
+                  <path
+                    key={p.node.id}
+                    d={`M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}`}
+                    fill="none"
+                    stroke={STATUS_META[p.node.status].color}
+                    strokeWidth={1.6}
+                    opacity={0.75}
+                  />
+                );
+              })}
+            </svg>
+            {positioned.map((p) => {
+              const meta = STATUS_META[p.node.status];
+              const isCollapsed = collapsed.has(p.node.id);
+              const isRoot = p.depth === 0;
+              return (
+                <div
+                  key={p.node.id}
+                  className="flex items-center gap-1"
+                  style={{
+                    position: "absolute",
+                    left: leftX(p.depth),
+                    top: centerY(p.row) - PILL_H / 2,
+                    width: PILL_W,
+                    height: PILL_H,
+                    borderRadius: PILL_H / 2,
+                    border: `${isRoot ? 2 : 1.5}px solid ${meta.color}`,
+                    background: "var(--panel)",
+                    padding: "0 6px",
+                  }}
+                >
+                  <button
+                    onClick={() => toggleCollapsed(p.node.id)}
+                    className="w-3 shrink-0 text-[10px] font-bold text-ink/50"
+                    title={p.hasChildren ? (isCollapsed ? "Expand" : "Collapse") : undefined}
+                    disabled={!p.hasChildren}
+                    style={{ visibility: p.hasChildren ? "visible" : "hidden" }}
+                  >
+                    {isCollapsed ? "▸" : "▾"}
+                  </button>
+                  <button
+                    onClick={() => cycleStatus(p.node.id, p.node.status)}
+                    className="h-2.5 w-2.5 shrink-0 rounded-full"
+                    style={{ backgroundColor: meta.color }}
+                    title={`${meta.label} — click to change`}
+                  />
+                  <input
+                    className={`min-w-0 flex-1 overflow-hidden bg-transparent px-0.5 text-ink outline-none focus:underline ${
+                      isRoot ? "text-[13px] font-bold" : "text-[11.5px] font-bold"
+                    }`}
+                    style={{ textOverflow: "ellipsis" }}
+                    value={p.node.name}
+                    onChange={(e) => updateNameLocal(p.node.id, e.target.value)}
+                    onBlur={(e) => commitName(p.node.id, e.target.value)}
+                  />
+                  <button
+                    onClick={() => {
+                      setAddingChildFor(addingChildFor === p.node.id ? null : p.node.id);
+                      setChildDraft("");
+                    }}
+                    className="shrink-0 text-[11px] font-bold text-ink/50 hover:text-comic-orange"
+                    title="Add subtopic"
+                  >
+                    +
+                  </button>
+                  <button
+                    onClick={() => deleteNode(p.node)}
+                    className="shrink-0 text-[11px] font-bold text-comic-red/70 hover:text-comic-red"
+                    title="Delete"
+                  >
+                    ×
+                  </button>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
-        {isAddingChild && (
+        {addingTarget && (
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              addChild(node.id);
+              addChild(addingTarget.node.id);
             }}
-            className="mt-1.5 flex gap-1.5 pl-6"
+            className="mt-3 flex flex-wrap items-center gap-1.5"
           >
+            <span className="text-xs text-ink/50">Add subtopic under &quot;{addingTarget.node.name}&quot;:</span>
             <input
               autoFocus
               className="comic-input min-w-0 flex-1 px-2 py-1 text-xs"
@@ -226,18 +331,7 @@ export default function TopicsPage() {
             </button>
           </form>
         )}
-      </>
-    );
-  }
-
-  function renderChild(node: TreeNode) {
-    const hasChildren = node.children.length > 0;
-    const isCollapsed = collapsed.has(node.id);
-    return (
-      <li key={node.id}>
-        {nodeRow(node, { root: false })}
-        {hasChildren && !isCollapsed && <ul>{node.children.map((c) => renderChild(c))}</ul>}
-      </li>
+      </div>
     );
   }
 
@@ -248,8 +342,8 @@ export default function TopicsPage() {
           Completed Topics
         </h1>
         <p className="mt-1 text-sm text-ink/50">
-          One tree per track — Data Engineering, Game Dev, VFX/Unreal, AI, whatever you&apos;re learning — branching
-          into every subtopic you add.
+          One skill tree per track — Data Engineering, Game Dev, VFX/Unreal, AI, whatever you&apos;re learning —
+          branching right into every subtopic you add. Click a dot to change its status.
         </p>
       </div>
 
@@ -276,25 +370,30 @@ export default function TopicsPage() {
         )}
       </div>
 
+      {totalPages > 1 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+            <button
+              key={n}
+              onClick={() => setPage(n)}
+              className="comic-btn px-3 py-1 text-xs"
+              style={{
+                backgroundColor: page === n ? "var(--ink)" : "var(--panel)",
+                color: page === n ? "var(--paper)" : "var(--ink)",
+              }}
+            >
+              Page {n}
+            </button>
+          ))}
+        </div>
+      )}
+
       {loading ? (
         <p className="text-ink/60">Loading...</p>
       ) : tree.length === 0 ? (
         <p className="text-ink/60">No topics yet — add your first main topic above.</p>
       ) : (
-        <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {tree.map((root) => {
-            const hasChildren = root.children.length > 0;
-            const isCollapsed = collapsed.has(root.id);
-            return (
-              <div key={root.id} className="comic-panel p-4">
-                {nodeRow(root, { root: true })}
-                {hasChildren && !isCollapsed && (
-                  <ul className="topic-tree mt-3">{root.children.map((c) => renderChild(c))}</ul>
-                )}
-              </div>
-            );
-          })}
-        </div>
+        <div className="space-y-4">{pageRoots.map((root) => renderLane(root))}</div>
       )}
     </div>
   );
