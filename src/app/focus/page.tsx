@@ -173,6 +173,11 @@ export default function FocusPage() {
   const [mode, setMode] = useState<TimerMode>("classic");
   const [forceStops, setForceStops] = useState<ForceStopState>({ date: todayKey(), count: 0 });
   const [unit, setUnit] = useState<DisplayUnit>("hours");
+  // Gates every start/stop click so a slow network can't turn one intended
+  // click into two requests, and so the button visibly reacts immediately
+  // instead of looking dead until the round trip finishes.
+  const [busy, setBusy] = useState<"idle" | "starting" | "stopping">("idle");
+  const [timerError, setTimerError] = useState<string | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
 
   function playFocusEndSound() {
@@ -222,37 +227,66 @@ export default function FocusPage() {
   // whatever moment the tab happens to wake up and run this — otherwise time
   // spent away while backgrounded/asleep would get logged as focus time.
   async function stopActiveSession(endTimeOverride?: number) {
-    await fetch("/api/timer/stop", {
+    return fetch("/api/timer/stop", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      // keepalive lets the request finish even if the page is closing —
+      // clicking Stop and immediately shutting the PC used to abort it
+      // mid-flight, which is how a session stayed open overnight.
+      keepalive: true,
       body: JSON.stringify(endTimeOverride != null ? { endTime: endTimeOverride } : {}),
     });
   }
 
-  // POSTs /api/timer/start, and if the server reports a session is already
-  // running (a stray one left over from an earlier failed transition), clears
-  // it and retries once instead of silently giving up — that stray-session
-  // deadlock is what made "Skip break" appear to do nothing.
-  async function startSessionWithRecovery(subject: string): Promise<Response> {
-    let res = await fetch("/api/timer/start", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ subject }),
-    });
-    if (res.status === 409) {
-      await stopActiveSession();
-      res = await fetch("/api/timer/start", {
+  // A Non-Focused session has to be recorded at half its real elapsed time
+  // no matter where it's stopped from — the Stop button or the stale-session
+  // recovery below. Returns undefined for normal sessions, which stops them
+  // at the real current time.
+  function slowEndTimeFor(session: StudySession): number | undefined {
+    if (!isSlowSubject(session.subject)) return undefined;
+    const startMs = new Date(session.startTime).getTime();
+    return startMs + (Date.now() - startMs) * SLOW_RATE;
+  }
+
+  // A session younger than this that blocks a start is almost certainly the
+  // very click being retried, not a leftover — so adopt it rather than
+  // killing it.
+  const STALE_SESSION_MS = 2 * 60 * 1000;
+
+  // POSTs /api/timer/start. If the server says one is already running, that's
+  // either this same click arriving twice (adopt the session — the old
+  // behaviour of stopping and restarting is what logged those stray 1-minute
+  // sessions next to real ones) or a genuinely stale session left running
+  // from an earlier sitting, which gets stopped at its correctly rated
+  // duration before starting fresh.
+  async function startSessionWithRecovery(subject: string): Promise<StudySession | null> {
+    const post = () =>
+      fetch("/api/timer/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ subject }),
       });
+
+    let res = await post();
+    if (res.status === 409) {
+      const existing: StudySession | undefined = (await res.json())?.session;
+      if (!existing) return null;
+      if (Date.now() - new Date(existing.startTime).getTime() < STALE_SESSION_MS) {
+        return existing;
+      }
+      await stopActiveSession(slowEndTimeFor(existing));
+      res = await post();
     }
-    return res;
+    if (!res.ok) return null;
+    return res.json();
   }
 
   async function startPlanFocus(blockIndex: number) {
-    const res = await startSessionWithRecovery(planLabel(blockIndex));
-    if (!res.ok) return;
+    const session = await startSessionWithRecovery(planLabel(blockIndex));
+    if (!session) {
+      setTimerError("Couldn't start the timer. Check your connection and try again.");
+      return;
+    }
     const next: PlanState = {
       blockIndex,
       phase: "focus",
@@ -260,13 +294,25 @@ export default function FocusPage() {
     };
     setPlan(next);
     savePlanState(next);
+    // Show the running session straight from the start response instead of
+    // waiting on the follow-up list fetch — that wait is what made the
+    // button feel unresponsive.
+    setActive(session);
+    setNow(Date.now());
     load();
   }
 
   async function startClassicPlan(e: FormEvent) {
     e.preventDefault();
+    if (busy !== "idle") return;
+    setBusy("starting");
+    setTimerError(null);
     setPlanJustFinished(false);
-    await startPlanFocus(0);
+    try {
+      await startPlanFocus(0);
+    } finally {
+      setBusy("idle");
+    }
   }
 
   async function advancePlan(nextIndex: number) {
@@ -345,10 +391,29 @@ export default function FocusPage() {
   // Free Mode: study for as long as you want, stop whenever — no break is
   // ever started automatically. The only breaks in this app come from
   // Classic Mode's built-in plan.
+  async function runStart(label: string) {
+    if (busy !== "idle") return;
+    setBusy("starting");
+    setTimerError(null);
+    try {
+      const session = await startSessionWithRecovery(label);
+      if (!session) {
+        setTimerError("Couldn't start the timer. Check your connection and try again.");
+        return;
+      }
+      setActive(session);
+      setNow(Date.now());
+      load();
+    } catch {
+      setTimerError("Couldn't start the timer. Check your connection and try again.");
+    } finally {
+      setBusy("idle");
+    }
+  }
+
   async function startFree(e: FormEvent) {
     e.preventDefault();
-    const res = await startSessionWithRecovery(subject.trim() || "Study");
-    if (res.ok) load();
+    await runStart(subject.trim() || "Study");
   }
 
   // Non-Focused: same open-ended start/stop as Free Mode, but every real
@@ -358,24 +423,66 @@ export default function FocusPage() {
   // that same halved amount instead of the real wall-clock elapsed time.
   async function startNonFocused(e: FormEvent) {
     e.preventDefault();
-    const res = await startSessionWithRecovery(`${subject.trim() || "Study"}${SLOW_TAG}`);
-    if (res.ok) load();
+    await runStart(`${subject.trim() || "Study"}${SLOW_TAG}`);
   }
 
   async function stop() {
-    if (active && isSlowSubject(active.subject)) {
-      const startMs = new Date(active.startTime).getTime();
-      await stopActiveSession(startMs + elapsedSeconds * 1000);
-    } else {
-      await stopActiveSession();
+    if (busy !== "idle" || !active) return;
+    const stopping = active;
+    setBusy("stopping");
+    setTimerError(null);
+    setActive(null); // optimistic — the panel switches the moment you click
+    try {
+      const res = await stopActiveSession(slowEndTimeFor(stopping));
+      // 404 means it was already stopped elsewhere, which is still "stopped".
+      if (!res.ok && res.status !== 404) {
+        setActive(stopping);
+        setTimerError("Couldn't stop the timer — it's still running. Check your connection and try again.");
+        return;
+      }
+      load();
+    } catch {
+      setActive(stopping);
+      setTimerError("Couldn't stop the timer — it's still running. Check your connection and try again.");
+    } finally {
+      setBusy("idle");
     }
-    load();
+  }
+
+  // Escape hatch for a session that was left running by accident (a crash, a
+  // closed laptop): throw it away entirely rather than logging hours of
+  // sleep as focus time.
+  async function discardActive() {
+    if (busy !== "idle" || !active) return;
+    if (
+      !window.confirm(
+        `Discard this session? Nothing will be logged for the ${formatDuration(elapsedSeconds)} on the clock.`
+      )
+    ) {
+      return;
+    }
+    const discarding = active;
+    setBusy("stopping");
+    setActive(null);
+    try {
+      await fetch(`/api/timer/${discarding.id}`, { method: "DELETE", keepalive: true });
+      load();
+    } catch {
+      setActive(discarding);
+      setTimerError("Couldn't discard the session. Check your connection and try again.");
+    } finally {
+      setBusy("idle");
+    }
   }
 
   const activeIsSlow = !!active && isSlowSubject(active.subject);
   const elapsedSeconds = active
     ? Math.max(0, (now - new Date(active.startTime).getTime()) / 1000) * (activeIsSlow ? SLOW_RATE : 1)
     : 0;
+  // A free-running session this long is almost always one that was left
+  // running by mistake, not real focus time worth logging.
+  const activeLooksForgotten =
+    !!active && !plan && now - new Date(active.startTime).getTime() > 6 * 60 * 60 * 1000;
 
   const weekStart = startOfWeek(new Date());
   const weeklyMinutes = sessions
@@ -483,9 +590,31 @@ export default function FocusPage() {
               <p className="font-heading my-4 text-6xl tracking-wide tabular-nums">
                 {formatDuration(elapsedSeconds)}
               </p>
-              <button onClick={stop} className="comic-btn px-6 py-2 text-sm text-ink">
-                Stop
-              </button>
+              {activeLooksForgotten && (
+                <p className="mx-auto mb-3 max-w-sm text-xs font-bold text-comic-red">
+                  This has been running over 6 hours — if you left it going by accident, discard it instead of logging
+                  it.
+                </p>
+              )}
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <button
+                  onClick={stop}
+                  disabled={busy !== "idle"}
+                  className="comic-btn px-6 py-2 text-sm text-ink disabled:opacity-50"
+                >
+                  {busy === "stopping" ? "Stopping…" : "Stop"}
+                </button>
+                {activeLooksForgotten && (
+                  <button
+                    onClick={discardActive}
+                    disabled={busy !== "idle"}
+                    className="comic-btn px-4 py-2 text-sm text-comic-red disabled:opacity-50"
+                  >
+                    Discard
+                  </button>
+                )}
+              </div>
+              {timerError && <p className="mt-3 text-xs font-bold text-comic-red">{timerError}</p>}
             </div>
           ) : (
             <div className="p-6">
@@ -546,8 +675,12 @@ export default function FocusPage() {
                         onChange={(e) => setSubject(e.target.value)}
                         placeholder="Subject"
                       />
-                      <button type="submit" className="comic-btn px-6 py-2 text-sm text-ink">
-                        Start
+                      <button
+                        type="submit"
+                        disabled={busy !== "idle"}
+                        className="comic-btn px-6 py-2 text-sm text-ink disabled:opacity-50"
+                      >
+                        {busy === "starting" ? "Starting…" : "Start"}
                       </button>
                     </div>
                     <p className="text-center text-xs text-ink/50">
@@ -563,8 +696,12 @@ export default function FocusPage() {
                         onChange={(e) => setSubject(e.target.value)}
                         placeholder="Subject"
                       />
-                      <button type="submit" className="comic-btn px-6 py-2 text-sm text-ink">
-                        Start
+                      <button
+                        type="submit"
+                        disabled={busy !== "idle"}
+                        className="comic-btn px-6 py-2 text-sm text-ink disabled:opacity-50"
+                      >
+                        {busy === "starting" ? "Starting…" : "Start"}
                       </button>
                     </div>
                     <p className="text-center text-xs text-ink/50">
@@ -574,14 +711,21 @@ export default function FocusPage() {
                   </form>
                 ) : (
                   <form onSubmit={startClassicPlan} className="space-y-2">
-                    <button type="submit" className="comic-btn w-full px-6 py-3 text-sm text-ink">
-                      Start Classic Mode ({formatMinutes(planTotalMinutes())} focus)
+                    <button
+                      type="submit"
+                      disabled={busy !== "idle"}
+                      className="comic-btn w-full px-6 py-3 text-sm text-ink disabled:opacity-50"
+                    >
+                      {busy === "starting"
+                        ? "Starting…"
+                        : `Start Classic Mode (${formatMinutes(planTotalMinutes())} focus)`}
                     </button>
                     <p className="text-center text-xs text-ink/50">
                       14 sessions — 13×45m plus a final 30m — with an 11m 20s break after every session but the last.
                     </p>
                   </form>
                 )}
+                {timerError && <p className="mt-3 text-xs font-bold text-comic-red">{timerError}</p>}
               </div>
             </div>
           )}
