@@ -40,22 +40,60 @@ function localDayKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-// Skipping a break banks its unused remainder here, added on top of the
-// next break's normal length instead of being lost.
-function bankBreakCarry(key: string, remainingMs: number) {
-  if (remainingMs <= 0) return;
-  const carried = Number(localStorage.getItem(key) ?? 0) + remainingMs;
-  localStorage.setItem(key, String(carried));
+// Unused time — a skipped break, or a session stopped early — is banked
+// here rather than lost, and spent later (on the next break, or on the
+// bonus session at the end of the plan). A bank that hasn't been touched
+// for 30 days is written off, so time from a month ago can't suddenly
+// reappear as a two-hour break.
+const CARRY_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+
+interface Carry {
+  ms: number;
+  updatedAt: number;
 }
 
-function takeBreakCarry(key: string): number {
-  const carried = Number(localStorage.getItem(key) ?? 0);
+function readCarry(key: string): number {
+  const raw = localStorage.getItem(key);
+  if (!raw) return 0;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return 0;
+  }
+  // Legacy format: a bare number of milliseconds, written before banks
+  // carried a timestamp. Honour it rather than silently dropping it.
+  if (typeof parsed === "number") {
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+  }
+  if (parsed && typeof parsed === "object") {
+    const carry = parsed as Partial<Carry>;
+    if (typeof carry.ms === "number" && typeof carry.updatedAt === "number") {
+      if (Date.now() - carry.updatedAt > CARRY_MAX_AGE_MS) {
+        localStorage.removeItem(key);
+        return 0;
+      }
+      return Math.max(0, carry.ms);
+    }
+  }
+  return 0;
+}
+
+function addCarry(key: string, ms: number): number {
+  if (ms <= 0) return readCarry(key);
+  const next: Carry = { ms: readCarry(key) + ms, updatedAt: Date.now() };
+  localStorage.setItem(key, JSON.stringify(next));
+  return next.ms;
+}
+
+function takeCarry(key: string): number {
+  const carried = readCarry(key);
   localStorage.removeItem(key);
   return carried;
 }
 
 interface PlanBlock {
-  focusMinutes: number;
+  focusSeconds: number;
   breakSeconds: number | null;
 }
 
@@ -65,14 +103,31 @@ const CLASSIC_BREAK_SECONDS = 11 * 60 + 20;
 
 const CLASSIC_PLAN: PlanBlock[] = [
   ...Array.from({ length: 13 }, () => ({
-    focusMinutes: 45,
+    focusSeconds: 45 * 60,
     breakSeconds: CLASSIC_BREAK_SECONDS,
   })),
-  { focusMinutes: 30, breakSeconds: null },
+  { focusSeconds: 30 * 60, breakSeconds: null },
 ];
 
+// Stopping a session early banks the unused focus time; once the 14 fixed
+// sessions are done that bank is spent as one extra "Session 15", so the
+// day's full total still gets served. Leftovers under a minute aren't
+// worth a session of their own.
+const BONUS_MIN_MS = 60_000;
+const BONUS_INDEX = CLASSIC_PLAN.length;
+
 function planTotalMinutes(): number {
-  return CLASSIC_PLAN.reduce((sum, b) => sum + b.focusMinutes, 0);
+  return CLASSIC_PLAN.reduce((sum, b) => sum + b.focusSeconds, 0) / 60;
+}
+
+// The break that follows a given session. The last fixed session normally
+// has none — but when a bonus session is queued behind it, it gets a
+// normal break like every other boundary.
+function breakSecondsAfter(blockIndex: number, bankedMs: number): number | null {
+  const block = CLASSIC_PLAN[blockIndex];
+  if (block?.breakSeconds != null) return block.breakSeconds;
+  if (blockIndex === CLASSIC_PLAN.length - 1 && bankedMs >= BONUS_MIN_MS) return CLASSIC_BREAK_SECONDS;
+  return null;
 }
 
 type PlanPhase = "focus" | "break";
@@ -85,6 +140,7 @@ interface PlanState {
 
 const PLAN_STORAGE_KEY = "timer-plan-state";
 const PLAN_BREAK_CARRY_KEY = "timer-plan-break-carry-ms";
+const PLAN_FOCUS_BANK_KEY = "timer-plan-focus-bank-ms";
 
 function loadPlanState(): PlanState | null {
   const raw = localStorage.getItem(PLAN_STORAGE_KEY);
@@ -94,7 +150,7 @@ function loadPlanState(): PlanState | null {
     if (
       typeof parsed.blockIndex === "number" &&
       parsed.blockIndex >= 0 &&
-      parsed.blockIndex < CLASSIC_PLAN.length &&
+      parsed.blockIndex <= BONUS_INDEX &&
       (parsed.phase === "focus" || parsed.phase === "break") &&
       typeof parsed.phaseEndsAt === "number"
     ) {
@@ -112,35 +168,6 @@ function savePlanState(state: PlanState | null) {
   } else {
     localStorage.removeItem(PLAN_STORAGE_KEY);
   }
-}
-
-// The plan isn't meant to be casually stoppable mid-focus — only a limited
-// "Force Stop" escape hatch for genuine emergencies, capped per calendar day.
-const MAX_FORCE_STOPS_PER_DAY = 2;
-const FORCE_STOP_STORAGE_KEY = "timer-force-stops";
-
-function todayKey(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-interface ForceStopState {
-  date: string;
-  count: number;
-}
-
-function loadForceStopState(): ForceStopState {
-  const raw = localStorage.getItem(FORCE_STOP_STORAGE_KEY);
-  if (raw) {
-    try {
-      const parsed = JSON.parse(raw) as ForceStopState;
-      if (parsed.date === todayKey() && typeof parsed.count === "number") {
-        return parsed;
-      }
-    } catch {
-      // fall through
-    }
-  }
-  return { date: todayKey(), count: 0 };
 }
 
 type TimerMode = "free" | "classic" | "nonfocused";
@@ -171,7 +198,10 @@ export default function FocusPage() {
   const [planJustFinished, setPlanJustFinished] = useState(false);
   const [planJustFinishedMinutes, setPlanJustFinishedMinutes] = useState(0);
   const [mode, setMode] = useState<TimerMode>("classic");
-  const [forceStops, setForceStops] = useState<ForceStopState>({ date: todayKey(), count: 0 });
+  // Focus time banked by stopping sessions early, spent as the bonus
+  // session at the end of the plan. Mirrored in state so the session
+  // count and dots update the moment you bank some.
+  const [bankedFocusMs, setBankedFocusMs] = useState(0);
   const [unit, setUnit] = useState<DisplayUnit>("hours");
   // Gates every start/stop click so a slow network can't turn one intended
   // click into two requests, and so the button visibly reacts immediately
@@ -204,7 +234,7 @@ export default function FocusPage() {
     load();
     setPlan(loadPlanState());
     setMode(loadMode());
-    setForceStops(loadForceStopState());
+    setBankedFocusMs(readCarry(PLAN_FOCUS_BANK_KEY));
   }, []);
 
   useEffect(() => {
@@ -219,6 +249,7 @@ export default function FocusPage() {
   }
 
   function planLabel(blockIndex: number) {
+    if (blockIndex >= BONUS_INDEX) return "Study (Bonus session · banked time)";
     return `Study (Session ${blockIndex + 1}/${CLASSIC_PLAN.length})`;
   }
 
@@ -281,16 +312,17 @@ export default function FocusPage() {
     return res.json();
   }
 
-  async function startPlanFocus(blockIndex: number) {
+  async function startPlanFocus(blockIndex: number, durationMs?: number) {
     const session = await startSessionWithRecovery(planLabel(blockIndex));
     if (!session) {
       setTimerError("Couldn't start the timer. Check your connection and try again.");
       return;
     }
+    const lengthMs = durationMs ?? CLASSIC_PLAN[blockIndex].focusSeconds * 1000;
     const next: PlanState = {
       blockIndex,
       phase: "focus",
-      phaseEndsAt: Date.now() + CLASSIC_PLAN[blockIndex].focusMinutes * 60_000,
+      phaseEndsAt: Date.now() + lengthMs,
     };
     setPlan(next);
     savePlanState(next);
@@ -315,36 +347,68 @@ export default function FocusPage() {
     }
   }
 
+  function finishPlan() {
+    setPlan(null);
+    savePlanState(null);
+    setPlanJustFinished(true);
+    setPlanJustFinishedMinutes(planTotalMinutes());
+    load();
+  }
+
   async function advancePlan(nextIndex: number) {
-    if (nextIndex >= CLASSIC_PLAN.length) {
-      setPlan(null);
-      savePlanState(null);
-      setPlanJustFinished(true);
-      setPlanJustFinishedMinutes(planTotalMinutes());
-      load();
+    // After the 14 fixed sessions, spend whatever was banked from early
+    // stops as one bonus session. Only one per run — stopping the bonus
+    // early re-banks the rest for next time rather than looping.
+    if (nextIndex === BONUS_INDEX) {
+      const banked = takeCarry(PLAN_FOCUS_BANK_KEY);
+      setBankedFocusMs(0);
+      if (banked >= BONUS_MIN_MS) {
+        await startPlanFocus(BONUS_INDEX, banked);
+        return;
+      }
+      finishPlan();
+      return;
+    }
+    if (nextIndex > BONUS_INDEX) {
+      finishPlan();
       return;
     }
     await startPlanFocus(nextIndex);
   }
 
+  // Ends the current focus block and moves on: into its break if it has
+  // one, otherwise straight to the next session. `endTimeMs` is what gets
+  // logged — the planned end for a session that ran its course, the real
+  // now for one stopped early.
+  async function finishFocusBlock(current: PlanState, endTimeMs: number, bankedMs: number) {
+    playFocusEndSound();
+    const breakSeconds = breakSecondsAfter(current.blockIndex, bankedMs);
+    if (breakSeconds != null) {
+      // Switch to the break right away and let the stop request land in the
+      // background — nothing else touches the session for the next several
+      // minutes, so there's nothing to race with.
+      const carryMs = takeCarry(PLAN_BREAK_CARRY_KEY);
+      const next: PlanState = {
+        blockIndex: current.blockIndex,
+        phase: "break",
+        phaseEndsAt: Date.now() + breakSeconds * 1000 + carryMs,
+      };
+      setPlan(next);
+      savePlanState(next);
+      stopActiveSession(endTimeMs)
+        .then(() => load())
+        .catch(() => {});
+    } else {
+      // The next session starts immediately here, so the stop has to be
+      // recorded before it to avoid colliding with itself.
+      await stopActiveSession(endTimeMs);
+      await advancePlan(current.blockIndex + 1);
+    }
+  }
+
   async function transitionPlan(current: PlanState) {
-    const block = CLASSIC_PLAN[current.blockIndex];
     if (current.phase === "focus") {
-      playFocusEndSound();
-      await stopActiveSession(current.phaseEndsAt);
-      if (block.breakSeconds != null) {
-        const carryMs = takeBreakCarry(PLAN_BREAK_CARRY_KEY);
-        const next: PlanState = {
-          blockIndex: current.blockIndex,
-          phase: "break",
-          phaseEndsAt: Date.now() + block.breakSeconds * 1000 + carryMs,
-        };
-        setPlan(next);
-        savePlanState(next);
-        load();
-      } else {
-        await advancePlan(current.blockIndex + 1);
-      }
+      await finishFocusBlock(current, current.phaseEndsAt, readCarry(PLAN_FOCUS_BANK_KEY));
     } else {
       playBreakEndSound();
       await advancePlan(current.blockIndex + 1);
@@ -364,28 +428,46 @@ export default function FocusPage() {
 
   async function skipPlanBreak() {
     if (!plan || plan.phase !== "break") return;
-    bankBreakCarry(PLAN_BREAK_CARRY_KEY, plan.phaseEndsAt - Date.now());
+    addCarry(PLAN_BREAK_CARRY_KEY, plan.phaseEndsAt - Date.now());
     playBreakEndSound();
     await advancePlan(plan.blockIndex + 1);
   }
 
-  async function forceStopPlan() {
-    if (!plan) return;
-    const current = loadForceStopState();
-    if (current.count >= MAX_FORCE_STOPS_PER_DAY) return;
-    const left = MAX_FORCE_STOPS_PER_DAY - current.count;
-    if (!window.confirm(`This uses a force stop (${left} left today). Only use this for real emergencies. Continue?`)) {
-      return;
+  // Stop a session whenever you like: the time you didn't use is banked
+  // and served later as the bonus session, then the plan carries on to its
+  // normal break and next session.
+  async function stopPlanSession() {
+    if (!plan || plan.phase !== "focus" || busy !== "idle") return;
+    setBusy("stopping");
+    setTimerError(null);
+    setActive(null); // optimistic — the panel moves on the moment you click
+    try {
+      const banked = addCarry(PLAN_FOCUS_BANK_KEY, plan.phaseEndsAt - Date.now());
+      setBankedFocusMs(banked);
+      await finishFocusBlock(plan, Date.now(), banked);
+    } finally {
+      setBusy("idle");
     }
-    if (plan.phase === "focus") {
-      await stopActiveSession();
+  }
+
+  // Leave Classic Mode entirely. The rest of the current session is banked
+  // like any other early stop, so nothing is thrown away.
+  async function endPlan() {
+    if (!plan || busy !== "idle") return;
+    setBusy("stopping");
+    setTimerError(null);
+    setActive(null);
+    try {
+      if (plan.phase === "focus") {
+        setBankedFocusMs(addCarry(PLAN_FOCUS_BANK_KEY, plan.phaseEndsAt - Date.now()));
+        stopActiveSession().catch(() => {});
+      }
+      setPlan(null);
+      savePlanState(null);
+      load();
+    } finally {
+      setBusy("idle");
     }
-    setPlan(null);
-    savePlanState(null);
-    const next: ForceStopState = { date: current.date, count: current.count + 1 };
-    localStorage.setItem(FORCE_STOP_STORAGE_KEY, JSON.stringify(next));
-    setForceStops(next);
-    load();
   }
 
   // Free Mode: study for as long as you want, stop whenever — no break is
@@ -426,27 +508,29 @@ export default function FocusPage() {
     await runStart(`${subject.trim() || "Study"}${SLOW_TAG}`);
   }
 
-  async function stop() {
+  // Stopping is instant: the panel switches and the button frees up on the
+  // click itself, and the request finishes in the background. Only a real
+  // failure comes back to put the session on screen again.
+  function stop() {
     if (busy !== "idle" || !active) return;
     const stopping = active;
-    setBusy("stopping");
     setTimerError(null);
-    setActive(null); // optimistic — the panel switches the moment you click
-    try {
-      const res = await stopActiveSession(slowEndTimeFor(stopping));
-      // 404 means it was already stopped elsewhere, which is still "stopped".
-      if (!res.ok && res.status !== 404) {
+    setActive(null);
+    void (async () => {
+      try {
+        const res = await stopActiveSession(slowEndTimeFor(stopping));
+        // 404 means it was already stopped elsewhere, which is still "stopped".
+        if (!res.ok && res.status !== 404) {
+          setActive(stopping);
+          setTimerError("Couldn't stop the timer — it's still running. Check your connection and try again.");
+          return;
+        }
+        load();
+      } catch {
         setActive(stopping);
         setTimerError("Couldn't stop the timer — it's still running. Check your connection and try again.");
-        return;
       }
-      load();
-    } catch {
-      setActive(stopping);
-      setTimerError("Couldn't stop the timer — it's still running. Check your connection and try again.");
-    } finally {
-      setBusy("idle");
-    }
+    })();
   }
 
   // Escape hatch for a session that was left running by accident (a crash, a
@@ -507,6 +591,10 @@ export default function FocusPage() {
   const dailyAverageMinutes = dailyTotals.size > 0 ? totalLoggedMinutes / dailyTotals.size : 0;
 
   const planPhaseRemainingSeconds = plan ? Math.max(0, (plan.phaseEndsAt - now) / 1000) : 0;
+  // A bonus session shows up in the count as soon as there's enough banked
+  // time to earn one, and stays there once it's actually running.
+  const bonusQueued = bankedFocusMs >= BONUS_MIN_MS || (plan?.blockIndex ?? 0) >= BONUS_INDEX;
+  const planSessionCount = CLASSIC_PLAN.length + (bonusQueued ? 1 : 0);
 
   return (
     <div className="space-y-8">
@@ -531,14 +619,14 @@ export default function FocusPage() {
             <p
               className={`text-sm font-bold uppercase tracking-wide ${plan.phase === "focus" ? "text-ink/70" : "text-chip-ink/80"}`}
             >
-              {plan.phase === "focus" ? "🕒 Classic Mode" : "☕ Break"}{" "}
-              · Session {plan.blockIndex + 1} of {CLASSIC_PLAN.length}
+              {plan.phase === "focus" ? (plan.blockIndex >= BONUS_INDEX ? "⭐ Bonus Session" : "🕒 Classic Mode") : "☕ Break"}{" "}
+              · Session {plan.blockIndex + 1} of {planSessionCount}
             </p>
             <p className="font-heading my-4 text-6xl tracking-wide tabular-nums">
               {formatDuration(planPhaseRemainingSeconds)}
             </p>
             <div className="mb-5 flex flex-wrap justify-center gap-2">
-              {CLASSIC_PLAN.map((_, i) => (
+              {Array.from({ length: planSessionCount }).map((_, i) => (
                 <span
                   key={i}
                   className="h-3 w-3 rounded-full"
@@ -554,25 +642,34 @@ export default function FocusPage() {
               ))}
             </div>
             <div className="flex flex-wrap items-center justify-center gap-2">
-              {plan.phase === "break" && (
+              {plan.phase === "break" ? (
                 <button onClick={skipPlanBreak} className="comic-btn bg-panel px-4 py-2 text-sm">
                   Skip break
                 </button>
+              ) : (
+                <button
+                  onClick={stopPlanSession}
+                  disabled={busy !== "idle"}
+                  className="comic-btn bg-panel px-4 py-2 text-sm disabled:opacity-50"
+                >
+                  Stop session
+                </button>
               )}
               <button
-                onClick={forceStopPlan}
-                disabled={forceStops.count >= MAX_FORCE_STOPS_PER_DAY}
+                onClick={endPlan}
+                disabled={busy !== "idle"}
                 className="comic-btn px-4 py-2 text-sm text-ink disabled:opacity-50"
               >
-                Force Stop ({Math.max(0, MAX_FORCE_STOPS_PER_DAY - forceStops.count)} left today)
+                End plan
               </button>
             </div>
           </div>
           <p
             className={`border-t-2 border-ink/10 bg-black/5 px-6 py-2.5 text-xs ${plan.phase === "focus" ? "text-ink/60" : "text-chip-ink/70"}`}
           >
-            No casual stopping — this plan runs the full {formatMinutes(planTotalMinutes())}. Force Stop is only for real
-            emergencies.
+            {bankedFocusMs >= BONUS_MIN_MS
+              ? `Stop whenever — ${formatDuration(bankedFocusMs / 1000)} banked so far, served as a bonus session at the end.`
+              : `Stop whenever you like — the time you don't use is banked and served as a bonus session at the end of the ${formatMinutes(planTotalMinutes())}.`}
           </p>
         </div>
       ) : (
@@ -722,6 +819,7 @@ export default function FocusPage() {
                     </button>
                     <p className="text-center text-xs text-ink/50">
                       14 sessions — 13×45m plus a final 30m — with an 11m 20s break after every session but the last.
+                      Stop a session early and the rest is banked for a bonus session at the end.
                     </p>
                   </form>
                 )}
