@@ -74,8 +74,8 @@ function effortOpacity(minutes: number, goal: number): number {
 }
 
 // Fixed full-day target used for the heatmap/goal displays — matches the
-// Focus page's "5-5" plan total (5x1h + 5x1h = 600 minutes).
-const DAILY_GOAL_MINUTES = 600;
+// Focus page's Classic Mode plan total (13×45m + 30m = 615 minutes).
+const DAILY_GOAL_MINUTES = 615;
 
 export default function FocusHistoryCard() {
   const [sessions, setSessions] = useState<StudySession[]>([]);

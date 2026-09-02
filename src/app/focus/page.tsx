@@ -41,8 +41,7 @@ function localDayKey(d: Date): string {
 }
 
 // Skipping a break banks its unused remainder here, added on top of the
-// next break's normal length instead of being lost. Each timer mode has its
-// own carry pool since their break lengths differ.
+// next break's normal length instead of being lost.
 function bankBreakCarry(key: string, remainingMs: number) {
   if (remainingMs <= 0) return;
   const carried = Number(localStorage.getItem(key) ?? 0) + remainingMs;
@@ -55,84 +54,30 @@ function takeBreakCarry(key: string): number {
   return carried;
 }
 
-// Each block is 1h focus / 15m break (last block in a plan has no break
-// after it), tagged with which half of your time it counts toward.
-type FocusCategory = "job" | "business";
-
-const CATEGORY_LABEL: Record<FocusCategory, string> = {
-  job: "Job Trials",
-  business: "Business & Passion",
-};
-
 interface PlanBlock {
   focusMinutes: number;
-  breakMinutes: number | null;
-  category: FocusCategory;
+  breakSeconds: number | null;
 }
 
-type PlanStyle = "5-5" | "2x4";
+// Classic Mode: 14 sessions — 13 × 45 min focus, then a final 30 min
+// session. An 11 min 20 s break follows every session except the last.
+const CLASSIC_BREAK_SECONDS = 11 * 60 + 20;
 
-const PLAN_STYLE_LABEL: Record<PlanStyle, string> = {
-  "5-5": "5h + 5h",
-  "2x4": "2.5h × 4",
-};
-
-// "5-5": 5x1h Job Trials, then 5x1h Business & Passion — same 1h/15m
-// pattern as before, just split down the middle by category.
-// "2x4": 4x2h30m blocks alternating category, 15m break between each —
-// 4 x 2.5h = 10h total, matching "5-5"'s daily total.
-const PLAN_PRESETS: Record<PlanStyle, PlanBlock[]> = {
-  "5-5": [
-    { focusMinutes: 60, breakMinutes: 15, category: "job" },
-    { focusMinutes: 60, breakMinutes: 15, category: "job" },
-    { focusMinutes: 60, breakMinutes: 15, category: "job" },
-    { focusMinutes: 60, breakMinutes: 15, category: "job" },
-    { focusMinutes: 60, breakMinutes: 15, category: "job" },
-    { focusMinutes: 60, breakMinutes: 15, category: "business" },
-    { focusMinutes: 60, breakMinutes: 15, category: "business" },
-    { focusMinutes: 60, breakMinutes: 15, category: "business" },
-    { focusMinutes: 60, breakMinutes: 15, category: "business" },
-    { focusMinutes: 60, breakMinutes: null, category: "business" },
-  ],
-  "2x4": [
-    { focusMinutes: 150, breakMinutes: 15, category: "job" },
-    { focusMinutes: 150, breakMinutes: 15, category: "business" },
-    { focusMinutes: 150, breakMinutes: 15, category: "job" },
-    { focusMinutes: 150, breakMinutes: null, category: "business" },
-  ],
-};
-
-// Classic Mode: the plain, no-frills version — 10x(1h focus / 15m break),
-// last block has no break after it. No Job/Business split, unlike Focus
-// Mode's presets below.
 const CLASSIC_PLAN: PlanBlock[] = [
-  { focusMinutes: 60, breakMinutes: 15, category: "job" },
-  { focusMinutes: 60, breakMinutes: 15, category: "job" },
-  { focusMinutes: 60, breakMinutes: 15, category: "job" },
-  { focusMinutes: 60, breakMinutes: 15, category: "job" },
-  { focusMinutes: 60, breakMinutes: 15, category: "job" },
-  { focusMinutes: 60, breakMinutes: 15, category: "job" },
-  { focusMinutes: 60, breakMinutes: 15, category: "job" },
-  { focusMinutes: 60, breakMinutes: 15, category: "job" },
-  { focusMinutes: 60, breakMinutes: 15, category: "job" },
-  { focusMinutes: 60, breakMinutes: null, category: "job" },
+  ...Array.from({ length: 13 }, () => ({
+    focusMinutes: 45,
+    breakSeconds: CLASSIC_BREAK_SECONDS,
+  })),
+  { focusMinutes: 30, breakSeconds: null },
 ];
 
-type PlanKind = "classic" | "advanced";
-
-function planBlocks(kind: PlanKind, style: PlanStyle): PlanBlock[] {
-  return kind === "classic" ? CLASSIC_PLAN : PLAN_PRESETS[style];
-}
-
-function planTotalMinutes(kind: PlanKind, style: PlanStyle): number {
-  return planBlocks(kind, style).reduce((sum, b) => sum + b.focusMinutes, 0);
+function planTotalMinutes(): number {
+  return CLASSIC_PLAN.reduce((sum, b) => sum + b.focusMinutes, 0);
 }
 
 type PlanPhase = "focus" | "break";
 
 interface PlanState {
-  kind: PlanKind;
-  style: PlanStyle;
   blockIndex: number;
   phase: PlanPhase;
   phaseEndsAt: number;
@@ -140,30 +85,20 @@ interface PlanState {
 
 const PLAN_STORAGE_KEY = "timer-plan-state";
 const PLAN_BREAK_CARRY_KEY = "timer-plan-break-carry-ms";
-const PLAN_STYLE_STORAGE_KEY = "timer-plan-style";
-
-function loadPlanStyle(): PlanStyle {
-  const raw = localStorage.getItem(PLAN_STYLE_STORAGE_KEY);
-  return raw === "2x4" ? "2x4" : "5-5";
-}
 
 function loadPlanState(): PlanState | null {
   const raw = localStorage.getItem(PLAN_STORAGE_KEY);
   if (!raw) return null;
   try {
     const parsed = JSON.parse(raw) as Partial<PlanState>;
-    const kind: PlanKind = parsed.kind === "classic" ? "classic" : "advanced";
-    const style: PlanStyle = parsed.style === "2x4" ? "2x4" : "5-5";
-    const blocks = planBlocks(kind, style);
     if (
-      blocks &&
       typeof parsed.blockIndex === "number" &&
       parsed.blockIndex >= 0 &&
-      parsed.blockIndex < blocks.length &&
+      parsed.blockIndex < CLASSIC_PLAN.length &&
       (parsed.phase === "focus" || parsed.phase === "break") &&
       typeof parsed.phaseEndsAt === "number"
     ) {
-      return { kind, style, blockIndex: parsed.blockIndex, phase: parsed.phase, phaseEndsAt: parsed.phaseEndsAt };
+      return { blockIndex: parsed.blockIndex, phase: parsed.phase, phaseEndsAt: parsed.phaseEndsAt };
     }
   } catch {
     // fall through
@@ -208,12 +143,11 @@ function loadForceStopState(): ForceStopState {
   return { date: todayKey(), count: 0 };
 }
 
-type TimerMode = "free" | "classic" | "focus";
+type TimerMode = "free" | "classic";
 const MODE_STORAGE_KEY = "timer-mode";
 
 function loadMode(): TimerMode {
-  const raw = localStorage.getItem(MODE_STORAGE_KEY);
-  return raw === "free" || raw === "classic" ? raw : "focus";
+  return localStorage.getItem(MODE_STORAGE_KEY) === "free" ? "free" : "classic";
 }
 
 export default function FocusPage() {
@@ -222,10 +156,9 @@ export default function FocusPage() {
   const [subject, setSubject] = useState("Study");
   const [now, setNow] = useState(() => Date.now());
   const [plan, setPlan] = useState<PlanState | null>(null);
-  const [planStyle, setPlanStyle] = useState<PlanStyle>("5-5");
   const [planJustFinished, setPlanJustFinished] = useState(false);
   const [planJustFinishedMinutes, setPlanJustFinishedMinutes] = useState(0);
-  const [mode, setMode] = useState<TimerMode>("focus");
+  const [mode, setMode] = useState<TimerMode>("classic");
   const [forceStops, setForceStops] = useState<ForceStopState>({ date: todayKey(), count: 0 });
   const [unit, setUnit] = useState<DisplayUnit>("hours");
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -253,7 +186,6 @@ export default function FocusPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time fetch on mount
     load();
     setPlan(loadPlanState());
-    setPlanStyle(loadPlanStyle());
     setMode(loadMode());
     setForceStops(loadForceStopState());
   }, []);
@@ -269,18 +201,11 @@ export default function FocusPage() {
     localStorage.setItem(MODE_STORAGE_KEY, next);
   }
 
-  function selectPlanStyle(next: PlanStyle) {
-    setPlanStyle(next);
-    localStorage.setItem(PLAN_STYLE_STORAGE_KEY, next);
+  function planLabel(blockIndex: number) {
+    return `Study (Session ${blockIndex + 1}/${CLASSIC_PLAN.length})`;
   }
 
-  function planLabel(blockIndex: number, kind: PlanKind, style: PlanStyle) {
-    const blocks = planBlocks(kind, style);
-    const base = kind === "classic" ? "Study" : CATEGORY_LABEL[blocks[blockIndex].category];
-    return `${base} (Session ${blockIndex + 1}/${blocks.length})`;
-  }
-
-  // `endTimeOverride` lets a scheduled phase transition (a Focus Mode block
+  // `endTimeOverride` lets a scheduled phase transition (a Classic Mode block
   // reaching its planned end) record that planned end time instead of
   // whatever moment the tab happens to wake up and run this — otherwise time
   // spent away while backgrounded/asleep would get logged as focus time.
@@ -313,68 +238,58 @@ export default function FocusPage() {
     return res;
   }
 
-  async function startPlanFocus(blockIndex: number, kind: PlanKind, style: PlanStyle) {
-    const res = await startSessionWithRecovery(planLabel(blockIndex, kind, style));
+  async function startPlanFocus(blockIndex: number) {
+    const res = await startSessionWithRecovery(planLabel(blockIndex));
     if (!res.ok) return;
     const next: PlanState = {
-      kind,
-      style,
       blockIndex,
       phase: "focus",
-      phaseEndsAt: Date.now() + planBlocks(kind, style)[blockIndex].focusMinutes * 60_000,
+      phaseEndsAt: Date.now() + CLASSIC_PLAN[blockIndex].focusMinutes * 60_000,
     };
     setPlan(next);
     savePlanState(next);
     load();
   }
 
-  async function startPlan(e: FormEvent) {
-    e.preventDefault();
-    setPlanJustFinished(false);
-    await startPlanFocus(0, "advanced", planStyle);
-  }
-
   async function startClassicPlan(e: FormEvent) {
     e.preventDefault();
     setPlanJustFinished(false);
-    await startPlanFocus(0, "classic", "5-5");
+    await startPlanFocus(0);
   }
 
-  async function advancePlan(nextIndex: number, kind: PlanKind, style: PlanStyle) {
-    if (nextIndex >= planBlocks(kind, style).length) {
+  async function advancePlan(nextIndex: number) {
+    if (nextIndex >= CLASSIC_PLAN.length) {
       setPlan(null);
       savePlanState(null);
       setPlanJustFinished(true);
-      setPlanJustFinishedMinutes(planTotalMinutes(kind, style));
+      setPlanJustFinishedMinutes(planTotalMinutes());
       load();
       return;
     }
-    await startPlanFocus(nextIndex, kind, style);
+    await startPlanFocus(nextIndex);
   }
 
   async function transitionPlan(current: PlanState) {
-    const block = planBlocks(current.kind, current.style)[current.blockIndex];
+    const block = CLASSIC_PLAN[current.blockIndex];
     if (current.phase === "focus") {
       playFocusEndSound();
       await stopActiveSession(current.phaseEndsAt);
-      if (block.breakMinutes != null) {
+      if (block.breakSeconds != null) {
         const carryMs = takeBreakCarry(PLAN_BREAK_CARRY_KEY);
         const next: PlanState = {
-          kind: current.kind,
-          style: current.style,
           blockIndex: current.blockIndex,
           phase: "break",
-          phaseEndsAt: Date.now() + block.breakMinutes * 60_000 + carryMs,
+          phaseEndsAt: Date.now() + block.breakSeconds * 1000 + carryMs,
         };
         setPlan(next);
         savePlanState(next);
         load();
       } else {
-        await advancePlan(current.blockIndex + 1, current.kind, current.style);
+        await advancePlan(current.blockIndex + 1);
       }
     } else {
       playBreakEndSound();
-      await advancePlan(current.blockIndex + 1, current.kind, current.style);
+      await advancePlan(current.blockIndex + 1);
     }
   }
 
@@ -393,7 +308,7 @@ export default function FocusPage() {
     if (!plan || plan.phase !== "break") return;
     bankBreakCarry(PLAN_BREAK_CARRY_KEY, plan.phaseEndsAt - Date.now());
     playBreakEndSound();
-    await advancePlan(plan.blockIndex + 1, plan.kind, plan.style);
+    await advancePlan(plan.blockIndex + 1);
   }
 
   async function forceStopPlan() {
@@ -416,8 +331,8 @@ export default function FocusPage() {
   }
 
   // Free Mode: study for as long as you want, stop whenever — no break is
-  // ever started automatically. The only breaks in this app come from Focus
-  // Mode's built-in plan.
+  // ever started automatically. The only breaks in this app come from
+  // Classic Mode's built-in plan.
   async function startFree(e: FormEvent) {
     e.preventDefault();
     const res = await startSessionWithRecovery(subject.trim() || "Study");
@@ -462,8 +377,7 @@ export default function FocusPage() {
           Focus
         </h1>
         <p className="mt-1 text-sm text-ink/50">
-          Run the plain Classic Mode plan, a Focus Mode plan split between Job Trials and Business &amp; Passion, or go
-          Free Mode for open-ended study.
+          Run the Classic Mode plan — 14 sessions with short breaks between them — or go Free Mode for open-ended study.
         </p>
       </div>
 
@@ -478,18 +392,14 @@ export default function FocusPage() {
             <p
               className={`text-sm font-bold uppercase tracking-wide ${plan.phase === "focus" ? "text-ink/70" : "text-chip-ink/80"}`}
             >
-              {plan.phase === "focus"
-                ? plan.kind === "classic"
-                  ? "🕒 Classic Mode"
-                  : `🎯 ${CATEGORY_LABEL[planBlocks(plan.kind, plan.style)[plan.blockIndex].category]}`
-                : "☕ Break"}{" "}
-              · Session {plan.blockIndex + 1} of {planBlocks(plan.kind, plan.style).length}
+              {plan.phase === "focus" ? "🕒 Classic Mode" : "☕ Break"}{" "}
+              · Session {plan.blockIndex + 1} of {CLASSIC_PLAN.length}
             </p>
             <p className="font-heading my-4 text-6xl tracking-wide tabular-nums">
               {formatDuration(planPhaseRemainingSeconds)}
             </p>
-            <div className="mb-5 flex justify-center gap-2">
-              {planBlocks(plan.kind, plan.style).map((_, i) => (
+            <div className="mb-5 flex flex-wrap justify-center gap-2">
+              {CLASSIC_PLAN.map((_, i) => (
                 <span
                   key={i}
                   className="h-3 w-3 rounded-full"
@@ -522,8 +432,8 @@ export default function FocusPage() {
           <p
             className={`border-t-2 border-ink/10 bg-black/5 px-6 py-2.5 text-xs ${plan.phase === "focus" ? "text-ink/60" : "text-chip-ink/70"}`}
           >
-            No casual stopping — this plan runs the full {formatMinutes(planTotalMinutes(plan.kind, plan.style))}. Force
-            Stop is only for real emergencies.
+            No casual stopping — this plan runs the full {formatMinutes(planTotalMinutes())}. Force Stop is only for real
+            emergencies.
           </p>
         </div>
       ) : (
@@ -533,7 +443,7 @@ export default function FocusPage() {
           ) : active ? (
             <div className="p-6">
               <p className="text-sm font-bold uppercase tracking-wide text-ink/70">
-                {mode === "free" ? "🟢 Free Mode" : mode === "classic" ? "🕒 Classic Mode" : "🎯 Focus Mode"}
+                {mode === "free" ? "🟢 Free Mode" : "🕒 Classic Mode"}
               </p>
               <p className="mt-1 text-sm font-bold text-ink/90">{active.subject}</p>
               <p className="font-heading my-4 text-6xl tracking-wide tabular-nums">
@@ -580,16 +490,6 @@ export default function FocusPage() {
                 >
                   🕒 Classic Mode
                 </button>
-                <button
-                  onClick={() => selectMode("focus")}
-                  className="flex-1 px-3 py-2.5 text-sm font-bold"
-                  style={{
-                    backgroundColor: mode === "focus" ? "var(--ink)" : "transparent",
-                    color: mode === "focus" ? "var(--paper)" : "var(--ink)",
-                  }}
-                >
-                  🎯 Focus Mode
-                </button>
               </div>
 
               <div className="mx-auto mt-5 max-w-sm">
@@ -610,40 +510,13 @@ export default function FocusPage() {
                       Study for as long as you want — no breaks, stop whenever.
                     </p>
                   </form>
-                ) : mode === "classic" ? (
+                ) : (
                   <form onSubmit={startClassicPlan} className="space-y-2">
                     <button type="submit" className="comic-btn w-full px-6 py-3 text-sm text-ink">
-                      Start Classic Mode ({formatMinutes(planTotalMinutes("classic", "5-5"))} focus)
+                      Start Classic Mode ({formatMinutes(planTotalMinutes())} focus)
                     </button>
                     <p className="text-center text-xs text-ink/50">
-                      10×1h focus/15m break — the plain original plan, no category split.
-                    </p>
-                  </form>
-                ) : (
-                  <form onSubmit={startPlan} className="space-y-3">
-                    <div className="flex overflow-hidden rounded-lg border-2 border-ink">
-                      {(["5-5", "2x4"] as const).map((style) => (
-                        <button
-                          key={style}
-                          type="button"
-                          onClick={() => selectPlanStyle(style)}
-                          className="flex-1 px-3 py-2 text-xs font-bold"
-                          style={{
-                            backgroundColor: planStyle === style ? "var(--ink)" : "transparent",
-                            color: planStyle === style ? "var(--paper)" : "var(--ink)",
-                          }}
-                        >
-                          {PLAN_STYLE_LABEL[style]}
-                        </button>
-                      ))}
-                    </div>
-                    <button type="submit" className="comic-btn w-full px-6 py-3 text-sm text-ink">
-                      Start Focus Mode ({formatMinutes(planTotalMinutes("advanced", planStyle))} focus)
-                    </button>
-                    <p className="text-center text-xs text-ink/50">
-                      {planStyle === "5-5"
-                        ? "5×1h focus/15m break (Job Trials) → 5×1h focus/15m break (Business & Passion)"
-                        : "2.5h Job → 2.5h Business → 2.5h Job → 2.5h Business · 15m breaks between"}
+                      14 sessions — 13×45m plus a final 30m — with an 11m 20s break after every session but the last.
                     </p>
                   </form>
                 )}
