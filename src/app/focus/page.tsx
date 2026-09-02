@@ -141,6 +141,48 @@ interface PlanState {
 const PLAN_STORAGE_KEY = "timer-plan-state";
 const PLAN_BREAK_CARRY_KEY = "timer-plan-break-carry-ms";
 const PLAN_FOCUS_BANK_KEY = "timer-plan-focus-bank-ms";
+const PLAN_PROGRESS_KEY = "timer-plan-progress";
+
+// How far through the plan today got. Ending the plan parks the day here
+// instead of throwing it away, so starting again picks up at the next
+// session. It's stamped with the local calendar day, so the only thing
+// that ever sends you back to session 1 is midnight.
+interface PlanProgress {
+  date: string;
+  nextBlockIndex: number;
+}
+
+function loadPlanProgress(): number {
+  const raw = localStorage.getItem(PLAN_PROGRESS_KEY);
+  if (!raw) return 0;
+  try {
+    const parsed = JSON.parse(raw) as Partial<PlanProgress>;
+    if (
+      parsed.date === localDayKey(new Date()) &&
+      typeof parsed.nextBlockIndex === "number" &&
+      parsed.nextBlockIndex > 0 &&
+      parsed.nextBlockIndex <= BONUS_INDEX
+    ) {
+      return parsed.nextBlockIndex;
+    }
+  } catch {
+    // fall through
+  }
+  localStorage.removeItem(PLAN_PROGRESS_KEY);
+  return 0;
+}
+
+function savePlanProgress(nextBlockIndex: number) {
+  if (nextBlockIndex <= 0) {
+    localStorage.removeItem(PLAN_PROGRESS_KEY);
+    return;
+  }
+  const progress: PlanProgress = {
+    date: localDayKey(new Date()),
+    nextBlockIndex: Math.min(nextBlockIndex, BONUS_INDEX),
+  };
+  localStorage.setItem(PLAN_PROGRESS_KEY, JSON.stringify(progress));
+}
 
 function loadPlanState(): PlanState | null {
   const raw = localStorage.getItem(PLAN_STORAGE_KEY);
@@ -202,6 +244,8 @@ export default function FocusPage() {
   // session at the end of the plan. Mirrored in state so the session
   // count and dots update the moment you bank some.
   const [bankedFocusMs, setBankedFocusMs] = useState(0);
+  // Which session today's plan resumes at — 0 means "start from the top".
+  const [resumeIndex, setResumeIndex] = useState(0);
   const [unit, setUnit] = useState<DisplayUnit>("hours");
   // Gates every start/stop click so a slow network can't turn one intended
   // click into two requests, and so the button visibly reacts immediately
@@ -235,6 +279,7 @@ export default function FocusPage() {
     setPlan(loadPlanState());
     setMode(loadMode());
     setBankedFocusMs(readCarry(PLAN_FOCUS_BANK_KEY));
+    setResumeIndex(loadPlanProgress());
   }, []);
 
   useEffect(() => {
@@ -326,6 +371,10 @@ export default function FocusPage() {
     };
     setPlan(next);
     savePlanState(next);
+    // Park the day's position as each session starts, so leaving the plan —
+    // or losing the tab outright — still resumes here rather than at one.
+    savePlanProgress(blockIndex + 1);
+    setResumeIndex(Math.min(blockIndex + 1, BONUS_INDEX));
     // Show the running session straight from the start response instead of
     // waiting on the follow-up list fetch — that wait is what made the
     // button feel unresponsive.
@@ -341,15 +390,26 @@ export default function FocusPage() {
     setTimerError(null);
     setPlanJustFinished(false);
     try {
-      await startPlanFocus(0);
+      // Pick up where today left off. At the bonus index there are no fixed
+      // sessions left, so hand over to advancePlan to spend the bank (or
+      // wrap the day up if there's nothing in it).
+      if (resumeIndex >= BONUS_INDEX) {
+        await advancePlan(BONUS_INDEX);
+      } else {
+        await startPlanFocus(resumeIndex);
+      }
     } finally {
       setBusy("idle");
     }
   }
 
+  // The whole day's plan is done — clear the resume point so the next run
+  // genuinely starts from session 1.
   function finishPlan() {
     setPlan(null);
     savePlanState(null);
+    savePlanProgress(0);
+    setResumeIndex(0);
     setPlanJustFinished(true);
     setPlanJustFinishedMinutes(planTotalMinutes());
     load();
@@ -450,24 +510,23 @@ export default function FocusPage() {
     }
   }
 
-  // Leave Classic Mode entirely. The rest of the current session is banked
-  // like any other early stop, so nothing is thrown away.
-  async function endPlan() {
+  // Leave Classic Mode for now. Nothing is thrown away: the rest of the
+  // current session is banked like any other early stop, an unfinished
+  // break rolls into the next one, and today's position is kept so
+  // starting again resumes at the next session rather than session 1.
+  function endPlan() {
     if (!plan || busy !== "idle") return;
-    setBusy("stopping");
     setTimerError(null);
-    setActive(null);
-    try {
-      if (plan.phase === "focus") {
-        setBankedFocusMs(addCarry(PLAN_FOCUS_BANK_KEY, plan.phaseEndsAt - Date.now()));
-        stopActiveSession().catch(() => {});
-      }
-      setPlan(null);
-      savePlanState(null);
-      load();
-    } finally {
-      setBusy("idle");
+    if (plan.phase === "focus") {
+      setBankedFocusMs(addCarry(PLAN_FOCUS_BANK_KEY, plan.phaseEndsAt - Date.now()));
+      setActive(null);
+      stopActiveSession().catch(() => {});
+    } else {
+      addCarry(PLAN_BREAK_CARRY_KEY, plan.phaseEndsAt - Date.now());
     }
+    setPlan(null);
+    savePlanState(null);
+    load();
   }
 
   // Free Mode: study for as long as you want, stop whenever — no break is
@@ -815,11 +874,16 @@ export default function FocusPage() {
                     >
                       {busy === "starting"
                         ? "Starting…"
-                        : `Start Classic Mode (${formatMinutes(planTotalMinutes())} focus)`}
+                        : resumeIndex > 0
+                          ? `Resume Classic Mode (Session ${Math.min(resumeIndex, BONUS_INDEX) + 1} of ${planSessionCount})`
+                          : `Start Classic Mode (${formatMinutes(planTotalMinutes())} focus)`}
                     </button>
                     <p className="text-center text-xs text-ink/50">
                       14 sessions — 13×45m plus a final 30m — with an 11m 20s break after every session but the last.
                       Stop a session early and the rest is banked for a bonus session at the end.
+                      {resumeIndex > 0
+                        ? " You're mid-plan — this picks up where you left off, and only resets after midnight."
+                        : ""}
                     </p>
                   </form>
                 )}
