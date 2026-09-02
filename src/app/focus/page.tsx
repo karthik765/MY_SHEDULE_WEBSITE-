@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { startOfWeek } from "@/lib/schedule";
 import { getAudioContext, playChime } from "@/lib/sound";
+import { SLOW_TAG, SLOW_RATE, isSlowSubject } from "@/lib/focusSessions";
 
 interface StudySession {
   id: string;
@@ -220,16 +221,6 @@ function loadMode(): TimerMode {
   return raw === "free" || raw === "nonfocused" ? raw : "classic";
 }
 
-// Non-Focused sessions are tagged right in the subject string (no schema
-// change needed) so a page reload can still tell a slow session apart from
-// a normal Free Mode one — same trick Classic Mode already uses to encode
-// its session number into the subject.
-const SLOW_TAG = " (Non-Focused ×0.5)";
-const SLOW_RATE = 0.5;
-
-function isSlowSubject(subject: string): boolean {
-  return subject.endsWith(SLOW_TAG);
-}
 
 export default function FocusPage() {
   const [active, setActive] = useState<StudySession | null | undefined>(undefined);
@@ -314,16 +305,6 @@ export default function FocusPage() {
     });
   }
 
-  // A Non-Focused session has to be recorded at half its real elapsed time
-  // no matter where it's stopped from — the Stop button or the stale-session
-  // recovery below. Returns undefined for normal sessions, which stops them
-  // at the real current time.
-  function slowEndTimeFor(session: StudySession): number | undefined {
-    if (!isSlowSubject(session.subject)) return undefined;
-    const startMs = new Date(session.startTime).getTime();
-    return startMs + (Date.now() - startMs) * SLOW_RATE;
-  }
-
   // A session younger than this that blocks a start is almost certainly the
   // very click being retried, not a leftover — so adopt it rather than
   // killing it.
@@ -350,7 +331,7 @@ export default function FocusPage() {
       if (Date.now() - new Date(existing.startTime).getTime() < STALE_SESSION_MS) {
         return existing;
       }
-      await stopActiveSession(slowEndTimeFor(existing));
+      await stopActiveSession();
       res = await post();
     }
     if (!res.ok) return null;
@@ -557,11 +538,10 @@ export default function FocusPage() {
     await runStart(subject.trim() || "Study");
   }
 
-  // Non-Focused: same open-ended start/stop as Free Mode, but every real
-  // minute only counts as half a minute of focus — for chores/other tasks
-  // running alongside, not real deep work. The display already runs at
-  // half speed (see elapsedSeconds below); stopping just has to persist
-  // that same halved amount instead of the real wall-clock elapsed time.
+  // Non-Focused: same open-ended start/stop as Free Mode, but only half the
+  // time counts toward study hours — for chores/other tasks running
+  // alongside, not real deep work. Focus Points still credit the full time;
+  // the stop endpoint applies both halves.
   async function startNonFocused(e: FormEvent) {
     e.preventDefault();
     await runStart(`${subject.trim() || "Study"}${SLOW_TAG}`);
@@ -577,7 +557,7 @@ export default function FocusPage() {
     setActive(null);
     void (async () => {
       try {
-        const res = await stopActiveSession(slowEndTimeFor(stopping));
+        const res = await stopActiveSession();
         // 404 means it was already stopped elsewhere, which is still "stopped".
         if (!res.ok && res.status !== 404) {
           setActive(stopping);
@@ -619,9 +599,13 @@ export default function FocusPage() {
   }
 
   const activeIsSlow = !!active && isSlowSubject(active.subject);
+  // The clock runs at real speed in every mode. Non-Focused only discounts
+  // what gets *logged as study time* — the credited figure below — while the
+  // Focus Points for it stay whole, topped back up by the stop endpoint.
   const elapsedSeconds = active
-    ? Math.max(0, (now - new Date(active.startTime).getTime()) / 1000) * (activeIsSlow ? SLOW_RATE : 1)
+    ? Math.max(0, (now - new Date(active.startTime).getTime()) / 1000)
     : 0;
+  const creditedLiveMinutes = (elapsedSeconds / 60) * (activeIsSlow ? SLOW_RATE : 1);
   // A free-running session this long is almost always one that was left
   // running by mistake, not real focus time worth logging.
   const activeLooksForgotten =
@@ -632,7 +616,7 @@ export default function FocusPage() {
     .filter((s) => s.durationMinutes != null && new Date(s.startTime) >= weekStart)
     .reduce((sum, s) => sum + (s.durationMinutes ?? 0), 0);
   const weeklyLiveMinutes =
-    weeklyMinutes + (active && new Date(active.startTime) >= weekStart ? elapsedSeconds / 60 : 0);
+    weeklyMinutes + (active && new Date(active.startTime) >= weekStart ? creditedLiveMinutes : 0);
 
   const todayLocalKey = localDayKey(new Date());
   const dailyTotals = new Map<string, number>();
@@ -643,7 +627,7 @@ export default function FocusPage() {
   }
   if (active) {
     const key = localDayKey(new Date(active.startTime));
-    dailyTotals.set(key, (dailyTotals.get(key) ?? 0) + elapsedSeconds / 60);
+    dailyTotals.set(key, (dailyTotals.get(key) ?? 0) + creditedLiveMinutes);
   }
   const todayMinutes = dailyTotals.get(todayLocalKey) ?? 0;
   const totalLoggedMinutes = [...dailyTotals.values()].reduce((sum, m) => sum + m, 0);
@@ -663,7 +647,7 @@ export default function FocusPage() {
         </h1>
         <p className="mt-1 text-sm text-ink/50">
           Run the Classic Mode plan — 14 sessions with short breaks between them — go Free Mode for open-ended study,
-          or Non-Focused for chores/tasks that only count at half speed.
+          or Non-Focused for chores/tasks, which count half toward study hours but earn full Focus Points.
         </p>
       </div>
 
@@ -861,8 +845,8 @@ export default function FocusPage() {
                       </button>
                     </div>
                     <p className="text-center text-xs text-ink/50">
-                      For chores/tasks alongside studying, not real deep work — runs at half speed, so every real
-                      hour only logs 30 minutes.
+                      For chores/tasks alongside studying, not real deep work. An hour here earns the full 60 Focus
+                      Points, but only counts as 30 minutes of study time.
                     </p>
                   </form>
                 ) : (
