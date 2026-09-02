@@ -143,11 +143,23 @@ function loadForceStopState(): ForceStopState {
   return { date: todayKey(), count: 0 };
 }
 
-type TimerMode = "free" | "classic";
+type TimerMode = "free" | "classic" | "nonfocused";
 const MODE_STORAGE_KEY = "timer-mode";
 
 function loadMode(): TimerMode {
-  return localStorage.getItem(MODE_STORAGE_KEY) === "free" ? "free" : "classic";
+  const raw = localStorage.getItem(MODE_STORAGE_KEY);
+  return raw === "free" || raw === "nonfocused" ? raw : "classic";
+}
+
+// Non-Focused sessions are tagged right in the subject string (no schema
+// change needed) so a page reload can still tell a slow session apart from
+// a normal Free Mode one — same trick Classic Mode already uses to encode
+// its session number into the subject.
+const SLOW_TAG = " (Non-Focused ×0.5)";
+const SLOW_RATE = 0.5;
+
+function isSlowSubject(subject: string): boolean {
+  return subject.endsWith(SLOW_TAG);
 }
 
 export default function FocusPage() {
@@ -339,12 +351,31 @@ export default function FocusPage() {
     if (res.ok) load();
   }
 
+  // Non-Focused: same open-ended start/stop as Free Mode, but every real
+  // minute only counts as half a minute of focus — for chores/other tasks
+  // running alongside, not real deep work. The display already runs at
+  // half speed (see elapsedSeconds below); stopping just has to persist
+  // that same halved amount instead of the real wall-clock elapsed time.
+  async function startNonFocused(e: FormEvent) {
+    e.preventDefault();
+    const res = await startSessionWithRecovery(`${subject.trim() || "Study"}${SLOW_TAG}`);
+    if (res.ok) load();
+  }
+
   async function stop() {
-    await stopActiveSession();
+    if (active && isSlowSubject(active.subject)) {
+      const startMs = new Date(active.startTime).getTime();
+      await stopActiveSession(startMs + elapsedSeconds * 1000);
+    } else {
+      await stopActiveSession();
+    }
     load();
   }
 
-  const elapsedSeconds = active ? Math.max(0, (now - new Date(active.startTime).getTime()) / 1000) : 0;
+  const activeIsSlow = !!active && isSlowSubject(active.subject);
+  const elapsedSeconds = active
+    ? Math.max(0, (now - new Date(active.startTime).getTime()) / 1000) * (activeIsSlow ? SLOW_RATE : 1)
+    : 0;
 
   const weekStart = startOfWeek(new Date());
   const weeklyMinutes = sessions
@@ -377,7 +408,8 @@ export default function FocusPage() {
           Focus
         </h1>
         <p className="mt-1 text-sm text-ink/50">
-          Run the Classic Mode plan — 14 sessions with short breaks between them — or go Free Mode for open-ended study.
+          Run the Classic Mode plan — 14 sessions with short breaks between them — go Free Mode for open-ended study,
+          or Non-Focused for chores/tasks that only count at half speed.
         </p>
       </div>
 
@@ -443,9 +475,11 @@ export default function FocusPage() {
           ) : active ? (
             <div className="p-6">
               <p className="text-sm font-bold uppercase tracking-wide text-ink/70">
-                {mode === "free" ? "🟢 Free Mode" : "🕒 Classic Mode"}
+                {activeIsSlow ? "🐢 Non-Focused ×0.5" : mode === "free" ? "🟢 Free Mode" : "🕒 Classic Mode"}
               </p>
-              <p className="mt-1 text-sm font-bold text-ink/90">{active.subject}</p>
+              <p className="mt-1 text-sm font-bold text-ink/90">
+                {activeIsSlow ? active.subject.slice(0, -SLOW_TAG.length) : active.subject}
+              </p>
               <p className="font-heading my-4 text-6xl tracking-wide tabular-nums">
                 {formatDuration(elapsedSeconds)}
               </p>
@@ -469,7 +503,7 @@ export default function FocusPage() {
                 </div>
               )}
 
-              <div className="mx-auto flex max-w-md overflow-hidden rounded-lg border-2 border-ink">
+              <div className="mx-auto flex max-w-lg flex-wrap overflow-hidden rounded-lg border-2 border-ink">
                 <button
                   onClick={() => selectMode("free")}
                   className="flex-1 px-3 py-2.5 text-sm font-bold"
@@ -479,6 +513,16 @@ export default function FocusPage() {
                   }}
                 >
                   🟢 Free Mode
+                </button>
+                <button
+                  onClick={() => selectMode("nonfocused")}
+                  className="flex-1 px-3 py-2.5 text-sm font-bold"
+                  style={{
+                    backgroundColor: mode === "nonfocused" ? "var(--ink)" : "transparent",
+                    color: mode === "nonfocused" ? "var(--paper)" : "var(--ink)",
+                  }}
+                >
+                  🐢 Non-Focused
                 </button>
                 <button
                   onClick={() => selectMode("classic")}
@@ -508,6 +552,24 @@ export default function FocusPage() {
                     </div>
                     <p className="text-center text-xs text-ink/50">
                       Study for as long as you want — no breaks, stop whenever.
+                    </p>
+                  </form>
+                ) : mode === "nonfocused" ? (
+                  <form onSubmit={startNonFocused} className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        className="comic-input min-w-0 flex-1 px-3 py-2 text-sm"
+                        value={subject}
+                        onChange={(e) => setSubject(e.target.value)}
+                        placeholder="Subject"
+                      />
+                      <button type="submit" className="comic-btn px-6 py-2 text-sm text-ink">
+                        Start
+                      </button>
+                    </div>
+                    <p className="text-center text-xs text-ink/50">
+                      For chores/tasks alongside studying, not real deep work — runs at half speed, so every real
+                      hour only logs 30 minutes.
                     </p>
                   </form>
                 ) : (
