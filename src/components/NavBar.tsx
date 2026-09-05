@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import Icon from "./studio/Icon";
 import BrandMark from "./studio/BrandMark";
 import ZoomControl from "./ZoomControl";
@@ -50,7 +50,6 @@ const TIER_EMOJI: Record<Tier, string> = { bronze: "🥉", silver: "🥈", gold:
 
 export default function NavBar() {
   const pathname = usePathname();
-  const router = useRouter();
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [focusPoints, setFocusPoints] = useState<number | null>(null);
@@ -135,12 +134,6 @@ export default function NavBar() {
 
   if (pathname === "/login") return null;
 
-  async function handleLogout() {
-    await fetch("/api/logout", { method: "POST" });
-    router.push("/login");
-    router.refresh();
-  }
-
   return (
     <nav className="studio-nav" aria-label="Main navigation">
       <div className="nav-brand-row">
@@ -162,7 +155,7 @@ export default function NavBar() {
         <div className="nav-bottom">
           <Link href="/focus" className="nav-focus-card" onClick={() => setMobileOpen(false)}><span className="eyebrow">A LITTLE PROGRESS</span><strong>{focusPoints === null ? "Your next chapter" : focusPoints.toLocaleString() + " focus points"}</strong><span>Make time for your next idea.<Icon name="arrow" size={16} /></span></Link>
           {trophies && <Link href="/trophies" className="nav-trophies" onClick={() => setMobileOpen(false)}><Icon name="trophies" size={16} />{trophies.bronze + trophies.silver + trophies.gold} trophies collected<Icon name="arrow" size={14} /></Link>}
-          <div className="nav-settings"><ZoomControl /><button onClick={handleLogout} className="icon-button" aria-label="Log out" title="Log out"><Icon name="logout" size={17} /></button></div>
+          <div className="nav-settings"><ZoomControl /></div>
           <div className="nav-profile"><BrandMark compact /><span><small>Your personal workspace</small></span></div>
         </div>
       </div>

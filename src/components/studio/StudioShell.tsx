@@ -10,6 +10,7 @@ import JokeWidget from "@/components/rails/JokeWidget";
 import PuzzleWidget from "@/components/rails/PuzzleWidget";
 import Atmosphere from "./Atmosphere";
 import BrandMark from "./BrandMark";
+import LogoutButton from "./LogoutButton";
 
 const SECTIONS = [{ href: "/", title: "Overview" }, { href: "/focus", title: "Focus" }, { href: "/schedule", title: "Schedule" }, { href: "/habits", title: "Habits" }, { href: "/goals", title: "Goals" }, { href: "/topics", title: "Learning" }, { href: "/minigames", title: "Play" }, { href: "/analytics", title: "Analytics" }];
 
@@ -22,7 +23,7 @@ export default function StudioShell({ children }: { children: ReactNode }) {
       <a href="#main-content" className="skip-link">Skip to content</a>
       <NavBar />
       <div className="studio-workspace">
-        <div className="workspace-bar"><span>YOUR SPACE <span className="workspace-divider">/</span> <strong>{pathname === "/" ? "OVERVIEW" : pathname.split("/")[1].replaceAll("-", " ").toUpperCase()}</strong></span><div className="workspace-tools"><span className="workspace-status"><i />MAKE IT COUNT</span><ThemeToggle /><BrandMark compact /></div></div>
+        <div className="workspace-bar"><span>YOUR SPACE <span className="workspace-divider">/</span> <strong>{pathname === "/" ? "OVERVIEW" : pathname.split("/")[1].replaceAll("-", " ").toUpperCase()}</strong></span><div className="workspace-tools"><span className="workspace-status"><i />MAKE IT COUNT</span><ThemeToggle /><BrandMark compact /><LogoutButton /></div></div>
         <main id="main-content" tabIndex={-1} className="studio-main"><div key={pathname} className="page-enter">{children}</div></main>
         <details className="studio-break">
           <summary><span>A moment to reset</span><span>Quotes, a little humor & a daily puzzle <b>+</b></span></summary>

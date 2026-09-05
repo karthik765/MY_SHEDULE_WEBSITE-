@@ -44,7 +44,12 @@ try {
       }
       const page = await context.newPage();
       // Keep browser verification from triggering existing GET-side database mutations.
-      await page.route("**/api/**", route => new URL(route.request().url()).pathname === "/api/login" ? route.continue() : route.fulfill({ status: 200, json: {} }));
+      await page.route("**/api/**", route => {
+        const path = new URL(route.request().url()).pathname;
+        if (["/api/login", "/api/logout"].includes(path)) return route.continue();
+        const json = path === "/api/focus-points" ? { points: 0 } : path === "/api/achievements" ? { achievements: [], trophies: { bronze: 0, silver: 0, gold: 0, platinum: false } } : null;
+        return route.fulfill({ status: 200, json });
+      });
       await page.goto(origin + "/login", { waitUntil: "networkidle" });
       assert.equal(await page.locator('input[type="password"]').count(), emailOnly ? 0 : 1);
       assert.equal(await page.locator('input[type="email"]').count(), emailOnly ? 0 : 1);
@@ -56,6 +61,24 @@ try {
         await page.locator("h1").first().waitFor();
         await page.reload();
         assert.equal(new URL(page.url()).pathname, "/", "Preview session persists after reload");
+        for (const width of [1440, 390, 320]) {
+          await page.setViewportSize({ width, height: 900 });
+          const button = page.getByRole("button", { name: "Log out", exact: true });
+          await button.waitFor({ state: "visible" });
+          assert.ok(await button.isVisible(), "Logout is visible without opening navigation");
+          const bounds = await button.boundingBox();
+          assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= width, "Logout fits the viewport");
+        }
+        await page.route("**/api/logout", route => route.fulfill({ status: 500, json: { error: "Simulated network failure" } }), { times: 1 });
+        await page.getByRole("button", { name: "Log out", exact: true }).click();
+        await page.locator(".logout-control [role=alert]").waitFor();
+        assert.equal(new URL(page.url()).pathname, "/", "A failed logout does not pretend to succeed");
+        await page.getByRole("button", { name: "Log out", exact: true }).click();
+        await page.waitForURL(origin + "/login");
+        assert.equal((await context.cookies()).some(cookie => cookie.name === "life_app_session"), false, "Session cookie removed");
+        await page.goto(origin + "/");
+        assert.equal(new URL(page.url()).pathname, "/login", "Protected pages stay locked after logout");
+        console.log("PASS: visible desktop/mobile logout, error recovery, cookie deletion and protected-page redirect");
       }
       console.log(emailOnly ? "PASS: one-click preview entry works with a legacy account setting and persists session" : "PASS: normal mode shows and enforces password, secure cookie enabled");
     } finally {
