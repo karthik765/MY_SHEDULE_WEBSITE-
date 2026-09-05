@@ -121,7 +121,7 @@ function PosterGrid({
   if (items.length === 0) return <p className="text-xs text-ink/40">{emptyLabel}</p>;
 
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+    <div className="poster-grid">
       {items.map((item) => (
         <div key={item.id} className="comic-panel-sm overflow-hidden p-0">
           <div className="relative flex aspect-[2/3] w-full items-center justify-center bg-paper">
@@ -141,7 +141,7 @@ function PosterGrid({
               <span className="text-4xl">{emoji}</span>
             )}
           </div>
-          <div className="space-y-1 p-2">
+          <div className="poster-caption">
             <p className="line-clamp-2 text-sm font-bold">{item.title}</p>
             {onMarkDone && (
               <button
@@ -248,7 +248,7 @@ export default function MediaSection({
   const markDoneLabel = `I Have ${watchedVerb} the ${itemNoun}`;
 
   return (
-    <div className="space-y-8">
+    <div className="media-studio space-y-8">
       <div>
         <div className="mb-2 flex items-center gap-2">
           <h2 className="font-heading text-lg tracking-wide" style={{ color: accentColor }}>

@@ -1,5 +1,6 @@
 "use client";
 
+import PageHeader from "@/components/studio/PageHeader";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 
 type TopicStatus = "planned" | "learning" | "completed" | "not_useful";
@@ -104,6 +105,7 @@ export default function TopicsPage() {
   const [addingChildFor, setAddingChildFor] = useState<string | null>(null);
   const [childDraft, setChildDraft] = useState("");
   const [page, setPage] = useState(1);
+  const [query, setQuery] = useState("");
 
   async function load() {
     const res = await fetch("/api/topics");
@@ -117,7 +119,9 @@ export default function TopicsPage() {
   }, []);
 
   const tree = useMemo(() => buildTree(topics), [topics]);
-  const totalPages = Math.max(1, Math.ceil(tree.length / ROOTS_PER_PAGE));
+  function matchesSearch(node: TreeNode): boolean { return node.name.toLowerCase().includes(query.toLowerCase()) || node.children.some(matchesSearch); }
+  const visibleTree = tree.filter(matchesSearch);
+  const totalPages = Math.max(1, Math.ceil(visibleTree.length / ROOTS_PER_PAGE));
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- clamps to a valid page after a root is deleted
@@ -202,7 +206,7 @@ export default function TopicsPage() {
     });
   }
 
-  const pageRoots = tree.slice((page - 1) * ROOTS_PER_PAGE, page * ROOTS_PER_PAGE);
+  const pageRoots = visibleTree.slice((page - 1) * ROOTS_PER_PAGE, page * ROOTS_PER_PAGE);
 
   function renderLane(root: TreeNode) {
     const { positioned, rowCount, maxDepth } = layoutTree(root, collapsed);
@@ -212,7 +216,8 @@ export default function TopicsPage() {
     const addingTarget = positioned.find((p) => p.node.id === addingChildFor);
 
     return (
-      <div key={root.id} className="comic-panel p-4">
+      <div key={root.id} className="comic-panel topic-lane p-4">
+        <div className="section-caption"><span>{root.name}</span><p>{countDescendants(root)} connected topics</p></div>
         <div className="overflow-x-auto">
           <div style={{ position: "relative", width, height }}>
             <svg width={width} height={height} style={{ position: "absolute", inset: 0, overflow: "visible" }}>
@@ -340,17 +345,18 @@ export default function TopicsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="page-topics space-y-6">
       <div>
-        <h1 className="font-heading text-4xl text-comic-orange" style={{ WebkitTextStroke: "1.5px var(--ink)" }}>
-          Completed Topics
-        </h1>
+        <PageHeader eyebrow="STAY CURIOUS" title="NEVER STOP LEARNING." description="A living map of what you are learning, exploring, and making your own." />
         <p className="mt-1 text-sm text-ink/50">
           One skill tree per track — Data Engineering, Game Dev, VFX/Unreal, AI, whatever you&apos;re learning —
           branching right into every subtopic you add. Click a dot to change its status.
         </p>
       </div>
 
+      <div className="chapter-tally"><span><strong>{tree.length}</strong>Learning tracks</span><span><strong>{topics.filter(t => t.status === "learning").length}</strong>In progress</span><span><strong>{topics.filter(t => t.status === "completed").length}</strong>Completed topics</span></div>
+      <div className="chapter-toolbar"><input className="chapter-search" aria-label="Search learning tracks" placeholder="Find a track or topic..." value={query} onChange={e => { setQuery(e.target.value); setPage(1); }} /><div className="segmented-control"><button data-camera-tab onClick={() => setCollapsed(new Set())}>Expand all</button><button data-camera-tab onClick={() => setCollapsed(new Set(topics.map(t => t.id)))}>Collapse all</button></div></div>
+      <details className="chapter-composer"><summary>Open a new learning track</summary>
       <form onSubmit={addRoot} className="comic-panel flex flex-wrap gap-2 p-4">
         <input
           className="comic-input min-w-[200px] flex-1 px-3 py-2 text-sm"
@@ -361,7 +367,7 @@ export default function TopicsPage() {
         <button type="submit" className="comic-btn px-4 py-2 text-sm text-ink">
           Add Main Topic
         </button>
-      </form>
+      </form></details>
 
       <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-ink/60">
         {(Object.entries(STATUS_META) as [TopicStatus, (typeof STATUS_META)[TopicStatus]][]).map(

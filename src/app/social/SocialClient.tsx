@@ -1,5 +1,6 @@
 "use client";
 
+import PageHeader from "@/components/studio/PageHeader";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 interface SocialState {
@@ -152,13 +153,8 @@ export default function SocialClient() {
   const active = state?.active ?? null;
 
   return (
-    <div className="space-y-6">
-      <h1
-        className="font-heading text-4xl text-comic-purple"
-        style={{ WebkitTextStroke: "1.5px var(--ink)" }}
-      >
-        Social
-      </h1>
+    <div className="page-social space-y-6">
+      <PageHeader eyebrow="CONNECT, THEN COME BACK" title="CONNECT. THEN CREATE." description="Enjoy your social break with a gentle boundary around your attention." />
       <p className="text-sm text-ink/60">
         15 minutes a day, combined across X and Instagram. Pick one below to open it in a new
         tab — you&apos;re already logged in there. The timer keeps counting until you press{" "}

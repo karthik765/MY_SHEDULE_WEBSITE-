@@ -7,17 +7,17 @@ export type Theme = "light" | "dark";
 function resolveTheme(): Theme {
   const explicit = document.documentElement.dataset.theme;
   if (explicit === "light" || explicit === "dark") return explicit;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  return "dark";
 }
 
 /**
  * Tracks the currently active theme (explicit toggle choice, falling back to
- * system preference). Reacts to both system-preference changes and to
+ * the dark observatory theme). Reacts to both system-preference changes and to
  * `data-theme` being flipped elsewhere (e.g. by the toggle button) via a
  * MutationObserver, so no shared context/provider is needed.
  */
 export function useTheme() {
-  const [theme, setTheme] = useState<Theme>("light");
+  const [theme, setTheme] = useState<Theme>("dark");
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing from DOM/localStorage on mount
@@ -39,7 +39,7 @@ export function useTheme() {
   function toggle() {
     const next: Theme = resolveTheme() === "dark" ? "light" : "dark";
     document.documentElement.dataset.theme = next;
-    localStorage.setItem("theme", next);
+    localStorage.setItem("observatory-theme", next);
     setTheme(next);
   }
 

@@ -214,9 +214,9 @@ export default function GameDetailPage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="page-game space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="font-heading text-3xl text-comic-pink" style={{ WebkitTextStroke: "1px var(--ink)" }}>
+        <h1 className="font-heading text-3xl text-comic-pink">
           {def.emoji} {def.title}
         </h1>
         <Link href="/minigames" className="comic-btn bg-panel px-3 py-1.5 text-sm">

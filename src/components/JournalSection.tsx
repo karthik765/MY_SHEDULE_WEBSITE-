@@ -47,20 +47,24 @@ export default function JournalSection() {
   }
 
   return (
-    <div className="space-y-6">
-      <form onSubmit={handleAdd} className="comic-panel space-y-3 p-4">
+    <div className="journal-studio">
+      <form onSubmit={handleAdd} className="comic-panel journal-composer">
+        <p className="eyebrow">A PAGE FOR TODAY</p><h2>Let it out.</h2><p className="page-description">An idea, a small win, or simply how you feel.</p>
         <textarea
           className="comic-input w-full px-3 py-2 text-sm"
-          rows={4}
+          aria-label="Journal entry"
+          rows={7}
           placeholder="What's on your mind today?"
           value={content}
           onChange={(e) => setContent(e.target.value)}
         />
-        <div className="flex items-center gap-2">
+        <div className="journal-actions">
           {MOODS.map((m) => (
             <button
               type="button"
               key={m}
+              aria-label={`Mood: ${m}`}
+              aria-pressed={mood === m}
               onClick={() => setMood(mood === m ? null : m)}
               className="comic-btn px-2 py-1 text-lg"
               style={{ backgroundColor: mood === m ? "var(--ink)" : "var(--panel)" }}
@@ -68,7 +72,7 @@ export default function JournalSection() {
               {m}
             </button>
           ))}
-          <button type="submit" className="comic-btn ml-auto px-4 py-2 text-sm text-ink">
+          <button type="submit" className="primary-action">
             Save entry
           </button>
         </div>
@@ -79,7 +83,7 @@ export default function JournalSection() {
       ) : entries.length === 0 ? (
         <p className="text-ink/60">No entries yet.</p>
       ) : (
-        <ul className="space-y-2">
+        <ul className="journal-entries">
           {entries.map((entry) => (
             <li key={entry.id} className="comic-panel p-4">
               <div className="mb-1 flex items-center justify-between">

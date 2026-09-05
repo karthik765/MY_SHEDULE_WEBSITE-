@@ -20,12 +20,9 @@ interface SimpleBarChartProps {
   layout?: "horizontal" | "vertical";
 }
 
-// Matches the app's own tokens (src/app/globals.css --ink/--panel) — this
-// chart predates the cyberpunk reskin and was never updated, which is why
-// it still looked like the old comic theme regardless of the bar color.
 const CHART_COLORS = {
-  light: { grid: "#ddd2bd", axis: "#1a130a", mutedTick: "#6b5f4a", tick: "#1a130a", panel: "#f3efe5", cursor: "rgba(26,19,10,0.06)" },
-  dark: { grid: "#2e2210", axis: "#f5f1e6", mutedTick: "#c4b8a0", tick: "#f5f1e6", panel: "#201709", cursor: "rgba(245,241,230,0.08)" },
+  light: { grid: "#e6e2d8", axis: "#e6e2d8", mutedTick: "#77746b", tick: "#302e29", panel: "#fffdf8", cursor: "#eeebe280" },
+  dark: { grid: "#3c3d34", axis: "#3c3d34", mutedTick: "#b3b1a5", tick: "#f0ece1", panel: "#292a25", cursor: "#33352e80" },
 };
 
 export default function SimpleBarChart({
@@ -43,14 +40,14 @@ export default function SimpleBarChart({
   return (
     <ResponsiveContainer width="100%" height={isVertical ? Math.max(120, data.length * 36) : 220}>
       <BarChart data={data} layout={layout} margin={{ top: 4, right: 8, bottom: 4, left: 4 }}>
-        <CartesianGrid stroke={c.grid} strokeDasharray="0" vertical={isVertical} horizontal={!isVertical} />
+        <CartesianGrid stroke={c.grid} strokeDasharray="3 5" vertical={isVertical} horizontal={!isVertical} />
         {isVertical ? (
           <>
-            <XAxis type="number" tick={{ fill: c.mutedTick, fontSize: 12, fontWeight: 700 }} axisLine={{ stroke: c.axis }} tickLine={false} />
+            <XAxis type="number" tick={{ fill: c.mutedTick, fontSize: 12, fontWeight: 400 }} axisLine={{ stroke: c.axis }} tickLine={false} />
             <YAxis
               type="category"
               dataKey={xKey}
-              tick={{ fill: c.tick, fontSize: 12, fontWeight: 700 }}
+              tick={{ fill: c.tick, fontSize: 12, fontWeight: 400 }}
               axisLine={{ stroke: c.axis }}
               tickLine={false}
               width={90}
@@ -60,28 +57,28 @@ export default function SimpleBarChart({
           <>
             <XAxis
               dataKey={xKey}
-              tick={{ fill: c.mutedTick, fontSize: 12, fontWeight: 700 }}
+              tick={{ fill: c.mutedTick, fontSize: 12, fontWeight: 400 }}
               axisLine={{ stroke: c.axis }}
               tickLine={false}
             />
-            <YAxis tick={{ fill: c.mutedTick, fontSize: 12, fontWeight: 700 }} axisLine={{ stroke: c.axis }} tickLine={false} />
+            <YAxis tick={{ fill: c.mutedTick, fontSize: 12, fontWeight: 400 }} axisLine={{ stroke: c.axis }} tickLine={false} />
           </>
         )}
         <Tooltip
           cursor={{ fill: c.cursor }}
           contentStyle={{
             background: c.panel,
-            border: `2.5px solid ${c.axis}`,
+            border: `1px solid ${c.axis}`,
             borderRadius: 10,
-            boxShadow: `3px 3px 0 0 ${c.axis}`,
+            boxShadow: "0 8px 24px -12px #30241930",
             fontSize: 12,
-            fontWeight: 700,
+            fontWeight: 400,
             color: c.tick,
           }}
           formatter={(value) => [`${value}${unit}`, ""]}
-          labelStyle={{ color: c.tick, fontWeight: 700 }}
+          labelStyle={{ color: c.tick, fontWeight: 400 }}
         />
-        <Bar dataKey={yKey} fill={color} stroke={c.axis} strokeWidth={2} radius={isVertical ? [0, 4, 4, 0] : [4, 4, 0, 0]} maxBarSize={28} />
+        <Bar dataKey={yKey} fill={color} stroke="none" radius={isVertical ? [0, 4, 4, 0] : [4, 4, 0, 0]} maxBarSize={32} />
       </BarChart>
     </ResponsiveContainer>
   );

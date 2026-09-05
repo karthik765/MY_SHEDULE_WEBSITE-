@@ -12,7 +12,7 @@ export default function ZoomControl() {
   const { zoomMode, setZoomMode } = useZoomMode();
 
   return (
-    <div className="flex overflow-hidden rounded-lg border-2 border-ink" title="Page size">
+    <div className="zoom-control" title="Page size">
       {OPTIONS.map((opt) => (
         <button
           key={opt.value}

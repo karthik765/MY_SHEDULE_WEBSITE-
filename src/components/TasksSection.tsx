@@ -74,22 +74,25 @@ export default function TasksSection() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="tasks-studio space-y-6">
       <form onSubmit={handleAdd} className="comic-panel flex flex-wrap gap-2 p-4">
         <input
           className="comic-input min-w-[200px] flex-1 px-3 py-2 text-sm"
-          placeholder="New task..."
+          aria-label="Task title"
+          placeholder="What is your next small step?"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
         <input
           type="date"
+          aria-label="Due date"
           className="comic-input px-3 py-2 text-sm"
           value={dueDate}
           onChange={(e) => setDueDate(e.target.value)}
         />
         <select
           className="comic-input px-3 py-2 text-sm"
+          aria-label="Priority"
           value={priority}
           onChange={(e) => setPriority(e.target.value)}
         >
@@ -99,6 +102,7 @@ export default function TasksSection() {
         </select>
         <select
           className="comic-input px-3 py-2 text-sm"
+          aria-label="Category"
           value={category}
           onChange={(e) => setCategory(e.target.value)}
         >
@@ -108,8 +112,8 @@ export default function TasksSection() {
             </option>
           ))}
         </select>
-        <button type="submit" className="comic-btn px-4 py-2 text-sm text-ink">
-          Add
+        <button type="submit" className="primary-action">
+          Add task
         </button>
       </form>
 
@@ -118,11 +122,11 @@ export default function TasksSection() {
       ) : tasks.length === 0 ? (
         <p className="text-ink/60">No tasks yet.</p>
       ) : (
-        <div className="space-y-6">
+        <div className="task-board">
           {CATEGORIES.map((cat) => {
             const catTasks = tasks.filter((t) => t.category === cat.value);
             return (
-              <div key={cat.value}>
+              <section key={cat.value} className="task-column">
                 <h2
                   className="font-heading mb-2 text-lg tracking-wide"
                   style={{ color: cat.color }}
@@ -142,6 +146,7 @@ export default function TasksSection() {
                       >
                         <input
                           type="checkbox"
+                          aria-label={`Mark ${task.title} ${task.completed ? "incomplete" : "complete"}`}
                           checked={task.completed}
                           onChange={() => toggleComplete(task)}
                           className="h-5 w-5 accent-[color:var(--comic-blue)]"
@@ -171,7 +176,7 @@ export default function TasksSection() {
                     ))}
                   </ul>
                 )}
-              </div>
+              </section>
             );
           })}
         </div>

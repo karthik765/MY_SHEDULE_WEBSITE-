@@ -16,7 +16,7 @@ export const sessionOptions: SessionOptions = {
   password: secret,
   cookieName: "life_app_session",
   cookieOptions: {
-    secure: process.env.NODE_ENV === "production",
+    secure: process.env.NODE_ENV === "production" && process.env.LOCAL_PREVIEW_EMAIL_ONLY !== "1",
     httpOnly: true,
     sameSite: "lax",
     maxAge: 60 * 60 * 24 * 30, // 30 days

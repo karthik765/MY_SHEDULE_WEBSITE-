@@ -1,5 +1,6 @@
 "use client";
 
+import PageHeader from "@/components/studio/PageHeader";
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { computeStudyStreak, STUDY_STREAK_GOAL_DAYS } from "@/lib/streaks";
 import { isGoalLocked } from "@/lib/goals";
@@ -72,6 +73,8 @@ export default function GoalsPage() {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [sessions, setSessions] = useState<StudySession[]>([]);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
+  const [view, setView] = useState("all");
   const [title, setTitle] = useState("");
   const [timeline, setTimeline] = useState("none");
   const [customDate, setCustomDate] = useState(() => addDays(30));
@@ -206,10 +209,8 @@ export default function GoalsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="font-heading text-4xl text-comic-yellow" style={{ WebkitTextStroke: "1.5px var(--ink)" }}>
-        Goals
-      </h1>
+    <div className="page-goals space-y-6">
+      <PageHeader eyebrow="YOUR NEXT CHAPTER" title="MAKE IT HAPPEN." description="Turn your ambitions into milestones. Every small step belongs to something bigger." />
 
       {(() => {
         const streak = computeStudyStreak(sessions);
@@ -241,6 +242,9 @@ export default function GoalsPage() {
         );
       })()}
 
+      <div className="chapter-tally"><span><strong>{goals.filter(g => g.status !== "completed").length}</strong>In motion</span><span><strong>{goals.filter(g => g.status === "completed").length}</strong>Achieved</span><span><strong>{goals.reduce((sum, g) => sum + g.milestones.filter(m => m.completed).length, 0)}</strong>Milestones reached</span></div>
+      <div className="chapter-toolbar"><input className="chapter-search" aria-label="Search goals" placeholder="Find an ambition..." value={query} onChange={e => setQuery(e.target.value)} /><div className="segmented-control">{["all", "active", "completed"].map(value => <button key={value} data-camera-tab aria-pressed={view === value} onClick={() => setView(value)}>{value}</button>)}</div></div>
+      <details className="chapter-composer"><summary>Start your next ambition</summary>
       <form onSubmit={handleAdd} className="comic-panel flex flex-wrap items-end gap-2 p-4">
         <div className="flex min-w-[160px] flex-1 flex-col gap-1">
           <label className="text-xs font-bold text-ink/70">Goal</label>
@@ -279,7 +283,7 @@ export default function GoalsPage() {
         <button type="submit" className="comic-btn px-4 py-2 text-sm text-ink">
           Add
         </button>
-      </form>
+      </form></details>
 
       {loading ? (
         <p className="text-ink/60">Loading...</p>
@@ -287,7 +291,7 @@ export default function GoalsPage() {
         <p className="text-ink/60">No goals yet.</p>
       ) : (
         <ul className="space-y-4">
-          {goals.map((goal) => {
+          {goals.filter(g => g.title.toLowerCase().includes(query.toLowerCase()) && (view === "all" || g.status === view)).map((goal) => {
             const done = goal.milestones.filter((m) => m.completed).length;
             const total = goal.milestones.length;
             const progress = total > 0 ? Math.round((done / total) * 100) : 0;

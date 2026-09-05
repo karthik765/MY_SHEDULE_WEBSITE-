@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useEffectEvent, useRef, useState, type FormEvent } from "react";
+import Icon from "@/components/studio/Icon";
+import Sculpture from "@/components/studio/Sculpture";
 import { startOfWeek } from "@/lib/schedule";
 import { getAudioContext, playChime } from "@/lib/sound";
 import { SLOW_TAG, SLOW_RATE, isSlowSubject } from "@/lib/focusSessions";
@@ -289,21 +291,43 @@ export default function FocusPage() {
   }
 
   async function load() {
-    const [activeRes, listRes] = await Promise.all([
-      fetch("/api/timer/active"),
-      fetch("/api/timer"),
-    ]);
-    setActive(await activeRes.json());
-    setSessions(await listRes.json());
+    try {
+      const [activeRes, listRes] = await Promise.all([
+        fetch("/api/timer/active", { cache: "no-store" }),
+        fetch("/api/timer", { cache: "no-store" }),
+      ]);
+      if (!activeRes.ok || !listRes.ok) throw new Error("Timer unavailable");
+      const current: StudySession | null = await activeRes.json();
+      const history: StudySession[] = await listRes.json();
+      setActive(current);
+      setSessions(history);
+      const saved = loadPlanState();
+      // Never revive a detached/expired break or a plan belonging to a stopped session.
+      const matches = current && saved?.phase === "focus" && current.subject === planLabel(saved.blockIndex);
+      const validBreak = !current && saved?.phase === "break" && saved.phaseEndsAt > Date.now();
+      if (matches || validBreak) setPlan(saved);
+      else { setPlan(null); savePlanState(null); }
+      document.dispatchEvent(new Event("studio:timer-changed"));
+    } catch {
+      setTimerError("Could not sync your timer. Retry before starting another session.");
+    }
   }
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time fetch on mount
-    load();
-    setPlan(loadPlanState());
+  const refreshTimer = useEffectEvent(() => { if (busy === "idle") void load(); });
+  const initializeTimer = useEffectEvent(() => {
+    void load();
     setMode(loadMode());
     setBankedFocusMs(readCarry(PLAN_FOCUS_BANK_KEY));
     setResumeIndex(loadPlanProgress());
+  });
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate browser-only timer preferences once on mount
+    initializeTimer();
+    const visible = () => { if (!document.hidden) refreshTimer(); };
+    const interval = setInterval(visible, 15000);
+    document.addEventListener("visibilitychange", visible);
+    window.addEventListener("focus", visible);
+    return () => { clearInterval(interval); document.removeEventListener("visibilitychange", visible); window.removeEventListener("focus", visible); };
   }, []);
 
   useEffect(() => {
@@ -327,7 +351,7 @@ export default function FocusPage() {
   // whatever moment the tab happens to wake up and run this — otherwise time
   // spent away while backgrounded/asleep would get logged as focus time.
   async function stopActiveSession(endTimeOverride?: number) {
-    return fetch("/api/timer/stop", {
+    const response = await fetch("/api/timer/stop", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       // keepalive lets the request finish even if the page is closing —
@@ -336,6 +360,9 @@ export default function FocusPage() {
       keepalive: true,
       body: JSON.stringify(endTimeOverride != null ? { endTime: endTimeOverride } : {}),
     });
+    if (!response.ok && response.status !== 404) throw new Error("Stop was not saved");
+    document.dispatchEvent(new Event("studio:timer-changed"));
+    return response;
   }
 
   // A session younger than this that blocks a start is almost certainly the
@@ -357,15 +384,13 @@ export default function FocusPage() {
         body: JSON.stringify({ subject }),
       });
 
-    let res = await post();
+    const res = await post();
     if (res.status === 409) {
       const existing: StudySession | undefined = (await res.json())?.session;
-      if (!existing) return null;
-      if (Date.now() - new Date(existing.startTime).getTime() < STALE_SESSION_MS) {
-        return existing;
-      }
-      await stopActiveSession();
-      res = await post();
+      if (existing && existing.subject === subject && Date.now() - new Date(existing.startTime).getTime() < STALE_SESSION_MS) return existing;
+      setTimerError("An unfinished timer exists. Review or discard it before starting another.");
+      await load();
+      return null;
     }
     if (!res.ok) return null;
     return res.json();
@@ -456,7 +481,9 @@ export default function FocusPage() {
   // one, otherwise straight to the next session. `endTimeMs` is what gets
   // logged — the planned end for a session that ran its course, the real
   // now for one stopped early.
-  async function finishFocusBlock(current: PlanState, endTimeMs: number, bankedMs: number) {
+  async function finishFocusBlock(current: PlanState, endTimeMs: number, bankedMs: number, alreadyStopped = false) {
+    if (!alreadyStopped) await stopActiveSession(endTimeMs);
+    setActive(null);
     playFocusEndSound();
     // This session is done — whether it ran its full length or was stopped
     // early with the rest banked — so the day's position moves to the next
@@ -476,13 +503,10 @@ export default function FocusPage() {
       };
       setPlan(next);
       savePlanState(next);
-      stopActiveSession(endTimeMs)
-        .then(() => load())
-        .catch(() => {});
+      await load();
     } else {
       // The next session starts immediately here, so the stop has to be
       // recorded before it to avoid colliding with itself.
-      await stopActiveSession(endTimeMs);
       await advancePlan(current.blockIndex + 1);
     }
   }
@@ -502,7 +526,7 @@ export default function FocusPage() {
   useEffect(() => {
     if (!plan) return;
     const delay = Math.max(0, plan.phaseEndsAt - Date.now());
-    const timeout = setTimeout(() => transitionPlan(plan), delay);
+    const timeout = setTimeout(() => { void transitionPlan(plan).catch(() => setTimerError("Transition not saved. Please retry stopping the session.")); }, delay);
     return () => clearTimeout(timeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on the plan's own identity, not the closure
   }, [plan?.blockIndex, plan?.phase, plan?.phaseEndsAt]);
@@ -521,11 +545,13 @@ export default function FocusPage() {
     if (!plan || plan.phase !== "focus" || busy !== "idle") return;
     setBusy("stopping");
     setTimerError(null);
-    setActive(null); // optimistic — the panel moves on the moment you click
     try {
+      await stopActiveSession();
       const banked = addCarry(PLAN_FOCUS_BANK_KEY, plan.phaseEndsAt - Date.now());
       setBankedFocusMs(banked);
-      await finishFocusBlock(plan, Date.now(), banked);
+      await finishFocusBlock(plan, Date.now(), banked, true);
+    } catch {
+      setTimerError("Could not stop this session. Please try again.");
     } finally {
       setBusy("idle");
     }
@@ -539,21 +565,26 @@ export default function FocusPage() {
   // that session never finished, so it's the one to come back to. Leaving
   // during a break means the session before it did finish, so the next one
   // is up — that position was already recorded when the session ended.
-  function endPlan() {
+  async function endPlan() {
     if (!plan || busy !== "idle") return;
+    setBusy("stopping");
     setTimerError(null);
-    if (plan.phase === "focus") {
-      setBankedFocusMs(addCarry(PLAN_FOCUS_BANK_KEY, plan.phaseEndsAt - Date.now()));
-      savePlanProgress(plan.blockIndex);
-      setResumeIndex(Math.min(plan.blockIndex, BONUS_INDEX));
+    try {
+      if (plan.phase === "focus") {
+        await stopActiveSession();
+        setBankedFocusMs(addCarry(PLAN_FOCUS_BANK_KEY, plan.phaseEndsAt - Date.now()));
+        savePlanProgress(plan.blockIndex);
+        setResumeIndex(Math.min(plan.blockIndex, BONUS_INDEX));
+      } else {
+        addCarry(PLAN_BREAK_CARRY_KEY, plan.phaseEndsAt - Date.now());
+      }
       setActive(null);
-      stopActiveSession().catch(() => {});
-    } else {
-      addCarry(PLAN_BREAK_CARRY_KEY, plan.phaseEndsAt - Date.now());
-    }
-    setPlan(null);
-    savePlanState(null);
-    load();
+      setPlan(null);
+      savePlanState(null);
+      await load();
+    } catch {
+      setTimerError("Could not end the plan. Your timer has not been cleared; please retry.");
+    } finally { setBusy("idle"); }
   }
 
   // Free Mode: study for as long as you want, stop whenever — no break is
@@ -596,26 +627,17 @@ export default function FocusPage() {
   // Stopping is instant: the panel switches and the button frees up on the
   // click itself, and the request finishes in the background. Only a real
   // failure comes back to put the session on screen again.
-  function stop() {
+  async function stop() {
     if (busy !== "idle" || !active) return;
-    const stopping = active;
+    setBusy("stopping");
     setTimerError(null);
-    setActive(null);
-    void (async () => {
-      try {
-        const res = await stopActiveSession();
-        // 404 means it was already stopped elsewhere, which is still "stopped".
-        if (!res.ok && res.status !== 404) {
-          setActive(stopping);
-          setTimerError("Couldn't stop the timer — it's still running. Check your connection and try again.");
-          return;
-        }
-        load();
-      } catch {
-        setActive(stopping);
-        setTimerError("Couldn't stop the timer — it's still running. Check your connection and try again.");
-      }
-    })();
+    try {
+      await stopActiveSession();
+      setActive(null);
+      await load();
+    } catch {
+      setTimerError("Could not stop the timer. Please try again.");
+    } finally { setBusy("idle"); }
   }
 
   // Escape hatch for a session that was left running by accident (a crash, a
@@ -634,8 +656,11 @@ export default function FocusPage() {
     setBusy("stopping");
     setActive(null);
     try {
-      await fetch(`/api/timer/${discarding.id}`, { method: "DELETE", keepalive: true });
-      load();
+      const response = await fetch(`/api/timer/${discarding.id}`, { method: "DELETE", keepalive: true });
+      if (!response.ok) throw new Error("Discard failed");
+      setPlan(null);
+      savePlanState(null);
+      await load();
     } catch {
       setActive(discarding);
       setTimerError("Couldn't discard the session. Check your connection and try again.");
@@ -685,286 +710,60 @@ export default function FocusPage() {
   const bonusQueued = bankedFocusMs >= BONUS_MIN_MS || (plan?.blockIndex ?? 0) >= BONUS_INDEX;
   const planSessionCount = CLASSIC_PLAN.length + (bonusQueued ? 1 : 0);
 
+  const choices = [
+    { id: "classic" as const, name: "Classic", value: "45", unit: "MIN", detail: "Structured focus + restorative breaks", icon: "focus" as const },
+    { id: "free" as const, name: "Free flow", value: "OPEN", unit: "ENDED", detail: "Follow your curiosity. Stop on your terms.", icon: "arrow" as const },
+    { id: "nonfocused" as const, name: "Parallel", value: "0.5", unit: "CREDIT", detail: "Everyday tasks. Full Focus Points.", icon: "check" as const },
+  ];
+  const sessionLabel = plan ? (plan.phase === "break" ? "REST. YOU EARNED IT." : "DEEP WORK IN PROGRESS") : active ? "OPEN TIMER" : "YOUR NEXT SESSION";
+  const clock = plan ? formatDuration(planPhaseRemainingSeconds) : active ? formatDuration(elapsedSeconds) : mode === "classic" ? "45:00" : "00:00";
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="font-heading text-4xl text-comic-orange" style={{ WebkitTextStroke: "1.5px var(--ink)" }}>
-          Focus
-        </h1>
-        <p className="mt-1 text-sm text-ink/50">
-          Run the Classic Mode plan — 14 sessions with short breaks between them — go Free Mode for open-ended study,
-          or Non-Focused for chores/tasks, which count half toward study hours but earn full Focus Points.
-        </p>
-      </div>
-
-      {plan ? (
-        <div
-          className={`comic-panel overflow-hidden text-center ${plan.phase === "focus" ? "text-ink" : "text-chip-ink"}`}
-          style={{
-            backgroundColor: plan.phase === "focus" ? "var(--panel)" : "var(--comic-green)",
-          }}
-        >
-          <div className="p-6 pb-5">
-            <p
-              className={`text-sm font-bold uppercase tracking-wide ${plan.phase === "focus" ? "text-ink/70" : "text-chip-ink/80"}`}
-            >
-              {plan.phase === "focus" ? (plan.blockIndex >= BONUS_INDEX ? "⭐ Bonus Session" : "🕒 Classic Mode") : "☕ Break"}{" "}
-              · Session {plan.blockIndex + 1} of {planSessionCount}
-            </p>
-            <p className="font-heading my-4 text-6xl tracking-wide tabular-nums">
-              {formatDuration(planPhaseRemainingSeconds)}
-            </p>
-            <div className="mb-5 flex flex-wrap justify-center gap-2">
-              {Array.from({ length: planSessionCount }).map((_, i) => (
-                <span
-                  key={i}
-                  className="h-3 w-3 rounded-full"
-                  style={{
-                    backgroundColor:
-                      i < plan.blockIndex || (i === plan.blockIndex && plan.phase === "break")
-                        ? "var(--ink)"
-                        : i === plan.blockIndex
-                          ? "var(--panel)"
-                          : "rgba(20,18,26,0.25)",
-                  }}
-                />
-              ))}
-            </div>
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              {plan.phase === "break" ? (
-                <button onClick={skipPlanBreak} className="comic-btn bg-panel px-4 py-2 text-sm">
-                  Skip break
-                </button>
-              ) : (
-                <button
-                  onClick={stopPlanSession}
-                  disabled={busy !== "idle"}
-                  className="comic-btn bg-panel px-4 py-2 text-sm disabled:opacity-50"
-                >
-                  Stop session
-                </button>
-              )}
-              <button
-                onClick={endPlan}
-                disabled={busy !== "idle"}
-                className="comic-btn px-4 py-2 text-sm text-ink disabled:opacity-50"
-              >
-                End plan
-              </button>
-            </div>
-          </div>
-          <p
-            className={`border-t-2 border-ink/10 bg-black/5 px-6 py-2.5 text-xs ${plan.phase === "focus" ? "text-ink/60" : "text-chip-ink/70"}`}
-          >
-            {bankedFocusMs >= BONUS_MIN_MS
-              ? `Stop whenever — ${formatDuration(bankedFocusMs / 1000)} banked so far, served as a bonus session at the end.`
-              : `Stop whenever you like — the time you don't use is banked and served as a bonus session at the end of the ${formatMinutes(planTotalMinutes())}.`}
-          </p>
+    <div className="page-focus focus-cinema">
+      <section className="focus-theatre">
+        <div className="focus-hero-copy">
+          <p className="eyebrow"><span />THE FOCUS CHAMBER / 02</p>
+          <h1>LESS NOISE.<br /><em>MORE FLOW.</em></h1>
+          <p>One intention. Your full attention.<br />Make this moment yours.</p>
         </div>
-      ) : (
-        <div className="comic-panel overflow-hidden text-center text-ink">
-          {active === undefined ? (
-            <p className="p-6 text-ink/60">Loading...</p>
-          ) : active ? (
-            <div className="p-6">
-              <p className="text-sm font-bold uppercase tracking-wide text-ink/70">
-                {activeIsSlow ? "🐢 Non-Focused ×0.5" : mode === "free" ? "🟢 Free Mode" : "🕒 Classic Mode"}
-              </p>
-              <p className="mt-1 text-sm font-bold text-ink/90">
-                {activeIsSlow ? active.subject.slice(0, -SLOW_TAG.length) : active.subject}
-              </p>
-              <p className="font-heading my-4 text-6xl tracking-wide tabular-nums">
-                {formatDuration(elapsedSeconds)}
-              </p>
-              {activeLooksForgotten && (
-                <p className="mx-auto mb-3 max-w-sm text-xs font-bold text-comic-red">
-                  This has been running over 6 hours — if you left it going by accident, discard it instead of logging
-                  it.
-                </p>
-              )}
-              <div className="flex flex-wrap items-center justify-center gap-2">
-                <button
-                  onClick={stop}
-                  disabled={busy !== "idle"}
-                  className="comic-btn px-6 py-2 text-sm text-ink disabled:opacity-50"
-                >
-                  {busy === "stopping" ? "Stopping…" : "Stop"}
-                </button>
-                {activeLooksForgotten && (
-                  <button
-                    onClick={discardActive}
-                    disabled={busy !== "idle"}
-                    className="comic-btn px-4 py-2 text-sm text-comic-red disabled:opacity-50"
-                  >
-                    Discard
-                  </button>
-                )}
-              </div>
-              {timerError && <p className="mt-3 text-xs font-bold text-comic-red">{timerError}</p>}
-            </div>
-          ) : (
-            <div className="p-6">
-              {planJustFinished && (
-                <div className="comic-panel-sm mb-4 flex items-center justify-between gap-3 p-3 text-ink">
-                  <span className="text-sm font-bold">
-                    🏆 Plan complete — {formatMinutes(planJustFinishedMinutes)} of focus logged!
-                  </span>
-                  <button
-                    onClick={() => setPlanJustFinished(false)}
-                    className="text-xs font-bold text-ink/70 hover:underline"
-                  >
-                    Dismiss
-                  </button>
-                </div>
-              )}
-
-              <div className="mx-auto flex max-w-lg flex-wrap overflow-hidden rounded-lg border-2 border-ink">
-                <button
-                  onClick={() => selectMode("free")}
-                  className="flex-1 px-3 py-2.5 text-sm font-bold"
-                  style={{
-                    backgroundColor: mode === "free" ? "var(--ink)" : "transparent",
-                    color: mode === "free" ? "var(--paper)" : "var(--ink)",
-                  }}
-                >
-                  🟢 Free Mode
-                </button>
-                <button
-                  onClick={() => selectMode("nonfocused")}
-                  className="flex-1 px-3 py-2.5 text-sm font-bold"
-                  style={{
-                    backgroundColor: mode === "nonfocused" ? "var(--ink)" : "transparent",
-                    color: mode === "nonfocused" ? "var(--paper)" : "var(--ink)",
-                  }}
-                >
-                  🐢 Non-Focused
-                </button>
-                <button
-                  onClick={() => selectMode("classic")}
-                  className="flex-1 px-3 py-2.5 text-sm font-bold"
-                  style={{
-                    backgroundColor: mode === "classic" ? "var(--ink)" : "transparent",
-                    color: mode === "classic" ? "var(--paper)" : "var(--ink)",
-                  }}
-                >
-                  🕒 Classic Mode
-                </button>
-              </div>
-
-              <div className="mx-auto mt-5 max-w-sm">
-                {mode === "free" ? (
-                  <form onSubmit={startFree} className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <input
-                        className="comic-input min-w-0 flex-1 px-3 py-2 text-sm"
-                        value={subject}
-                        onChange={(e) => setSubject(e.target.value)}
-                        placeholder="Subject"
-                      />
-                      <button
-                        type="submit"
-                        disabled={busy !== "idle"}
-                        className="comic-btn px-6 py-2 text-sm text-ink disabled:opacity-50"
-                      >
-                        {busy === "starting" ? "Starting…" : "Start"}
-                      </button>
-                    </div>
-                    <p className="text-center text-xs text-ink/50">
-                      Study for as long as you want — no breaks, stop whenever.
-                    </p>
-                  </form>
-                ) : mode === "nonfocused" ? (
-                  <form onSubmit={startNonFocused} className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <input
-                        className="comic-input min-w-0 flex-1 px-3 py-2 text-sm"
-                        value={subject}
-                        onChange={(e) => setSubject(e.target.value)}
-                        placeholder="Subject"
-                      />
-                      <button
-                        type="submit"
-                        disabled={busy !== "idle"}
-                        className="comic-btn px-6 py-2 text-sm text-ink disabled:opacity-50"
-                      >
-                        {busy === "starting" ? "Starting…" : "Start"}
-                      </button>
-                    </div>
-                    <p className="text-center text-xs text-ink/50">
-                      For chores/tasks alongside studying, not real deep work. An hour here earns the full 60 Focus
-                      Points, but only counts as 30 minutes of study time.
-                    </p>
-                  </form>
-                ) : (
-                  <form onSubmit={startClassicPlan} className="space-y-2">
-                    <button
-                      type="submit"
-                      disabled={busy !== "idle"}
-                      className="comic-btn w-full px-6 py-3 text-sm text-ink disabled:opacity-50"
-                    >
-                      {busy === "starting"
-                        ? "Starting…"
-                        : effectiveResumeIndex > 0
-                          ? `Resume Classic Mode (Session ${Math.min(effectiveResumeIndex, BONUS_INDEX) + 1} of ${planSessionCount})`
-                          : `Start Classic Mode (${formatMinutes(planTotalMinutes())} focus)`}
-                    </button>
-                    <p className="text-center text-xs text-ink/50">
-                      14 sessions — 13×45m plus a final 30m — with an 11m 20s break after every session but the last.
-                      Stop a session early and the rest is banked for a bonus session at the end.
-                      {effectiveResumeIndex > 0
-                        ? " You're mid-plan — this picks up where you left off, and only resets after midnight."
-                        : ""}
-                    </p>
-                  </form>
-                )}
-                {timerError && <p className="mt-3 text-xs font-bold text-comic-red">{timerError}</p>}
-              </div>
-            </div>
-          )}
+        <div className="focus-monument"><Sculpture active={!!active} priority /><span>K / FORGED IN FOCUS</span></div>
+        <div className="focus-console" data-status={plan?.phase ?? (active ? "active" : "idle")}>
+          <div className="console-heading"><span className="eyebrow"><i className="status-light" />{active === undefined ? "SYNCING TIMER" : sessionLabel}</span><span className="console-code">{plan ? `SESSION ${plan.blockIndex + 1} / ${planSessionCount}` : "MAKE IT COUNT"}</span></div>
+          <div className="console-clock"><strong>{clock}</strong><div className="clock-signal" aria-hidden="true">{Array.from({ length: 24 }, (_, i) => <i key={i} style={{ animationDelay: `-${i * .13}s` }} />)}</div></div>
+          {active && !plan && <p className="console-subject">{activeIsSlow ? active.subject.slice(0, -SLOW_TAG.length) : active.subject}</p>}
+          {activeLooksForgotten && <p className="timer-notice">This timer may have been left open. Discard it if you were not studying.</p>}
+          {plan ? <div className="console-actions">
+            {plan.phase === "break" ? <button className="primary-action" disabled={busy !== "idle"} onClick={skipPlanBreak}>Skip break <Icon name="arrow" /></button> : <button className="primary-action" disabled={busy !== "idle"} onClick={stopPlanSession}>Finish session <Icon name="check" /></button>}
+            <button className="text-action" disabled={busy !== "idle"} onClick={endPlan}>{busy === "stopping" ? "Saving..." : "End plan"}</button>
+          </div> : active ? <div className="console-actions">
+            <button className="primary-action" disabled={busy !== "idle"} onClick={stop}>{busy === "stopping" ? "Saving..." : "Stop & save"} <Icon name="check" /></button>
+            <button className="text-action" disabled={busy !== "idle"} onClick={discardActive}>Discard unfinished session</button>
+          </div> : <form onSubmit={mode === "classic" ? startClassicPlan : mode === "free" ? startFree : startNonFocused} className="console-actions">
+            {mode !== "classic" && <input aria-label="Focus subject" className="comic-input" value={subject} onChange={e => setSubject(e.target.value)} placeholder="What are you working on?" />}
+            <button className="primary-action" disabled={busy !== "idle" || active === undefined}>{busy === "starting" ? "Starting..." : mode === "classic" && effectiveResumeIndex > 0 ? `Resume session ${effectiveResumeIndex + 1}` : "Begin your session"} <Icon name="arrow" /></button>
+          </form>}
+          {timerError && <div role="alert" className="timer-notice">{timerError} <button onClick={() => void load()}>Retry sync</button></div>}
+          {planJustFinished && <p className="timer-notice">Plan complete. {formatMinutes(planJustFinishedMinutes)} planned focus. <button onClick={() => setPlanJustFinished(false)}>Dismiss</button></p>}
         </div>
-      )}
-
-      <div className="comic-panel p-5">
-        <div className="mb-4 flex items-center justify-between">
-          <p className="font-heading text-lg tracking-wide text-ink">Your Focus</p>
-          <div className="flex overflow-hidden rounded-lg border-2 border-ink">
-            <button
-              onClick={() => setUnit("hours")}
-              className="px-2 py-1 text-xs font-bold"
-              style={{
-                backgroundColor: unit === "hours" ? "var(--ink)" : "transparent",
-                color: unit === "hours" ? "var(--paper)" : "var(--ink)",
-              }}
-            >
-              Hours
-            </button>
-            <button
-              onClick={() => setUnit("minutes")}
-              className="px-2 py-1 text-xs font-bold"
-              style={{
-                backgroundColor: unit === "minutes" ? "var(--ink)" : "transparent",
-                color: unit === "minutes" ? "var(--paper)" : "var(--ink)",
-              }}
-            >
-              Minutes
-            </button>
-          </div>
-        </div>
-        <div className="grid grid-cols-3 divide-x-2 divide-ink/10 text-center">
-          <div className="min-w-0 px-1 sm:px-2">
-            <p className="text-xs font-bold uppercase tracking-wide text-ink/40">Today</p>
-            <p className="font-heading mt-1 truncate text-xl tracking-wide text-ink sm:text-3xl">{formatByUnit(todayMinutes, unit)}</p>
-          </div>
-          <div className="min-w-0 px-1 sm:px-2">
-            <p className="text-xs font-bold uppercase tracking-wide text-ink/40">This Week</p>
-            <p className="font-heading mt-1 truncate text-xl tracking-wide text-ink sm:text-3xl">{formatByUnit(weeklyLiveMinutes, unit)}</p>
-          </div>
-          <div className="min-w-0 px-1 sm:px-2">
-            <p className="text-xs font-bold uppercase tracking-wide text-ink/40">Daily Avg</p>
-            <p className="font-heading mt-1 truncate text-xl tracking-wide text-ink sm:text-3xl">{formatByUnit(dailyAverageMinutes, unit)}</p>
-          </div>
-        </div>
-      </div>
+      </section>
+      <section className="focus-modes">
+        <div className="section-caption"><span>01 / CHOOSE YOUR RHYTHM</span><p>Different days. Different ways to focus.</p></div>
+        <div className="mode-deck">{choices.map(choice => <button key={choice.id} data-camera-tab aria-pressed={mode === choice.id} disabled={!!active || !!plan || active === undefined} onClick={() => selectMode(choice.id)} className="mode-tile">
+          <span className="mode-name"><Icon name={choice.icon} />{choice.name}<i /></span><strong>{choice.value}<small>{choice.unit}</small></strong><p>{choice.detail}</p>
+        </button>)}</div>
+      </section>
+      <section className="focus-journey">
+        <div className="section-caption"><span>02 / THE CLASSIC JOURNEY</span><p>{formatMinutes(planTotalMinutes())} across 14 sessions. Unused time is banked, never lost.</p></div>
+        <div className="journey-track">{CLASSIC_PLAN.map((block, i) => <div key={i} className={i < (plan?.blockIndex ?? effectiveResumeIndex) ? "is-complete" : i === (plan?.blockIndex ?? effectiveResumeIndex) ? "is-current" : ""}><span>{String(i + 1).padStart(2, "0")}</span><i /><small>{block.focusSeconds / 60}m</small></div>)}</div>
+        <p className="journey-note">11m 20s breaks between sessions. {bonusQueued ? `${formatDuration(bankedFocusMs / 1000)} banked for a bonus session.` : "Stop early to bank unused focus time for a bonus session."}</p>
+      </section>
+      <section className="focus-metrics">
+        <div className="section-caption"><span>03 / YOUR MOMENTUM</span><div className="segmented-control">{(["hours", "minutes"] as const).map(value => <button key={value} data-camera-tab aria-pressed={unit === value} onClick={() => setUnit(value)}>{value}</button>)}</div></div>
+        <div className="focus-metric-grid">{[["Today", todayMinutes], ["This week", weeklyLiveMinutes], ["Daily average", dailyAverageMinutes]].map(([label, value]) => <div key={label}><span>{label}</span><strong>{formatByUnit(Number(value), unit)}</strong><div className="metric-rule" /></div>)}</div>
+      </section>
+      <section className="focus-log"><div className="section-caption"><span>04 / RECENT FOCUS</span><p>Your last five completed sessions.</p></div>
+        {sessions.filter(s => s.endTime).slice(0, 5).map(s => <div className="focus-log-row" key={s.id}><Icon name="check" /><strong>{s.subject}</strong><time>{new Date(s.startTime).toLocaleDateString()}</time><span>{formatMinutes(s.durationMinutes ?? 0)}</span></div>)}
+        {!sessions.some(s => s.endTime) && <p className="journey-note">Your first finished session will appear here.</p>}
+      </section>
     </div>
   );
 }

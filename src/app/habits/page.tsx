@@ -1,5 +1,6 @@
 "use client";
 
+import PageHeader from "@/components/studio/PageHeader";
 import { useEffect, useState, type FormEvent } from "react";
 import { computeLongestStreak, computeStreak } from "@/lib/habits";
 import MediaSection from "@/components/MediaSection";
@@ -72,15 +73,15 @@ export default function HabitsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="font-heading text-4xl text-comic-green" style={{ WebkitTextStroke: "1.5px var(--ink)" }}>
-        Habits
-      </h1>
+    <div className="page-habits space-y-6">
+      <PageHeader eyebrow="THE ART OF SHOWING UP" title="BUILD YOUR RITUAL." description="Build your habits, keep your journal, and make space for the things you love." />
 
-      <div className="flex flex-wrap gap-2">
+      <div className="chapter-tabs">
         {TABS.map((t) => (
           <button
             key={t.value}
+            data-camera-tab
+            aria-pressed={tab === t.value}
             onClick={() => setTab(t.value)}
             className={`comic-btn px-3 py-1.5 text-sm ${tab === t.value ? "text-paper" : ""}`}
             style={{ backgroundColor: tab === t.value ? "var(--ink)" : "var(--panel)" }}
@@ -92,6 +93,8 @@ export default function HabitsPage() {
 
       {tab === "habits" && (
         <>
+          <div className="chapter-tally"><span><strong>{habits.length}</strong>Personal rituals</span><span><strong>{habits.filter(h => h.logs.some(l => l.date.slice(0, 10) === todayKey())).length}</strong>Done today</span><span><strong>{Math.max(0, ...habits.map(h => computeLongestStreak(h.logs)))}</strong>Best streak / days</span></div>
+          <details className="chapter-composer"><summary>Build a new ritual</summary>
           <form onSubmit={handleAdd} className="comic-panel flex gap-2 p-4">
             <input
               className="comic-input flex-1 px-3 py-2 text-sm"
@@ -102,14 +105,14 @@ export default function HabitsPage() {
             <button type="submit" className="comic-btn px-4 py-2 text-sm text-ink">
               Add
             </button>
-          </form>
+          </form></details>
 
           {loading ? (
             <p className="text-ink/60">Loading...</p>
           ) : habits.length === 0 ? (
             <p className="text-ink/60">No habits yet.</p>
           ) : (
-            <ul className="space-y-2">
+            <ul className="habit-collection">
               {habits.map((habit) => {
                 const doneToday = habit.logs.some((l) => l.date.slice(0, 10) === todayKey());
                 const streak = computeStreak(habit.logs);
@@ -118,7 +121,9 @@ export default function HabitsPage() {
                   <li key={habit.id} className="comic-panel-sm flex items-center gap-3 p-3">
                     <button
                       onClick={() => toggleToday(habit.id)}
-                      className={`comic-btn h-9 w-9 rounded-full p-0 text-base ${doneToday ? "text-chip-ink" : ""}`}
+                      aria-label={`${doneToday ? "Undo" : "Complete"} ${habit.name} for today`}
+                      aria-pressed={doneToday}
+                      className={`comic-btn h-9 w-9 rounded-full p-0 text-base ${doneToday ? "text-paper" : ""}`}
                       style={{ backgroundColor: doneToday ? "var(--ink)" : "var(--panel)" }}
                     >
                       {doneToday ? "✓" : ""}
@@ -136,6 +141,7 @@ export default function HabitsPage() {
                     >
                       Delete
                     </button>
+                    <div className="habit-week" aria-label="Last seven days">{Array.from({ length: 7 }, (_, i) => { const date = new Date(); date.setUTCDate(date.getUTCDate() - (6 - i)); const key = date.toISOString().slice(0, 10); const done = habit.logs.some(l => l.date.slice(0, 10) === key); return <span key={key} className={done ? "done" : ""} title={`${key}: ${done ? "Completed" : "Not completed"}`} />; })}</div>
                   </li>
                 );
               })}

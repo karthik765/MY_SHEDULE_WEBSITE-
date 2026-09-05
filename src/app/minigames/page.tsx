@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import PageHeader from "@/components/studio/PageHeader";
+import GameArtwork from "@/components/studio/GameArtwork";
+import { useDeferredValue, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import {
   MINIGAMES,
@@ -8,7 +10,6 @@ import {
   RIDDLES,
   IQ_GAMES,
   QMASTER_GAMES,
-  DIFFICULTY_COLOR,
   REPLAY_REWARD_PCT,
   MINIGAME_WEEKLY_CAP,
   MINIGAME_ONLY_WEEKLY_CAP,
@@ -109,108 +110,27 @@ interface UnlockInfo {
   requirement: string | null;
 }
 
-function GameRow({
-  title,
-  color,
-  games,
-  records,
-  unlocks,
-  mode = "active",
-  testMode = false,
-}: {
-  title: string;
-  color: string;
-  games: GameDef[];
-  records: Map<string, GameRecordRow>;
-  unlocks: Record<string, UnlockInfo>;
-  // "active": normal playable list (minigames always land here — they're
-  // replayable and never "complete" forever). "completed": only the
-  // one-shot kinds (puzzle/riddle/iq/qmaster) that have been solved,
-  // replayable here for fun but never for reward.
-  mode?: "active" | "completed";
-  // Beta/test mode: lock status is ignored (everything becomes playable),
-  // but never earns a reward — see src/lib/testMode.ts.
-  testMode?: boolean;
+function GameRow({ title, games, records, unlocks, mode = "active", testMode = false, query = "", difficulty = "all", availability = "all" }: {
+  title: string; color: string; games: GameDef[]; records: Map<string, GameRecordRow>; unlocks: Record<string, UnlockInfo>;
+  mode?: "active" | "completed"; testMode?: boolean; query?: string; difficulty?: string; availability?: string;
 }) {
-  const filtered = games.filter((g) => {
+  const [showAll, setShowAll] = useState(false);
+  const filtered = games.filter(g => {
     const solved = g.kind !== "minigame" && (records.get(g.id)?.solved ?? false);
-    return mode === "completed" ? solved : !solved;
+    return (mode === "completed" ? solved : !solved) && g.title.toLowerCase().includes(query.toLowerCase()) && (difficulty === "all" || g.difficulty === difficulty) && (availability === "all" || unlocks[g.id]?.unlocked);
   });
-
-  return (
-    <div>
-      <h2 className="font-heading mb-2 text-lg tracking-wide" style={{ color }}>
-        {title}
-      </h2>
-      {filtered.length === 0 && (
-        <p className="text-sm text-ink/50">{mode === "completed" ? "Nothing solved here yet." : "Nothing here right now."}</p>
-      )}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
-        {filtered.map((g) => {
-          const record = records.get(g.id);
-          const done = g.kind === "minigame" ? (record?.timesCompleted ?? 0) > 0 : (record?.solved ?? false);
-          const unlock = unlocks[g.id];
-          const locked = unlock ? !unlock.unlocked : false;
-
-          if (locked) {
-            return (
-              <div
-                key={g.id}
-                title={unlock.requirement ?? undefined}
-                className="comic-panel-sm flex flex-col items-center gap-1 p-3 text-center opacity-50"
-              >
-                <span className="text-3xl grayscale">🔒</span>
-                <span className="text-sm font-bold">{g.title}</span>
-                <span className="text-[11px] leading-tight text-ink/60">{unlock.requirement}</span>
-              </div>
-            );
-          }
-
-          if (mode === "completed") {
-            return (
-              <Link
-                key={g.id}
-                href={`/minigames/${g.id}`}
-                className="comic-panel-sm flex flex-col items-center gap-1 p-3 text-center transition hover:-translate-y-0.5"
-              >
-                <span className="text-3xl">{g.emoji}</span>
-                <span className="text-sm font-bold">{g.title}</span>
-                <span className="comic-badge px-2 py-0.5 text-xs text-ink">
-                  🔁 Replay · {Math.round(REPLAY_REWARD_PCT[g.difficulty] * 100)}% reward
-                </span>
-              </Link>
-            );
-          }
-
-          return (
-            <Link
-              key={g.id}
-              href={`/minigames/${g.id}`}
-              className="comic-panel-sm flex flex-col items-center gap-1 p-3 text-center transition hover:-translate-y-0.5"
-            >
-              <span className="text-3xl">{g.emoji}</span>
-              <span className="text-sm font-bold">{g.title}</span>
-              <span
-                className="comic-badge px-2 py-0.5 text-xs text-chip-ink capitalize"
-                style={{ backgroundColor: DIFFICULTY_COLOR[g.difficulty] }}
-              >
-                {g.difficulty}
-              </span>
-              <span className="text-xs text-ink/50">+{g.rewardMinutes}m focus</span>
-              {testMode && (
-                <span className="comic-badge px-2 py-0.5 text-xs text-ink">🧪 no reward</span>
-              )}
-              {done && (
-                <span className="text-xs font-bold text-comic-green">
-                  ✓ {record?.timesCompleted} win{record?.timesCompleted === 1 ? "" : "s"}
-                </span>
-              )}
-            </Link>
-          );
-        })}
-      </div>
-    </div>
-  );
+  return <section className="arcade-collection">
+    <div className="section-caption"><span>{title.replace(/^[^A-Za-z]+/, "")}</span><p>{filtered.length} challenges in this collection</p></div>
+    {!filtered.length && <p className="journey-note">No challenges match. Try another filter or collection.</p>}
+    <div className="arcade-grid">{filtered.slice(0, showAll ? filtered.length : 12).map(g => {
+      const record = records.get(g.id);
+      const unlock = unlocks[g.id];
+      const locked = !unlock?.unlocked;
+      const contents = <><span className="game-art" aria-hidden="true"><GameArtwork id={g.id} kind={g.kind} /></span><h3>{g.title}</h3><div className="game-card-meta"><span>{g.difficulty}</span><span className="game-reward">{locked ? "LOCKED" : testMode ? "PRACTICE / NO REWARD" : mode === "completed" ? `${Math.round(REPLAY_REWARD_PCT[g.difficulty] * 100)}% replay reward` : `+${g.rewardMinutes}m focus`}</span></div><div className="game-card-footer"><span>{locked ? unlock?.requirement ?? "Checking availability..." : record?.timesCompleted ? `${record.timesCompleted} wins / Play again` : "Take the challenge"}</span><b aria-hidden="true">{locked ? "+" : "↗"}</b></div></>;
+      return locked ? <div key={g.id} className="arcade-card is-locked" data-difficulty={g.difficulty}>{contents}</div> : <Link key={g.id} href={`/minigames/${g.id}`} className="arcade-card" data-difficulty={g.difficulty}>{contents}</Link>;
+    })}</div>
+    {filtered.length > 12 && <button className="text-action mt-6" onClick={() => setShowAll(value => !value)}>{showAll ? "Show fewer challenges" : `Explore all ${filtered.length} challenges`}</button>}
+  </section>;
 }
 
 function CompletedToggle({
@@ -229,6 +149,8 @@ function CompletedToggle({
       {options.map((o) => (
         <button
           key={o.id}
+          data-camera-tab
+          aria-pressed={view === o.id}
           onClick={() => onChange(o.id)}
           className="rounded-lg px-3 py-1 text-xs font-bold transition-colors"
           style={{
@@ -246,6 +168,11 @@ function CompletedToggle({
 type ContentView = "active" | "completed";
 
 export default function MinigamesPage() {
+  const [search, setSearch] = useState("");
+  const query = useDeferredValue(search);
+  const [difficulty, setDifficulty] = useState("all");
+  const [availability, setAvailability] = useState("playable");
+  const [featuredIndex, setFeaturedIndex] = useState(0);
   const [records, setRecords] = useState<GameRecordRow[]>([]);
   const [limits, setLimits] = useState<LimitsResponse | null>(null);
   const [unlocks, setUnlocks] = useState<Record<string, UnlockInfo>>({});
@@ -305,19 +232,25 @@ export default function MinigamesPage() {
   const thisWeekIQ = IQ_GAMES.find((g) => g.unlock?.type === "date" && g.unlock.after === thisWeekDate);
   const thisWeekQMaster = QMASTER_GAMES.find((g) => g.unlock?.type === "date" && g.unlock.after === thisWeekDate);
 
+  const playable = MINIGAMES.filter(g => unlocks[g.id]?.unlocked);
+  const featured = playable.length ? playable[featuredIndex % playable.length] : null;
+
   return (
-    <div className="space-y-6">
-      <h1 className="font-heading text-4xl text-comic-pink" style={{ WebkitTextStroke: "1.5px var(--ink)" }}>
-        Minigames
-      </h1>
-      <p className="text-sm text-ink/60">
+    <div className="page-minigames space-y-6">
+      <PageHeader eyebrow="A PLAYFUL PAUSE" title="RESET. RECHARGE. PLAY." description="Small challenges, fresh perspectives, and a little well-earned play." />
+      <section className="arcade-feature">
+        <div className="arcade-feature-copy"><p className="eyebrow">THE SPOTLIGHT / {String(featuredIndex % Math.max(1, playable.length) + 1).padStart(2, "0")}</p><h2>{featured?.title ?? "YOUR NEXT CHALLENGE"}</h2><p>A different kind of focus. Pick a challenge and get into it.</p>{featured && <Link className="primary-action" href={`/minigames/${featured.id}`}>Play now <span aria-hidden="true">/</span></Link>}</div>
+        <div className="arcade-feature-art"><span key={featured?.id} aria-hidden="true"><GameArtwork id={featured?.id ?? ""} kind={featured?.kind ?? "minigame"} /></span></div>
+      </section>
+      <div className="chapter-toolbar"><p className="eyebrow">{limits ? `${limits.weeklyRemaining} / ${limits.weeklyCap} WEEKLY ATTEMPTS LEFT` : "LOADING YOUR PLAY BUDGET"}</p><div className="segmented-control"><button data-camera-tab aria-label="Previous featured game" disabled={!playable.length} onClick={() => setFeaturedIndex(i => (i - 1 + playable.length) % playable.length)}>Previous</button><button data-camera-tab aria-label="Next featured game" disabled={!playable.length} onClick={() => setFeaturedIndex(i => i + 1)}>Next challenge</button></div></div>
+      <details className="arcade-rules"><summary>How rewards, limits and replays work</summary><p>
         Play, solve, and earn bonus focus points credited straight to your Focus stats. Each minigame lets you pick
         Easy, Medium, or Hard before you play — harder tiers pay a bonus (+10% Medium, +30% Hard) but are rarer:
         Hard and Medium reward once per game per day, Easy twice. Puzzles, riddles, IQ Levels, and Q Mastered Games
         reward in full the first time you solve them, and a reduced amount on replay. Every attempt — win or lose,
         any tab — counts against a shared pool of {MINIGAME_WEEKLY_CAP} per week, reset every Monday; Minigames
         alone are further capped at {MINIGAME_ONLY_WEEKLY_CAP} of those.
-      </p>
+      </p></details>
 
       {testMode ? (
         <div className="comic-panel-sm flex flex-wrap items-center justify-between gap-2 p-3 text-ink">
@@ -347,10 +280,12 @@ export default function MinigamesPage() {
         </form>
       )}
 
-      <div className="comic-panel-sm flex items-center gap-1 overflow-x-auto p-1">
+      <div className="chapter-tabs">
         {TABS.map((t) => (
           <button
             key={t.id}
+            data-camera-tab
+            aria-pressed={tab === t.id}
             onClick={() => setTab(t.id)}
             className="shrink-0 rounded-lg px-4 py-1.5 text-sm font-bold transition-colors"
             style={{
@@ -363,6 +298,11 @@ export default function MinigamesPage() {
         ))}
       </div>
 
+      {tab !== "stats" && <div className="chapter-toolbar">
+        <input className="chapter-search" aria-label="Search challenges" placeholder="Find your next challenge..." value={search} onChange={e => setSearch(e.target.value)} />
+        <select className="comic-input p-3 text-xs" aria-label="Challenge difficulty" value={difficulty} onChange={e => setDifficulty(e.target.value)}><option value="all">Every difficulty</option><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select>
+        <div className="segmented-control">{["all", "playable"].map(value => <button key={value} data-camera-tab aria-pressed={availability === value} onClick={() => setAvailability(value)}>{value === "all" ? "All challenges" : "Ready to play"}</button>)}</div>
+      </div>}
       {tab === "minigames" && (
         <div className="space-y-3">
           <NewThisWeekBanner kind="minigame" item={thisWeekMinigame} />
@@ -370,6 +310,9 @@ export default function MinigamesPage() {
             title="🎮 Minigames"
             color="var(--comic-blue)"
             games={MINIGAMES}
+            query={query}
+            difficulty={difficulty}
+            availability={availability}
             records={recordMap}
             unlocks={unlocks}
             testMode={testMode}
@@ -384,6 +327,9 @@ export default function MinigamesPage() {
             title="🧩 Brain Puzzles"
             color="var(--comic-orange)"
             games={PUZZLES}
+            query={query}
+            difficulty={difficulty}
+            availability={availability}
             records={recordMap}
             unlocks={unlocks}
             mode={puzzlesView}
@@ -399,6 +345,9 @@ export default function MinigamesPage() {
             title="🔍 Mystery Riddles"
             color="var(--comic-purple)"
             games={RIDDLES}
+            query={query}
+            difficulty={difficulty}
+            availability={availability}
             records={recordMap}
             unlocks={unlocks}
             mode={riddlesView}
@@ -419,6 +368,9 @@ export default function MinigamesPage() {
             title="🧠 IQ Levels"
             color="var(--comic-red)"
             games={IQ_GAMES}
+            query={query}
+            difficulty={difficulty}
+            availability={availability}
             records={recordMap}
             unlocks={unlocks}
             mode={iqView}
@@ -439,6 +391,9 @@ export default function MinigamesPage() {
             title="✏️ Q Mastered Games"
             color="var(--comic-blue)"
             games={QMASTER_GAMES}
+            query={query}
+            difficulty={difficulty}
+            availability={availability}
             records={recordMap}
             unlocks={unlocks}
             mode={qmasterView}

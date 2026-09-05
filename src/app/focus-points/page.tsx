@@ -1,5 +1,6 @@
 "use client";
 
+import PageHeader from "@/components/studio/PageHeader";
 import { useEffect, useMemo, useState } from "react";
 
 interface HistoryEntry {
@@ -45,6 +46,7 @@ export default function FocusPointsPage() {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [shown, setShown] = useState(PAGE_SIZE);
   const [filter, setFilter] = useState<Filter>("all");
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     fetch("/api/focus-points")
@@ -58,14 +60,12 @@ export default function FocusPointsPage() {
   const totalGained = useMemo(() => history.filter((h) => h.amount > 0).reduce((s, h) => s + h.amount, 0), [history]);
   const totalLost = useMemo(() => history.filter((h) => h.amount < 0).reduce((s, h) => s + h.amount, 0), [history]);
 
-  const filtered = history.filter((h) => (filter === "gains" ? h.amount > 0 : filter === "losses" ? h.amount < 0 : true));
+  const filtered = history.filter((h) => h.label.toLowerCase().includes(query.toLowerCase()) && (filter === "gains" ? h.amount > 0 : filter === "losses" ? h.amount < 0 : true));
   const visible = filtered.slice(0, shown);
 
   return (
-    <div className="space-y-6">
-      <h1 className="font-heading text-4xl text-comic-green" style={{ WebkitTextStroke: "1.5px var(--ink)" }}>
-        Focus Points
-      </h1>
+    <div className="page-points space-y-6">
+      <PageHeader eyebrow="EVERY MINUTE ADDS UP" title="EVERY MINUTE COUNTS." description="Follow the points you earn and spend as you build your daily momentum." />
       <p className="text-sm text-ink/60">
         Every gain and loss, newest first — study sessions, game rewards, loss penalties, and missed
         task/goal/habit deadlines. Showing the most recent {history.length} of up to 1,000.
@@ -78,10 +78,12 @@ export default function FocusPointsPage() {
         <StatTile label="Lost" value={totalLost} color="var(--comic-red)" />
       </div>
 
-      <div className="comic-panel-sm flex w-fit items-center gap-1 p-1">
+      <div className="chapter-toolbar"><input className="chapter-search" aria-label="Search point history" placeholder="Find a reward, session or adjustment..." value={query} onChange={e => { setQuery(e.target.value); setShown(PAGE_SIZE); }} /><div className="chapter-tabs">
         {FILTERS.map((f) => (
           <button
             key={f.id}
+            data-camera-tab
+            aria-pressed={filter === f.id}
             onClick={() => {
               setFilter(f.id);
               setShown(PAGE_SIZE);
@@ -95,9 +97,9 @@ export default function FocusPointsPage() {
             {f.label}
           </button>
         ))}
-      </div>
+      </div></div>
 
-      <div className="comic-panel divide-y-2 divide-ink/10 overflow-hidden">
+      <div className="comic-panel points-ledger divide-y-2 divide-ink/10 overflow-hidden">
         {visible.length === 0 && (
           <p className="p-6 text-center text-sm text-ink/50">
             {history.length === 0 ? "No focus point history yet." : "Nothing matches this filter."}

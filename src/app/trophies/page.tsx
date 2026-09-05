@@ -1,5 +1,6 @@
 "use client";
 
+import PageHeader from "@/components/studio/PageHeader";
 import { useEffect, useState } from "react";
 import type { AchievementCategory, AchievementTier } from "@/lib/achievements";
 
@@ -42,6 +43,8 @@ export default function TrophiesPage() {
   const [achievements, setAchievements] = useState<AchievementRow[]>([]);
   const [trophies, setTrophies] = useState<Trophies>({ bronze: 0, silver: 0, gold: 0, platinum: false });
   const [loading, setLoading] = useState(true);
+  const [view, setView] = useState("all");
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -57,10 +60,8 @@ export default function TrophiesPage() {
   const totalByTier = (tier: AchievementTier) => achievements.filter((a) => a.tier === tier).length;
 
   return (
-    <div className="space-y-6">
-      <h1 className="font-heading text-4xl text-comic-blue" style={{ WebkitTextStroke: "1.5px var(--ink)" }}>
-        Trophies
-      </h1>
+    <div className="page-trophies space-y-6">
+      <PageHeader eyebrow="LITTLE WINS, WORTH KEEPING" title="EARNED. NOT GIVEN." description="A collection of your milestones, persistence, and moments of progress." />
 
       <div className="comic-panel p-4 text-ink">
         <div className="mb-3 flex items-center justify-between">
@@ -103,11 +104,12 @@ export default function TrophiesPage() {
         )}
       </div>
 
+      <div className="chapter-toolbar"><input className="chapter-search" aria-label="Search trophies" placeholder="Find a milestone..." value={query} onChange={e => setQuery(e.target.value)} /><div className="segmented-control">{["all", "earned", "next"].map(value => <button key={value} data-camera-tab aria-pressed={view === value} onClick={() => setView(value)}>{value === "next" ? "Up next" : value}</button>)}</div></div>
       {loading ? (
         <p className="text-ink/60">Loading...</p>
       ) : (
         CATEGORY_ORDER.map((cat) => {
-          const rows = achievements.filter((a) => a.category === cat);
+          const rows = achievements.filter((a) => a.category === cat && a.title.toLowerCase().includes(query.toLowerCase()) && (view === "all" || (view === "earned" ? a.unlocked : !a.unlocked)));
           if (rows.length === 0) return null;
           const meta = CATEGORY_META[cat];
           return (

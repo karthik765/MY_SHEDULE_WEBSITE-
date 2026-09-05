@@ -1,5 +1,6 @@
 "use client";
 
+import PageHeader from "@/components/studio/PageHeader";
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import ScheduleSection from "@/components/ScheduleSection";
@@ -14,10 +15,12 @@ type Tab = (typeof TABS)[number]["value"];
 
 function TabPicker({ tab, onChange }: { tab: Tab; onChange: (tab: Tab) => void }) {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="chapter-tabs">
       {TABS.map((t) => (
         <button
           key={t.value}
+          data-camera-tab
+          aria-pressed={tab === t.value}
           onClick={() => onChange(t.value)}
           className={`comic-btn px-3 py-1.5 text-sm ${tab === t.value ? "text-paper" : ""}`}
           style={{ backgroundColor: tab === t.value ? "var(--ink)" : "var(--panel)" }}
@@ -48,10 +51,8 @@ function TabbedContent() {
 
 export default function SchedulePage() {
   return (
-    <div className="space-y-6">
-      <h1 className="font-heading text-4xl text-comic-purple" style={{ WebkitTextStroke: "1.5px var(--ink)" }}>
-        Schedule & Tasks
-      </h1>
+    <div className="page-schedule space-y-6">
+      <PageHeader eyebrow="PLAN WITH PURPOSE" title="OWN YOUR DAY." description="A thoughtful home for your schedule and the things you want to get done." />
       <Suspense fallback={<TabPicker tab="schedule" onChange={() => {}} />}>
         <TabbedContent />
       </Suspense>

@@ -1,3 +1,4 @@
+import PageHeader from "@/components/studio/PageHeader";
 import { prisma } from "@/lib/prisma";
 import { startOfWeek } from "@/lib/schedule";
 import SimpleBarChart from "@/components/charts/SimpleBarChart";
@@ -59,11 +60,10 @@ export default async function AnalyticsPage() {
   }));
 
   return (
-    <div className="space-y-8">
-      <h1 className="font-heading text-4xl text-comic-orange" style={{ WebkitTextStroke: "1.5px var(--ink)" }}>
-        Analytics
-      </h1>
+    <div className="page-analytics space-y-6">
+      <PageHeader eyebrow="THE BIGGER PICTURE" title="SEE YOUR MOMENTUM." description="Look back at your time, your consistency, and the work that is adding up." />
 
+      <div className="analytics-grid">
       <section className="comic-panel p-4">
         <h2 className="font-heading mb-3 text-lg tracking-wide text-comic-orange">
           Study hours per week (last {WEEKS} weeks)
@@ -107,6 +107,7 @@ export default async function AnalyticsPage() {
       <section className="comic-panel p-4">
         <FocusHistoryCard />
       </section>
+      </div>
     </div>
   );
 }

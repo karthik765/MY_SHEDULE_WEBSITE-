@@ -3,13 +3,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import ThemeToggle from "./ThemeToggle";
+import Icon from "./studio/Icon";
+import BrandMark from "./studio/BrandMark";
 import ZoomControl from "./ZoomControl";
 import { getAudioContext, playChime } from "@/lib/sound";
 import { MINIGAMES, PUZZLES, RIDDLES, IQ_GAMES, QMASTER_GAMES, currentContentWeek, weekUnlockDate, type GameDef } from "@/lib/games";
 
 const LINKS = [
-  { href: "/", label: "Dashboard" },
+  { href: "/", label: "Overview" },
   { href: "/focus", label: "Focus" },
   { href: "/schedule", label: "Schedule" },
   { href: "/habits", label: "Habits" },
@@ -51,6 +52,7 @@ export default function NavBar() {
   const pathname = usePathname();
   const router = useRouter();
 
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [focusPoints, setFocusPoints] = useState<number | null>(null);
   const [trophies, setTrophies] = useState<TrophyCounts | null>(null);
   const [toast, setToast] = useState<AchievementRow[] | null>(null);
@@ -88,6 +90,7 @@ export default function NavBar() {
 
       if (newlyUnlocked.length > 0) {
         playTrophySound();
+        document.dispatchEvent(new Event("studio:achievement"));
         setToast(newlyUnlocked);
         setTimeout(() => setToast(null), 5000);
       }
@@ -139,71 +142,28 @@ export default function NavBar() {
   }
 
   return (
-    <nav className="min-w-0 border-b-4 border-ink bg-panel">
-      <div className="mx-auto min-w-0 max-w-[1720px] px-4 py-3">
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <span className="k-mark-stage" aria-hidden="true">
-              <span className="k-mark" style={{ fontSize: "clamp(22px, 5.5vw, 34px)" }}>
-                K
-              </span>
-            </span>
-            <span
-              className="font-heading tracking-wide text-comic-orange"
-              style={{ WebkitTextStroke: "1px var(--ink)", fontSize: "clamp(1.1rem, 4vw, 1.875rem)" }}
-            >
-              KARTHIK
-            </span>
-          </Link>
-
-          <div className="flex flex-wrap items-center gap-2">
-            {focusPoints !== null && (
-              <Link
-                href="/focus"
-                className="comic-badge gap-1.5 px-3 py-1.5 text-sm text-ink"
-                title="All-time Focus Points (1 minute of focus = 1 point)"
-              >
-                🔥 {focusPoints} Focus Points
-              </Link>
-            )}
-            {trophies && (
-              <Link
-                href="/trophies"
-                className="comic-badge gap-1.5 bg-panel px-3 py-1.5 text-sm"
-                title="Trophies"
-              >
-                🏆 {trophies.bronze + trophies.silver + trophies.gold} Trophies
-              </Link>
-            )}
-            <ZoomControl />
-            <ThemeToggle />
-            <button
-              onClick={handleLogout}
-              className="comic-btn px-3 py-1.5 text-sm"
-              style={{ boxShadow: "2px 2px 0 0 var(--ink)" }}
-            >
-              Log Out
-            </button>
-          </div>
-        </div>
-
-        <div className="comic-panel-sm mt-3 flex items-center gap-1 overflow-x-auto p-1">
-          {LINKS.map((link) => {
-            const active = pathname === link.href;
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="shrink-0 rounded-lg px-4 py-1.5 text-sm font-bold transition-colors"
-                style={{
-                  backgroundColor: active ? "var(--ink)" : "transparent",
-                  color: active ? "var(--paper)" : "var(--ink)",
-                }}
-              >
-                {link.label}
-              </Link>
-            );
+    <nav className="studio-nav" aria-label="Main navigation">
+      <div className="nav-brand-row">
+        <Link href="/" className="studio-brand" aria-label="Overview" onClick={() => setMobileOpen(false)}><BrandMark /><span className="brand-caption">PERSONAL SPACE</span></Link>
+        <button className="mobile-menu-button" onClick={() => setMobileOpen(!mobileOpen)} aria-label={mobileOpen ? "Close navigation" : "Open navigation"} aria-expanded={mobileOpen} aria-controls="studio-navigation"><Icon name={mobileOpen ? "close" : "menu"} /></button>
+      </div>
+      <div id="studio-navigation" className={`nav-content ${mobileOpen ? "is-open" : ""}`}>
+        <div className="nav-section-label">YOUR EVERYDAY</div>
+        <div className="nav-links">
+          {LINKS.map((link, index) => {
+            const active = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href + "/"));
+            const icon = link.href === "/" ? "dashboard" : link.href === "/focus-points" ? "points" : link.href.slice(1);
+            return <div key={link.href}>
+              {index === 6 && <div className="nav-section-label nav-section-break">EXPLORE & REFLECT</div>}
+              <Link href={link.href} onClick={() => setMobileOpen(false)} className={`nav-link ${active ? "is-active" : ""}`} aria-current={active ? "page" : undefined}><Icon name={icon} size={18} /><span>{link.label}</span>{active && <span className="nav-active-dot" />}</Link>
+            </div>;
           })}
+        </div>
+        <div className="nav-bottom">
+          <Link href="/focus" className="nav-focus-card" onClick={() => setMobileOpen(false)}><span className="eyebrow">A LITTLE PROGRESS</span><strong>{focusPoints === null ? "Your next chapter" : focusPoints.toLocaleString() + " focus points"}</strong><span>Make time for your next idea.<Icon name="arrow" size={16} /></span></Link>
+          {trophies && <Link href="/trophies" className="nav-trophies" onClick={() => setMobileOpen(false)}><Icon name="trophies" size={16} />{trophies.bronze + trophies.silver + trophies.gold} trophies collected<Icon name="arrow" size={14} /></Link>}
+          <div className="nav-settings"><ZoomControl /><button onClick={handleLogout} className="icon-button" aria-label="Log out" title="Log out"><Icon name="logout" size={17} /></button></div>
+          <div className="nav-profile"><BrandMark compact /><span><small>Your personal workspace</small></span></div>
         </div>
       </div>
 
@@ -221,22 +181,13 @@ export default function NavBar() {
       )}
 
       {!unlockNoticeDismissed && unlockItems.length > 0 && (
-        <div className="comic-panel fixed top-20 right-4 left-4 z-50 max-w-[300px] sm:left-auto p-3 text-ink">
-          <p className="font-heading text-sm tracking-wide">🆕 New This Week</p>
-          <ul className="mt-1 space-y-0.5">
-            {unlockItems.map((item) => (
-              <li key={item.def.id} className="text-xs font-bold">
-                {item.def.emoji} {item.label}: {item.def.title}
-              </li>
-            ))}
-          </ul>
-          <button
-            onClick={dismissUnlockNotice}
-            className="comic-btn mt-2 w-full bg-panel px-3 py-1 text-xs text-ink"
-          >
-            OK
-          </button>
-        </div>
+        <aside className="studio-announcement" aria-label="Weekly updates">
+          <details>
+            <summary><Icon name="minigames" size={16} /><span>Something new to explore</span><span className="announcement-count">{unlockItems.length}</span></summary>
+            <ul>{unlockItems.map(item => <li key={item.def.id}><span>{item.label}</span><Link href={`/minigames/${item.def.id}`} onClick={dismissUnlockNotice}>{item.def.title}<Icon name="arrow" size={12} /></Link></li>)}</ul>
+          </details>
+          <button onClick={dismissUnlockNotice} aria-label="Dismiss weekly updates" className="icon-button"><Icon name="close" size={14} /></button>
+        </aside>
       )}
     </nav>
   );
