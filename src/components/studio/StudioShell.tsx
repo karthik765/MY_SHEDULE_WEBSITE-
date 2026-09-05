@@ -16,6 +16,7 @@ const SECTIONS = [{ href: "/", title: "Overview" }, { href: "/focus", title: "Fo
 
 export default function StudioShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  if (pathname === "/demo" || pathname.startsWith("/demo/")) return <>{children}</>;
   if (pathname === "/login") return <><Atmosphere /><div className="login-theme"><ThemeToggle /></div><main className="login-shell">{children}</main></>;
   return (
     <div className="studio-shell">

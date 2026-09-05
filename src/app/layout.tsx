@@ -4,6 +4,7 @@ import Script from "next/script";
 import "./globals.css";
 import "./observatory.css";
 import "./chapters.css";
+import "./demo.css";
 import StudioShell from "@/components/studio/StudioShell";
 
 const display = Barlow_Condensed({ weight: ["400", "500", "600", "700"], variable: "--font-display", subsets: ["latin"], display: "swap" });

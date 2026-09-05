@@ -16,8 +16,9 @@ const scenes: Record<string, { name: string; label: string; mark: string }> = {
   social: { name: "signal", label: "CONNECTED / NOT DISTRACTED", mark: "15" },
 };
 
-export default function SectionScene() {
-  const section = usePathname().split("/")[1];
+export default function SectionScene({ section: previewSection }: { section?: string } = {}) {
+  const pathname = usePathname();
+  const section = previewSection ?? pathname.split("/")[1];
   const scene = scenes[section];
   if (!scene) return null;
   return <div className={`section-scene scene-${scene.name}`} aria-hidden="true">
