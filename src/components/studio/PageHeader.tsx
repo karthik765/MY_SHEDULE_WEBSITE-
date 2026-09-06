@@ -7,7 +7,7 @@ import SectionScene from "./SectionScene";
  * Keeping the action here means "how do I add one of these?" has the same
  * answer on every page.
  */
-export default function PageHeader({ eyebrow, title, description, action, children }: { eyebrow: string; title: string; description: string; action?: ReactNode; children?: ReactNode }) {
+export default function PageHeader({ eyebrow, title, description, action, children }: { eyebrow: string; title: ReactNode; description: ReactNode; action?: ReactNode; children?: ReactNode }) {
   // The decorative scene is anchored right; when there is also a primary
   // action it has to move over or the two sit on top of each other.
   return (

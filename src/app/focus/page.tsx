@@ -2,7 +2,7 @@
 
 import { useEffect, useEffectEvent, useRef, useState, type FormEvent } from "react";
 import Icon from "@/components/studio/Icon";
-import Sculpture from "@/components/studio/Sculpture";
+import PageHeader from "@/components/studio/PageHeader";
 import { SegmentedControl } from "@/components/studio/Tabs";
 import { startOfWeek } from "@/lib/schedule";
 import { getAudioContext, playChime } from "@/lib/sound";
@@ -719,15 +719,18 @@ export default function FocusPage() {
   const sessionLabel = plan ? (plan.phase === "break" ? "REST. YOU EARNED IT." : "DEEP WORK IN PROGRESS") : active ? "OPEN TIMER" : "YOUR NEXT SESSION";
   const clock = plan ? formatDuration(planPhaseRemainingSeconds) : active ? formatDuration(elapsedSeconds) : mode === "classic" ? "45:00" : "00:00";
   return (
-    <div className="page-focus focus-cinema">
-      <section className="focus-theatre">
-        <div className="focus-hero-copy">
-          <p className="eyebrow"><span />THE FOCUS CHAMBER / 02</p>
-          <h1>LESS NOISE.<br /><em>MORE FLOW.</em></h1>
-          <p>One intention. Your full attention.<br />Make this moment yours.</p>
-        </div>
-        <div className="focus-monument"><Sculpture active={!!active} priority /><span>K / FORGED IN FOCUS</span></div>
+    <div className="page-focus">
+      <PageHeader
+        eyebrow="THE FOCUS CHAMBER / 02"
+        title={<>LESS NOISE.<br /><em>MORE FLOW.</em></>}
+        description="One intention. Your full attention. Make this moment yours."
+      />
+      {/* The timer is the whole point of this page, so it now sits centred and
+          alone the way the demo presents it, rather than sharing the fold with
+          a full-height sculpture. */}
+      <section className="focus-stage">
         <div className="focus-console" data-status={plan?.phase ?? (active ? "active" : "idle")}>
+          <div className="focus-orbit" aria-hidden="true" />
           <div className="console-heading"><span className="eyebrow"><i className="status-light" />{active === undefined ? "SYNCING TIMER" : sessionLabel}</span><span className="console-code">{plan ? `SESSION ${plan.blockIndex + 1} / ${planSessionCount}` : "MAKE IT COUNT"}</span></div>
           <div className="console-clock"><strong>{clock}</strong><div className="clock-signal" aria-hidden="true">{Array.from({ length: 24 }, (_, i) => <i key={i} style={{ animationDelay: `-${i * .13}s` }} />)}</div></div>
           {active && !plan && <p className="console-subject">{activeIsSlow ? active.subject.slice(0, -SLOW_TAG.length) : active.subject}</p>}

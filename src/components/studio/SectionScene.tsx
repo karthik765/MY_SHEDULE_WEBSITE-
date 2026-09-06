@@ -3,8 +3,10 @@
 import { usePathname } from "next/navigation";
 import type { CSSProperties } from "react";
 import ChapterEmblem from "./ChapterEmblem";
+import BrandMark from "./BrandMark";
 
 const scenes: Record<string, { name: string; label: string; mark: string }> = {
+  focus: { name: "chamber", label: "K / FORGED IN FOCUS", mark: "K" },
   schedule: { name: "chronograph", label: "TIME / BY DESIGN", mark: "24" },
   habits: { name: "ritual", label: "SMALL ACTIONS / LASTING CHANGE", mark: "01" },
   goals: { name: "summit", label: "THE NEXT SUMMIT", mark: "/" },
@@ -23,7 +25,13 @@ export default function SectionScene({ section: previewSection }: { section?: st
   if (!scene) return null;
   return <div className={`section-scene scene-${scene.name}`} aria-hidden="true">
     <div className="scene-halo" />
-    {["trophies", "focus-points", "minigames", "schedule"].includes(section) ? <div className="emblem-object"><ChapterEmblem section={section} /></div> : <div className="scene-object">{Array.from({ length: 9 }, (_, i) => <i key={i} style={{ "--i": i } as CSSProperties} />)}</div>}
+    {section === "focus"
+      // Focus gets the brand mark itself, sized to sit inside the reticle —
+      // the same small K from the top bar, not the full-height sculpture.
+      ? <div className="brand-object"><BrandMark /></div>
+      : ["trophies", "focus-points", "minigames", "schedule"].includes(section)
+        ? <div className="emblem-object"><ChapterEmblem section={section} /></div>
+        : <div className="scene-object">{Array.from({ length: 9 }, (_, i) => <i key={i} style={{ "--i": i } as CSSProperties} />)}</div>}
     <div className="scene-reticle"><span /><span /><span /><span /></div>
     <small>{scene.label}</small>
   </div>;

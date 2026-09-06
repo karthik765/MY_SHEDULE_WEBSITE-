@@ -608,3 +608,74 @@ li:hover > .row-delete { opacity: 1; }
   .chapter-toolbar > .chapter-search { max-width: none; flex-basis: 100%; }
   .chapter-toolbar select { flex: 1 1 auto; }
 }
+
+/* --- Dashboard headline ----------------------------------------------------
+   The markup already split the second line into its own <span>, but nothing
+   ever coloured it, so both lines read as one flat block of cream. */
+.hero-copy h1 span, .login-intro h2 em { color: var(--comic-orange); font-style: normal; }
+
+/* --- Focus: the demo's centred timer --------------------------------------
+   Was a 790px "theatre" — a full-height K sculpture on the right, the timer
+   pushed into a 62% column on the left, and nothing above the fold you could
+   actually press. It now opens with the standard page header (small K inside
+   the reticle, like every other section) and gives the timer the whole stage,
+   centred, the way the demo presents it. */
+
+/* No panel, no border, no card — the demo lets the timer sit directly on the
+   page, and that openness is most of why it reads as calm. */
+.focus-stage { display: flex; justify-content: center; padding: 30px 0 56px; border-top: 1px solid var(--line); }
+.page-focus .focus-console {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: min(680px, 100%);
+  margin: 0;
+  padding: 34px 20px 8px;
+  border: 0;
+  background: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+/* The ring the demo puts behind its clock: one orange arc, slowly precessing. */
+.focus-orbit {
+  position: absolute; z-index: -1; top: 0;
+  width: 340px; max-width: 82%;
+  aspect-ratio: 1;
+  border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  border-top-color: var(--comic-orange);
+  border-radius: 50%;
+  box-shadow: 0 0 60px #f7932c0f, inset 0 0 55px #f7932c0d;
+  animation: focus-orbit 18s linear infinite;
+}
+@keyframes focus-orbit { to { transform: rotate(360deg); } }
+.focus-console[data-status="active"] .focus-orbit,
+.focus-console[data-status="focus"] .focus-orbit { animation-duration: 7s; border-top-color: var(--comic-orange); }
+
+.page-focus .console-heading { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin-bottom: 6px; }
+.page-focus .console-clock { flex-direction: column; gap: 10px; }
+.page-focus .console-clock > strong { font-size: clamp(62px, 9vw, 116px); line-height: 1.1; }
+.page-focus .clock-signal { justify-content: center; height: 26px; flex: none; }
+.page-focus .console-subject { margin-top: 4px; color: var(--muted); font-size: 13px; }
+.page-focus .console-actions { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 14px; margin-top: 26px; width: 100%; }
+.page-focus .console-actions .comic-input { flex: 1 1 240px; max-width: 320px; text-align: center; }
+
+/* The small K, sized to sit inside the reticle brackets. */
+.brand-object { position: absolute; inset: 0; display: grid; place-items: center; animation: object-drift 10s ease-in-out infinite; }
+.brand-object .sculptural-brand { width: 74px; height: 92px; }
+.brand-object .sculptural-brand img { filter: drop-shadow(0 6px 22px #e88c2255); }
+
+@media (max-width: 700px) {
+  .focus-stage { padding: 4px 0 26px; }
+  .page-focus .focus-console { padding: 38px 20px 32px; }
+  .focus-orbit { top: 18px; width: 260px; }
+  .page-focus .console-actions .comic-input { max-width: none; }
+  .brand-object .sculptural-brand { width: 52px; height: 64px; }
+}
+
+/* The two-line headline treatment now lives on the shared page header, since
+   Focus moved onto it (chapters.css only ever styled .focus-hero-copy h1 em). */
+.page-heading h1 em { font-style: normal; color: var(--comic-orange); }
