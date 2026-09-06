@@ -7,7 +7,7 @@ import { useMotion } from "@/lib/useMotion";
 export default function Atmosphere() {
   const canvas = useRef<HTMLCanvasElement>(null);
   const pathname = usePathname();
-  const { enabled, reduced, toggle } = useMotion();
+  const { enabled } = useMotion();
 
   useEffect(() => {
     const surface = canvas.current;
@@ -48,26 +48,23 @@ export default function Atmosphere() {
     return () => { cancelAnimationFrame(frame); removeEventListener("resize", resize); removeEventListener("pointermove", move); document.removeEventListener("visibilitychange", resume); };
   }, [enabled]);
 
+  // Switching a tab used to shake the entire page. Tab changes now animate the
+  // tab marker and the incoming panel instead, so the only thing left worth a
+  // whole-screen reaction is unlocking a trophy — and that gets a warm pulse
+  // rather than a camera shake.
   useEffect(() => {
     if (!enabled) return;
-    const shake = () => {
+    const celebrate = () => {
       document.querySelector(".page-enter")?.animate([
-        { transform: "perspective(1400px) scale(.985)" }, { transform: "translate3d(-6px,2px,0) rotate(-.18deg)", offset: .2 },
-        { transform: "translate3d(4px,-2px,0) rotate(.12deg)", offset: .45 }, { transform: "translate3d(-2px,0,0)", offset: .7 }, { transform: "none" },
-      ], { duration: 430, easing: "ease-out" });
+        { filter: "brightness(1)" }, { filter: "brightness(1.09)", offset: .3 }, { filter: "brightness(1)" },
+      ], { duration: 620, easing: "ease-out" });
     };
-    const click = (event: MouseEvent) => {
-      const target = event.target instanceof Element ? event.target : null;
-      if (target?.closest("[data-camera-tab], [role=tab]")) shake();
-    };
-    document.addEventListener("click", click);
-    document.addEventListener("studio:achievement", shake);
-    return () => { document.removeEventListener("click", click); document.removeEventListener("studio:achievement", shake); };
+    document.addEventListener("studio:achievement", celebrate);
+    return () => document.removeEventListener("studio:achievement", celebrate);
   }, [enabled]);
 
   return <>
     <div className="atmosphere" aria-hidden="true"><div className="nebula nebula-one" /><div className="nebula nebula-two" /><div className="atmospheric-beam" /><div className="atmospheric-grid" /><canvas ref={canvas} /><div className="film-grain" /></div>
     <div key={pathname} className="route-flare" aria-hidden="true"><span>{pathname === "/" ? "OVERVIEW" : pathname.split("/")[1].replaceAll("-", " ")}</span><i /></div>
-    <button type="button" className="motion-toggle" aria-pressed={enabled} disabled={reduced} onClick={toggle} title={reduced ? "Your system prefers reduced motion" : enabled ? "Pause all decorative motion" : "Enable cinematic motion"}><span className="equalizer" aria-hidden="true"><i /><i /><i /></span>{reduced ? "Reduced motion" : enabled ? "Motion on" : "Motion paused"}</button>
   </>;
 }

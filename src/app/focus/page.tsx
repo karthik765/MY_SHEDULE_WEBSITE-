@@ -3,6 +3,7 @@
 import { useEffect, useEffectEvent, useRef, useState, type FormEvent } from "react";
 import Icon from "@/components/studio/Icon";
 import Sculpture from "@/components/studio/Sculpture";
+import { SegmentedControl } from "@/components/studio/Tabs";
 import { startOfWeek } from "@/lib/schedule";
 import { getAudioContext, playChime } from "@/lib/sound";
 import { SLOW_TAG, SLOW_RATE, isSlowSubject } from "@/lib/focusSessions";
@@ -747,7 +748,7 @@ export default function FocusPage() {
       </section>
       <section className="focus-modes">
         <div className="section-caption"><span>01 / CHOOSE YOUR RHYTHM</span><p>Different days. Different ways to focus.</p></div>
-        <div className="mode-deck">{choices.map(choice => <button key={choice.id} data-camera-tab aria-pressed={mode === choice.id} disabled={!!active || !!plan || active === undefined} onClick={() => selectMode(choice.id)} className="mode-tile">
+        <div className="mode-deck">{choices.map(choice => <button key={choice.id} aria-pressed={mode === choice.id} disabled={!!active || !!plan || active === undefined} onClick={() => selectMode(choice.id)} className="mode-tile">
           <span className="mode-name"><Icon name={choice.icon} />{choice.name}<i /></span><strong>{choice.value}<small>{choice.unit}</small></strong><p>{choice.detail}</p>
         </button>)}</div>
       </section>
@@ -757,7 +758,7 @@ export default function FocusPage() {
         <p className="journey-note">11m 20s breaks between sessions. {bonusQueued ? `${formatDuration(bankedFocusMs / 1000)} banked for a bonus session.` : "Stop early to bank unused focus time for a bonus session."}</p>
       </section>
       <section className="focus-metrics">
-        <div className="section-caption"><span>03 / YOUR MOMENTUM</span><div className="segmented-control">{(["hours", "minutes"] as const).map(value => <button key={value} data-camera-tab aria-pressed={unit === value} onClick={() => setUnit(value)}>{value}</button>)}</div></div>
+        <div className="section-caption"><span>03 / YOUR MOMENTUM</span><SegmentedControl ariaLabel="Chart unit" value={unit} onChange={(next) => setUnit(next as "hours" | "minutes")} items={[{ value: "hours", label: "Hours" }, { value: "minutes", label: "Minutes" }]} /></div>
         <div className="focus-metric-grid">{[["Today", todayMinutes], ["This week", weeklyLiveMinutes], ["Daily average", dailyAverageMinutes]].map(([label, value]) => <div key={label}><span>{label}</span><strong>{formatByUnit(Number(value), unit)}</strong><div className="metric-rule" /></div>)}</div>
       </section>
       <section className="focus-log"><div className="section-caption"><span>04 / RECENT FOCUS</span><p>Your last five completed sessions.</p></div>

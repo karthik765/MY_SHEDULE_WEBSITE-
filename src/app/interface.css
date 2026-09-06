@@ -1,0 +1,610 @@
+/* ---------------------------------------------------------------------------
+   Interface layer.
+
+   Loaded last, so it owns the shell, the shared controls, and every
+   interaction state. The three layers beneath it (globals -> observatory ->
+   chapters) still carry the page-level art direction; this file is where the
+   things you actually click are defined, once.
+
+   Motion principle: the page should react to YOU. Ambient drift lives in
+   observatory.css; everything here fires on hover, press, focus or a tab
+   change, and nothing here animates on its own.
+--------------------------------------------------------------------------- */
+
+:root {
+  --ease-out: cubic-bezier(.22, .78, .3, 1);
+  --ease-spring: cubic-bezier(.34, 1.32, .48, 1);
+  --press: cubic-bezier(.3, 0, .2, 1);
+  --ring: 0 0 0 2px var(--paper), 0 0 0 4px var(--comic-orange);
+  --header-h: 108px;
+  /* Text drawn ON the accent colour. The accent is a bright amber in the dark
+     theme and a dark rust in the light one, so a single hard-coded value would
+     be unreadable in one of them. */
+  --on-accent: #fff8f0;
+}
+:root[data-theme="dark"] { --on-accent: #18120a; }
+
+/* --- Shell: the sidebar is gone, the workspace is full width --------------- */
+
+.studio-nav, .section-nav, .workspace-bar, .motion-toggle { display: none !important; }
+.studio-workspace { margin-left: 0 !important; margin-right: 0 !important; }
+.studio-main { padding-top: 0; }
+
+/* --- Top bar --------------------------------------------------------------- */
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+  backdrop-filter: blur(14px) saturate(1.2);
+  border-bottom: 1px solid var(--line);
+}
+.app-bar {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-height: 60px;
+  padding: 0 38px;
+  max-width: 1500px;
+  margin: 0 auto;
+}
+.app-brand { display: flex; align-items: center; gap: 11px; flex-shrink: 0; color: var(--ink); }
+.app-brand > span {
+  display: flex; flex-direction: column; line-height: 1.15;
+  font-family: var(--font-display), sans-serif; font-size: 19px; font-weight: 500; letter-spacing: .1em;
+}
+.app-brand small { font-family: var(--font-comic-mono), monospace; font-size: 7px; letter-spacing: .22em; color: var(--muted); font-weight: 400; }
+.app-brand .sculptural-brand { transition: transform .4s var(--ease-spring); }
+.app-brand:hover .sculptural-brand { transform: translateY(-2px) rotate(-4deg) scale(1.06); }
+
+.app-bar-tools { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+
+.app-chip {
+  display: flex; align-items: center; gap: 7px;
+  padding: 7px 12px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+  transition: color .2s, border-color .2s, background-color .2s, transform .18s var(--ease-out);
+}
+.app-chip svg { color: var(--comic-orange); }
+.app-chip b { color: var(--ink); font-family: var(--font-display), sans-serif; font-size: 15px; font-weight: 500; letter-spacing: .03em; }
+.app-chip:hover { border-color: var(--comic-orange); background: var(--accent-soft); color: var(--ink); transform: translateY(-2px); }
+.app-chip:active { transform: translateY(0) scale(.97); transition-duration: .08s; }
+
+/* --- Main navigation ------------------------------------------------------- */
+
+.app-nav {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  padding: 0 38px;
+  max-width: 1500px;
+  margin: 0 auto;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.app-nav::-webkit-scrollbar { display: none; }
+.app-nav-link {
+  position: relative;
+  display: flex; align-items: center; gap: 8px;
+  padding: 13px 14px 12px;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+  transition: color .22s var(--ease-out);
+}
+.app-nav-link svg { opacity: .65; transition: opacity .22s, transform .3s var(--ease-spring); }
+.app-nav-link > i {
+  position: absolute; left: 10px; right: 10px; bottom: 0; height: 2px;
+  background: var(--comic-orange);
+  transform: scaleX(0);
+  transform-origin: 50% 50%;
+  transition: transform .32s var(--ease-spring);
+}
+.app-nav-link:hover { color: var(--ink); }
+.app-nav-link:hover svg { opacity: 1; transform: translateY(-2px); }
+.app-nav-link:hover > i { transform: scaleX(.55); background: var(--muted); }
+.app-nav-link.is-active { color: var(--comic-orange); }
+.app-nav-link.is-active svg { opacity: 1; }
+.app-nav-link.is-active > i, .app-nav-link.is-active:hover > i { transform: scaleX(1); background: var(--comic-orange); }
+.app-nav-link:active { transform: scale(.97); transition-duration: .08s; }
+
+.app-menu-button { display: none; }
+
+.app-breadcrumb {
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 18px 38px 0;
+  color: var(--muted);
+  font-family: var(--font-comic-mono), monospace;
+  font-size: 8px;
+  letter-spacing: .16em;
+}
+.app-breadcrumb span { color: var(--comic-orange); margin: 0 8px; }
+.app-breadcrumb strong { color: var(--ink); font-weight: 400; }
+
+/* --- Settings menu --------------------------------------------------------- */
+
+.settings-menu { position: relative; flex-shrink: 0; }
+.settings-trigger {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 13px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 11px;
+  transition: border-color .2s, background-color .2s, transform .18s var(--ease-out);
+}
+.settings-trigger:hover { border-color: var(--comic-orange); background: var(--accent-soft); transform: translateY(-2px); }
+.settings-trigger:active { transform: translateY(0) scale(.97); transition-duration: .08s; }
+.settings-trigger svg:first-child { color: var(--comic-orange); }
+
+.settings-panel {
+  position: absolute; right: 0; top: calc(100% + 10px); z-index: 60;
+  width: 268px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--panel);
+  box-shadow: 0 24px 60px -20px #0009;
+  animation: menu-open .26s var(--ease-out) both;
+}
+.settings-title { font-family: var(--font-display), sans-serif; font-size: 17px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink); margin-bottom: 15px; }
+.settings-row { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; }
+.settings-label { font-size: 11px; color: var(--muted); }
+.settings-note { font-size: 10px; line-height: 1.6; color: var(--muted); margin-top: -6px; margin-bottom: 14px; }
+.settings-error { color: var(--comic-orange); }
+
+.option-group { display: flex; gap: 4px; padding: 3px; border: 1px solid var(--line); border-radius: 3px; }
+.option-group button {
+  flex: 1;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 8px 6px;
+  border-radius: 2px;
+  color: var(--muted);
+  font-size: 11px;
+  transition: background-color .2s, color .2s, transform .12s var(--press);
+}
+.option-group button:hover:not(:disabled) { color: var(--ink); background: var(--soft); }
+.option-group button:active:not(:disabled) { transform: scale(.94); }
+.option-group button[aria-pressed="true"] { background: var(--comic-orange); color: var(--on-accent); }
+.option-group button:disabled { opacity: .45; cursor: not-allowed; }
+
+.settings-logout {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%;
+  padding: 11px;
+  margin-top: 4px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  color: var(--ink);
+  font-size: 12px;
+  transition: border-color .2s, color .2s, background-color .2s, transform .12s var(--press);
+}
+.settings-logout:hover:not(:disabled) { border-color: var(--comic-orange); color: var(--comic-orange); background: var(--accent-soft); }
+.settings-logout:active:not(:disabled) { transform: scale(.97); }
+.settings-logout:disabled { opacity: .6; cursor: wait; }
+
+@keyframes menu-open { from { opacity: 0; transform: translateY(-8px) scale(.97); } to { opacity: 1; transform: none; } }
+
+/* --- Page header: half the height it was ----------------------------------- */
+
+.page-heading {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding: 20px 0 20px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 22px;
+  min-height: 0;
+}
+.page-heading-text { min-width: 0; flex: 1 1 340px; }
+.page-heading h1 { font-size: clamp(30px, 3.4vw, 50px); margin-top: 9px; }
+.page-description { margin-top: 8px; font-size: 12px; line-height: 1.7; max-width: 560px; }
+.page-heading-action { flex-shrink: 0; display: flex; align-items: center; gap: 12px; padding-bottom: 4px; }
+.page-heading .section-scene { position: absolute; inset: -6px 0 -6px auto; right: 0; width: 300px; opacity: .5; pointer-events: none; }
+.not-found-studio .page-heading { padding-top: 12px; }
+
+/* --- The one tab bar ------------------------------------------------------- */
+
+.tab-bar {
+  position: relative;
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  gap: 0;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 20px;
+}
+.tab-bar::-webkit-scrollbar { display: none; }
+.tab-button {
+  position: relative;
+  padding: 13px 18px;
+  color: var(--muted);
+  font-family: var(--font-display), sans-serif;
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  background: transparent;
+  border: 0;
+  transition: color .22s var(--ease-out), background-color .22s, transform .12s var(--press);
+}
+.tab-button:hover { color: var(--ink); background: color-mix(in srgb, var(--soft) 45%, transparent); }
+.tab-button:active { transform: scale(.96); }
+.tab-button[aria-selected="true"] { color: var(--comic-orange); }
+.tab-marker {
+  position: absolute; left: 0; bottom: -1px; height: 2px;
+  background: var(--comic-orange);
+  box-shadow: 0 0 14px -1px var(--comic-orange);
+  transition: transform .4s var(--ease-spring), width .4s var(--ease-spring);
+  pointer-events: none;
+}
+.tab-panel { animation: panel-enter .42s var(--ease-out) both; outline: none; }
+@keyframes panel-enter { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+/* --- Filters (deliberately not shaped like tabs) --------------------------- */
+
+.segmented { display: inline-flex; gap: 3px; padding: 3px; border: 1px solid var(--line); border-radius: 3px; }
+.segmented button {
+  padding: 8px 14px;
+  border-radius: 2px;
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: capitalize;
+  transition: background-color .2s, color .2s, transform .12s var(--press);
+}
+.segmented button:hover { color: var(--ink); background: var(--soft); }
+.segmented button:active { transform: scale(.94); }
+.segmented button[aria-pressed="true"] { background: var(--comic-orange); color: var(--on-accent); }
+
+/* --- Add button + composer ------------------------------------------------- */
+
+.add-button { gap: 12px; padding: 13px 20px; font-size: 15px; min-height: 44px; }
+.add-button svg { transition: transform .3s var(--ease-spring); }
+.add-button[aria-expanded="true"] svg { transform: rotate(90deg); }
+
+.composer {
+  padding: 22px 24px;
+  margin-bottom: 22px;
+  border: 1px solid var(--comic-orange);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--panel) 80%, transparent);
+  animation: composer-open .34s var(--ease-out) both;
+}
+.composer-title {
+  font-family: var(--font-display), sans-serif;
+  font-size: 19px;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--comic-orange);
+  margin-bottom: 16px;
+}
+.composer form { border: 0 !important; background: transparent !important; padding: 0 !important; box-shadow: none !important; }
+@keyframes composer-open { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
+
+/* --- Toolbar (search + filters) -------------------------------------------- */
+
+.chapter-toolbar { margin-bottom: 20px; }
+.chapter-search { border-radius: 3px; transition: border-color .2s, box-shadow .25s; }
+.chapter-search:focus { outline: none; border-color: var(--comic-orange); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+/* --- Press, hover and focus for every remaining control -------------------- */
+
+.comic-btn, .primary-action, .icon-button, .demo-exit, .logout-button {
+  transition: transform .18s var(--ease-out), background-color .2s, border-color .2s, color .2s, box-shadow .28s;
+}
+.comic-btn:active:not(:disabled),
+.primary-action:active,
+.icon-button:active,
+.demo-exit:active { transform: scale(.96) !important; transition-duration: .08s; }
+.primary-action:hover { transform: translateY(-2px); }
+.icon-button:hover { transform: translateY(-2px); }
+
+/* Keyboard focus was nearly invisible — two rules across four stylesheets.
+   One visible ring, everywhere, and only for keyboard users. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+  border-radius: 3px;
+}
+.tab-button:focus-visible, .app-nav-link:focus-visible { box-shadow: inset var(--ring); }
+
+/* --- Cards arrive in sequence rather than all at once ---------------------- */
+
+.habit-collection > li, .page-goals > ul > li, .demo-grid > *, .page-minigames .grid > a {
+  animation: card-rise .5s var(--ease-out) both;
+}
+.habit-collection > li:nth-child(1), .page-goals > ul > li:nth-child(1), .page-minigames .grid > a:nth-child(1) { animation-delay: .03s; }
+.habit-collection > li:nth-child(2), .page-goals > ul > li:nth-child(2), .page-minigames .grid > a:nth-child(2) { animation-delay: .07s; }
+.habit-collection > li:nth-child(3), .page-goals > ul > li:nth-child(3), .page-minigames .grid > a:nth-child(3) { animation-delay: .11s; }
+.habit-collection > li:nth-child(4), .page-goals > ul > li:nth-child(4), .page-minigames .grid > a:nth-child(4) { animation-delay: .15s; }
+.habit-collection > li:nth-child(n+5), .page-goals > ul > li:nth-child(n+5), .page-minigames .grid > a:nth-child(n+5) { animation-delay: .19s; }
+@keyframes card-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+.habit-collection > li, .page-goals > ul > li { transition: border-color .25s, transform .22s var(--ease-out), box-shadow .3s; }
+.habit-collection > li:hover, .page-goals > ul > li:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--comic-orange) 55%, var(--line)); box-shadow: 0 14px 30px -22px var(--comic-orange); }
+
+/* --- Single-item grids should not leave half the page empty ---------------- */
+
+.habit-collection { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+.page-goals > ul { grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); }
+
+/* --- The corner: one stack, so nothing lands on anything else -------------- */
+
+.floating-stack {
+  position: fixed;
+  right: 20px; bottom: 20px;
+  z-index: 45;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+  max-width: calc(100vw - 40px);
+  pointer-events: none;
+}
+.floating-stack > * { pointer-events: auto; position: static !important; inset: auto !important; animation: toast-in .4s var(--ease-spring) both; }
+.trophy-toast {
+  width: 268px;
+  padding: 14px 16px;
+  border: 1px solid var(--comic-orange);
+  border-radius: 4px;
+  background: var(--panel);
+  box-shadow: 0 18px 44px -18px #000a;
+}
+.trophy-toast > p { font-family: var(--font-display), sans-serif; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; color: var(--comic-orange); }
+.trophy-toast ul { margin-top: 7px; display: grid; gap: 4px; }
+.trophy-toast li { font-size: 11px; color: var(--ink); }
+@keyframes toast-in { from { opacity: 0; transform: translateY(16px) scale(.96); } to { opacity: 1; transform: none; } }
+
+/* --- Responsive ------------------------------------------------------------ */
+
+@media (max-width: 1150px) {
+  .app-bar, .app-nav, .app-breadcrumb { padding-left: 28px; padding-right: 28px; }
+  .app-nav-link { padding: 13px 11px; font-size: 11px; }
+  .page-heading .section-scene { width: 220px; opacity: .35; }
+}
+
+@media (max-width: 950px) {
+  .app-nav-link span { font-size: 11px; }
+  .app-chip span { display: none; }
+}
+
+@media (max-width: 850px) {
+  .app-bar { padding-left: 20px; padding-right: 20px; min-height: 56px; }
+  .app-breadcrumb { padding: 14px 20px 0; }
+  .app-menu-button {
+    display: grid; place-items: center;
+    width: 36px; height: 36px;
+    border: 1px solid var(--line); border-radius: 3px;
+    color: var(--ink); background: var(--panel);
+    transition: border-color .2s, transform .12s var(--press);
+  }
+  .app-menu-button:active { transform: scale(.92); }
+  .app-nav {
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 8px 12px 14px;
+    border-top: 1px solid var(--line);
+    overflow: visible;
+  }
+  .app-nav.is-open { display: flex; animation: sheet-open .3s var(--ease-out) both; }
+  .app-nav-link { padding: 13px 14px; font-size: 13px; border-radius: 3px; }
+  .app-nav-link > i { left: 0; right: auto; top: 8px; bottom: 8px; width: 2px; height: auto; transform: scaleY(0); transform-origin: 50% 50%; }
+  .app-nav-link:hover > i, .app-nav-link.is-active > i { transform: scaleY(1); }
+  .app-nav-link.is-active { background: var(--accent-soft); }
+  .page-heading .section-scene { display: none; }
+  .page-heading { align-items: flex-start; }
+}
+@keyframes sheet-open { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
+
+@media (max-width: 600px) {
+  .app-bar { gap: 10px; }
+  .app-brand > span { font-size: 15px; }
+  .app-brand small { display: none; }
+  .app-bar-tools { gap: 7px; }
+  .settings-trigger span { display: none; }
+  .settings-trigger { padding: 9px 10px; }
+  .settings-panel { width: min(280px, calc(100vw - 32px)); }
+  .app-chip { padding: 7px 9px; }
+  .page-heading h1 { font-size: 38px; }
+  .page-heading-action { width: 100%; }
+  .add-button { width: 100%; justify-content: center; }
+  .tab-button { padding: 12px 13px; font-size: 15px; }
+  .floating-stack { right: 14px; bottom: 14px; }
+  .trophy-toast { width: min(268px, calc(100vw - 28px)); }
+  .habit-collection, .page-goals > ul { grid-template-columns: 1fr; }
+}
+
+/* --- Motion off: kill transitions too, not only keyframes ------------------ */
+
+:root[data-motion="off"] *, :root[data-motion="off"] *::before, :root[data-motion="off"] *::after {
+  transition: none !important;
+}
+
+/* --- Components introduced with the new page patterns ---------------------- */
+
+/* Deleting was as loud as completing. It is now a quiet icon that only turns
+   red once you are actually pointed at it. */
+.row-delete {
+  display: grid; place-items: center;
+  width: 30px; height: 30px;
+  flex-shrink: 0;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: var(--muted);
+  opacity: .5;
+  transition: opacity .2s, color .2s, border-color .2s, background-color .2s, transform .12s var(--press);
+}
+li:hover > .row-delete { opacity: 1; }
+.row-delete:hover, .row-delete:focus-visible { color: #d9603a; border-color: #d9603a55; background: #d9603a12; opacity: 1; }
+.row-delete:active { transform: scale(.88); }
+
+/* Empty states now carry the action that fills them. */
+.empty-state button {
+  display: inline-flex; align-items: center; gap: 8px;
+  margin-top: 6px;
+  padding: 10px 16px;
+  border: 1px solid var(--comic-orange);
+  border-radius: 3px;
+  color: var(--comic-orange);
+  font-size: 12px;
+  transition: background-color .2s, color .2s, transform .16s var(--ease-out);
+}
+.empty-state button:hover { background: var(--comic-orange); color: var(--on-accent); transform: translateY(-2px); }
+.empty-state button:active { transform: scale(.96); transition-duration: .08s; }
+
+/* Study streak, rebuilt in the page's own language. */
+.streak-panel { padding: 20px 24px; border: 1px solid var(--line); border-radius: 4px; background: color-mix(in srgb, var(--panel) 70%, transparent); }
+.streak-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
+.streak-head strong { font-family: var(--font-display), sans-serif; font-size: 30px; font-weight: 400; letter-spacing: .02em; color: var(--comic-orange); }
+.streak-head small { font-family: var(--font-comic-body), sans-serif; font-size: 12px; color: var(--muted); letter-spacing: 0; }
+.streak-track { height: 3px; background: var(--line); overflow: hidden; }
+.streak-track i { display: block; height: 100%; background: var(--comic-orange); box-shadow: 0 0 12px var(--comic-orange); transition: width .7s var(--ease-out); }
+.streak-note { margin-top: 11px; font-size: 11px; color: var(--muted); }
+
+/* Week / featured stepping — arrows around a label, not filter pills. */
+.week-stepper { display: inline-flex; align-items: center; gap: 4px; }
+.week-stepper > button {
+  display: grid; place-items: center;
+  width: 32px; height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  color: var(--ink);
+  font-size: 17px;
+  line-height: 1;
+  transition: border-color .2s, background-color .2s, color .2s, transform .12s var(--press);
+}
+.week-stepper > button:hover:not(:disabled) { border-color: var(--comic-orange); color: var(--comic-orange); background: var(--accent-soft); }
+.week-stepper > button:active:not(:disabled) { transform: scale(.9); }
+.week-stepper > button:disabled { opacity: .4; cursor: not-allowed; }
+.week-stepper > span { padding: 0 12px; min-width: 128px; text-align: center; font-size: 11px; color: var(--muted); white-space: nowrap; }
+.week-stepper .week-today { width: auto; padding: 0 12px; font-size: 11px; margin-left: 4px; }
+
+.tree-controls { display: inline-flex; gap: 8px; }
+.tree-controls button {
+  padding: 9px 14px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  color: var(--muted);
+  font-size: 11px;
+  transition: border-color .2s, color .2s, background-color .2s, transform .12s var(--press);
+}
+.tree-controls button:hover { border-color: var(--comic-orange); color: var(--ink); background: var(--accent-soft); }
+.tree-controls button:active { transform: scale(.95); }
+
+/* The schedule form sits inside a composer now, so it supplies its own layout
+   rather than the standalone panel padding it used to carry. */
+.composer .schedule-composer { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px; padding: 0; }
+.composer .schedule-composer > div { flex: 1 1 110px; }
+.composer .schedule-composer input, .composer .schedule-composer select { width: 100%; }
+
+@media (max-width: 600px) {
+  .week-stepper > span { min-width: 0; padding: 0 6px; }
+  .chapter-toolbar { gap: 12px; }
+}
+
+/* --- Corrections over the older layers ------------------------------------- */
+
+/* chapters.css pins these to two hard columns, which left a single card
+   floating in half an empty page. Auto-fill lets one card be card-sized and a
+   full list fill the row. Matching the older selectors' specificity so this
+   actually wins. */
+.page-habits .habit-collection { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+.page-goals > ul { grid-template-columns: repeat(auto-fill, minmax(370px, 1fr)); }
+
+/* Keep the header's decorative scene clear of the primary action. */
+.page-heading.has-action .section-scene { right: 250px; width: 250px; }
+
+/* The weekly notice collapsed to an unlabelled chip in the corner — the exact
+   "what is this icon?" problem this pass is meant to remove. It keeps its
+   label now, and sits above the footer rather than across it. */
+.studio-announcement:not(:has(details[open])) { width: auto; padding: 11px 40px 11px 14px; }
+.studio-announcement:not(:has(details[open])) summary > span:first-of-type { display: inline; }
+.studio-announcement summary { gap: 9px; }
+.studio-announcement { border-color: var(--comic-orange); }
+.announcement-count { min-width: 19px; padding: 1px 6px; text-align: center; background: var(--comic-orange); color: var(--on-accent); font-size: 10px; }
+
+/* Goal card chips still carried the old comic pill shape and emoji locks. */
+.page-goals .comic-badge { border-radius: 2px; border-width: 1px; font-size: 10px; letter-spacing: .04em; padding: 4px 9px; }
+.page-goals > ul > li { transition: border-color .25s, transform .22s var(--ease-out), box-shadow .3s; }
+
+/* --- Mobile header + top-bar fit ------------------------------------------- */
+
+/* globals.css turns the page header into a flex COLUMN under 600px, where a
+   `flex-basis` on the text block becomes its HEIGHT — which was padding the
+   mobile header out by ~230px of empty space. Own the direction explicitly at
+   every width, and only let the text block flex when the header is a row. */
+.page-heading { flex-direction: row; }
+.page-heading-text { flex: 1 1 340px; min-width: 0; }
+
+@media (max-width: 700px) {
+  .page-heading { flex-direction: column; align-items: stretch; gap: 16px; }
+  .page-heading-text { flex: 0 0 auto; }
+  .page-heading-action { width: 100%; padding-bottom: 0; }
+}
+
+/* The top bar overflowed its own width on a 390px screen, clipping the menu
+   button off the right edge. */
+@media (max-width: 620px) {
+  .app-bar { gap: 8px; }
+  .app-bar-tools { gap: 6px; min-width: 0; }
+  .app-chip { padding: 8px; gap: 5px; }
+  .app-chip b { font-size: 13px; }
+  .app-brand { min-width: 0; }
+  .app-brand > span { font-size: 14px; letter-spacing: .06em; }
+}
+@media (max-width: 430px) {
+  /* Trophies stay one tap away in the nav; the points chip is the one worth
+     keeping visible, so it is the one that survives the squeeze. */
+  .app-bar-tools > .app-chip:nth-of-type(2) { display: none; }
+  .app-brand > span { display: none; }
+}
+
+/* --- Toolbar: search and filters read as one row, not three loose objects --- */
+
+.chapter-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+/* Everything before the last child groups on the left; the last control (the
+   view/availability switch) is pushed to the right edge. */
+.chapter-toolbar > :last-child { margin-left: auto; }
+.chapter-toolbar > .chapter-search { flex: 1 1 200px; max-width: 340px; margin-left: 0; }
+
+/* The difficulty picker was an unbordered black box floating mid-row. It now
+   matches the search field beside it. */
+.chapter-toolbar select, .chapter-toolbar .comic-input {
+  padding: 12px 34px 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--paper) 70%, transparent);
+  color: var(--ink);
+  font-size: 12px;
+  transition: border-color .2s, box-shadow .25s;
+}
+.chapter-toolbar select:hover { border-color: var(--comic-orange); }
+.chapter-toolbar select:focus { outline: none; border-color: var(--comic-orange); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+/* A horizontally scrolling tab bar should show that it scrolls. */
+.tab-bar { -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 26px), transparent 100%); mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 26px), transparent 100%); }
+@media (min-width: 1000px) { .tab-bar { -webkit-mask-image: none; mask-image: none; } }
+
+@media (max-width: 700px) {
+  .chapter-toolbar > :last-child { margin-left: 0; }
+  .chapter-toolbar > .chapter-search { max-width: none; flex-basis: 100%; }
+  .chapter-toolbar select { flex: 1 1 auto; }
+}

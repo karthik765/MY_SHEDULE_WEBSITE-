@@ -2,33 +2,21 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { GameResult } from "@/lib/games";
+import { BALL_R, pathToSegments, stepBall, svgPoint, type Point, type Rect } from "./qmasterPhysics";
 
 // Inspired by Q Remastered's "draw anything, gravity solves it" hook — but
-// scoped to one fixed goal per level and driven by a small hand-rolled
-// simulation (circle vs. static obstacle-rect and drawn-segment collision),
-// not a real physics engine.
+// scoped to one fixed goal per level. Shares its ball-vs-obstacle/line
+// simulation with the Q Mastered Games tab (qmasterPhysics.ts) rather than
+// keeping a second copy — a ball that can actually roll along a drawn ramp,
+// not just ricochet off it, is exactly what both tracks need.
 
 const W = 320;
 const H = 380;
-const BALL_R = 10;
-const GRAVITY = 620; // px/s^2
 const START = { x: 40, y: 30 };
 
-interface Obstacle {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
-
-interface Point {
-  x: number;
-  y: number;
-}
-
-function seededObstacles(level: number): Obstacle[] {
+function seededObstacles(level: number): Rect[] {
   const count = Math.min(1 + Math.floor(level / 10), 5);
-  const obstacles: Obstacle[] = [];
+  const obstacles: Rect[] = [];
   for (let i = 0; i < count; i++) {
     const y = 90 + i * ((H - 180) / Math.max(1, count));
     const w = 60 + ((level + i * 37) % 60);
@@ -42,18 +30,6 @@ function goalFor(level: number): { x: number; y: number; r: number } {
   const r = Math.max(16, 30 - level * 0.25);
   const x = level % 2 === 0 ? W - 50 : W - 60;
   return { x, y: H - 30, r };
-}
-
-function clamp(v: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, v));
-}
-
-function closestOnSegment(px: number, py: number, ax: number, ay: number, bx: number, by: number): Point {
-  const abx = bx - ax;
-  const aby = by - ay;
-  const lenSq = abx * abx + aby * aby;
-  const t = lenSq === 0 ? 0 : clamp(((px - ax) * abx + (py - ay) * aby) / lenSq, 0, 1);
-  return { x: ax + abx * t, y: ay + aby * t };
 }
 
 export default function IQDrawPhysics({
@@ -83,23 +59,15 @@ export default function IQDrawPhysics({
 
   useEffect(() => () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); }, []);
 
-  function svgPoint(e: React.PointerEvent<SVGSVGElement>): Point {
-    const rect = e.currentTarget.getBoundingClientRect();
-    return {
-      x: ((e.clientX - rect.left) / rect.width) * W,
-      y: ((e.clientY - rect.top) / rect.height) * H,
-    };
-  }
-
   function onPointerDown(e: React.PointerEvent<SVGSVGElement>) {
     if (phase !== "draw") return;
     drawing.current = true;
-    setPath([svgPoint(e)]);
+    setPath([svgPoint(e, W, H)]);
   }
 
   function onPointerMove(e: React.PointerEvent<SVGSVGElement>) {
     if (!drawing.current || phase !== "draw") return;
-    const p = svgPoint(e);
+    const p = svgPoint(e, W, H);
     setPath((prev) => {
       const last = prev[prev.length - 1];
       if (last && Math.hypot(p.x - last.x, p.y - last.y) < 4) return prev;
@@ -114,64 +82,22 @@ export default function IQDrawPhysics({
   function drop() {
     if (path.length < 2) return;
     setPhase("simulating");
-    const segments = path.slice(0, -1).map((p, i) => ({ x1: p.x, y1: p.y, x2: path[i + 1].x, y2: path[i + 1].y }));
-    let x = START.x;
-    let y = START.y;
-    let vx = 0;
-    let vy = 0;
+    const segments = pathToSegments(path);
+    let state = { x: START.x, y: START.y, vx: 0, vy: 0 };
     let t = 0;
     const dt = 1 / 60;
 
     const tick = () => {
       t += dt;
-      vy += GRAVITY * dt;
-      x += vx * dt;
-      y += vy * dt;
+      state = stepBall(state, dt, obstacles, segments, { left: 0, right: W });
+      setBall({ x: state.x, y: state.y });
 
-      if (x - BALL_R < 0) { x = BALL_R; vx *= -0.4; }
-      if (x + BALL_R > W) { x = W - BALL_R; vx *= -0.4; }
-
-      for (const o of obstacles) {
-        const cx = clamp(x, o.x, o.x + o.w);
-        const cy = clamp(y, o.y, o.y + o.h);
-        const dx = x - cx;
-        const dy = y - cy;
-        const dist = Math.hypot(dx, dy);
-        if (dist < BALL_R) {
-          const nx = dist === 0 ? 0 : dx / dist;
-          const ny = dist === 0 ? -1 : dy / dist;
-          x += nx * (BALL_R - dist);
-          y += ny * (BALL_R - dist);
-          const vn = vx * nx + vy * ny;
-          vx = (vx - 1.6 * vn * nx) * 0.9;
-          vy = (vy - 1.6 * vn * ny) * 0.9;
-        }
-      }
-
-      for (const seg of segments) {
-        const cp = closestOnSegment(x, y, seg.x1, seg.y1, seg.x2, seg.y2);
-        const dx = x - cp.x;
-        const dy = y - cp.y;
-        const dist = Math.hypot(dx, dy);
-        if (dist < BALL_R) {
-          const nx = dist === 0 ? 0 : dx / dist;
-          const ny = dist === 0 ? -1 : dy / dist;
-          x += nx * (BALL_R - dist);
-          y += ny * (BALL_R - dist);
-          const vn = vx * nx + vy * ny;
-          vx = (vx - 1.6 * vn * nx) * 0.85;
-          vy = (vy - 1.6 * vn * ny) * 0.85;
-        }
-      }
-
-      setBall({ x, y });
-
-      const reachedGoal = Math.hypot(x - goal.x, y - goal.y) < goal.r + BALL_R * 0.4;
+      const reachedGoal = Math.hypot(state.x - goal.x, state.y - goal.y) < goal.r + BALL_R * 0.4;
       if (reachedGoal) {
         setPhase("won");
         return;
       }
-      if (y - BALL_R > H + 30 || t > timeLimit) {
+      if (state.y - BALL_R > H + 30 || t > timeLimit) {
         setPhase("lost");
         return;
       }

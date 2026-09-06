@@ -1,6 +1,8 @@
 "use client";
 
 import PageHeader from "@/components/studio/PageHeader";
+import { SegmentedControl } from "@/components/studio/Tabs";
+import { AddButton, Composer } from "@/components/studio/Composer";
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { computeStudyStreak, STUDY_STREAK_GOAL_DAYS } from "@/lib/streaks";
 import { isGoalLocked } from "@/lib/goals";
@@ -75,6 +77,7 @@ export default function GoalsPage() {
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [view, setView] = useState("all");
+  const [adding, setAdding] = useState(false);
   const [title, setTitle] = useState("");
   const [timeline, setTimeline] = useState("none");
   const [customDate, setCustomDate] = useState(() => addDays(30));
@@ -108,6 +111,7 @@ export default function GoalsPage() {
     });
     setTitle("");
     setTimeline("none");
+    setAdding(false);
     load();
   }
 
@@ -210,42 +214,50 @@ export default function GoalsPage() {
 
   return (
     <div className="page-goals space-y-6">
-      <PageHeader eyebrow="YOUR NEXT CHAPTER" title="MAKE IT HAPPEN." description="Turn your ambitions into milestones. Every small step belongs to something bigger." />
+      <PageHeader
+        eyebrow="YOUR NEXT CHAPTER"
+        title="MAKE IT HAPPEN."
+        description="Turn your ambitions into milestones. Every small step belongs to something bigger."
+        action={<AddButton open={adding} onToggle={() => setAdding(!adding)} label="Add goal" />}
+      />
 
       {(() => {
         const streak = computeStudyStreak(sessions);
         const capped = Math.min(streak, STUDY_STREAK_GOAL_DAYS);
         const progress = Math.round((capped / STUDY_STREAK_GOAL_DAYS) * 100);
         const complete = streak >= STUDY_STREAK_GOAL_DAYS;
+        // Was styled in the old comic theme (emoji heading, pill badge, 2px
+        // borders) and read as a foreign object on the page. It now uses the
+        // same panel, progress bar and type scale as everything else.
         return (
-          <div className="comic-panel p-4">
-            <div className="mb-2 flex items-center justify-between">
-              <p className="font-heading text-xl tracking-wide text-comic-orange">
-                🔥 Study Streak: 10 hrs/day
-              </p>
-              <span className="comic-badge px-2 py-0.5 text-xs text-ink">
-                {capped}/{STUDY_STREAK_GOAL_DAYS} days
-              </span>
+          <section className="streak-panel">
+            <div className="streak-head">
+              <p className="eyebrow"><span />STUDY STREAK / 10 HRS A DAY</p>
+              <strong>{capped}<small> / {STUDY_STREAK_GOAL_DAYS} days</small></strong>
             </div>
-            <div className="h-3 w-full overflow-hidden rounded-full border-2 border-ink bg-paper">
-              <div
-                className="h-full bg-comic-orange"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-            <p className="mt-1 text-xs font-bold text-ink/60">
+            <div className="streak-track"><i style={{ width: `${progress}%` }} /></div>
+            <p className="streak-note">
               {complete
-                ? "Goal complete! 🎉 50-day streak reached."
+                ? `Goal complete — ${STUDY_STREAK_GOAL_DAYS}-day streak reached.`
                 : `Study 10+ hours in a day to keep the streak alive. ${streak} day streak so far.`}
             </p>
-          </div>
+          </section>
         );
       })()}
 
       <div className="chapter-tally"><span><strong>{goals.filter(g => g.status !== "completed").length}</strong>In motion</span><span><strong>{goals.filter(g => g.status === "completed").length}</strong>Achieved</span><span><strong>{goals.reduce((sum, g) => sum + g.milestones.filter(m => m.completed).length, 0)}</strong>Milestones reached</span></div>
-      <div className="chapter-toolbar"><input className="chapter-search" aria-label="Search goals" placeholder="Find an ambition..." value={query} onChange={e => setQuery(e.target.value)} /><div className="segmented-control">{["all", "active", "completed"].map(value => <button key={value} data-camera-tab aria-pressed={view === value} onClick={() => setView(value)}>{value}</button>)}</div></div>
-      <details className="chapter-composer"><summary>Start your next ambition</summary>
-      <form onSubmit={handleAdd} className="comic-panel flex flex-wrap items-end gap-2 p-4">
+      <div className="chapter-toolbar">
+        <input className="chapter-search" aria-label="Search goals" placeholder="Find an ambition..." value={query} onChange={e => setQuery(e.target.value)} />
+        <SegmentedControl
+          ariaLabel="Filter goals"
+          value={view}
+          onChange={setView}
+          items={[{ value: "all", label: "All" }, { value: "active", label: "Active" }, { value: "completed", label: "Completed" }]}
+        />
+      </div>
+
+      <Composer open={adding} title="Add a goal">
+      <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-2">
         <div className="flex min-w-[160px] flex-1 flex-col gap-1">
           <label className="text-xs font-bold text-ink/70">Goal</label>
           <input
@@ -281,14 +293,19 @@ export default function GoalsPage() {
           </div>
         )}
         <button type="submit" className="comic-btn px-4 py-2 text-sm text-ink">
-          Add
+          Add goal
         </button>
-      </form></details>
+      </form>
+      </Composer>
 
       {loading ? (
         <p className="text-ink/60">Loading...</p>
       ) : goals.length === 0 ? (
-        <p className="text-ink/60">No goals yet.</p>
+        <div className="empty-state">
+          <strong>Big things start with a single step.</strong>
+          <p>Name the thing you are working toward, then break it into milestones you can actually see.</p>
+          {!adding && <button type="button" onClick={() => setAdding(true)}>Add your first goal</button>}
+        </div>
       ) : (
         <ul className="space-y-4">
           {goals.filter(g => g.title.toLowerCase().includes(query.toLowerCase()) && (view === "all" || g.status === view)).map((goal) => {

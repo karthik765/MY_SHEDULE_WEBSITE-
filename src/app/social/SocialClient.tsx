@@ -49,7 +49,7 @@ export default function SocialClient() {
   useEffect(() => {
     // Deferred a tick so the setState lands after mount, syncing from an
     // external system (the API) rather than synchronously in the effect
-    // body — same pattern as NavBar.tsx / minigames.
+    // body — same pattern as AppHeader.tsx / minigames.
     (async () => {
       await Promise.resolve();
       await refresh();

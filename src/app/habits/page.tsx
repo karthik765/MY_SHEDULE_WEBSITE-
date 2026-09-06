@@ -1,10 +1,13 @@
 "use client";
 
 import PageHeader from "@/components/studio/PageHeader";
+import { Tabs, TabPanel } from "@/components/studio/Tabs";
+import { AddButton, Composer } from "@/components/studio/Composer";
 import { useEffect, useState, type FormEvent } from "react";
 import { computeLongestStreak, computeStreak } from "@/lib/habits";
 import MediaSection from "@/components/MediaSection";
 import JournalSection from "@/components/JournalSection";
+import Icon from "@/components/studio/Icon";
 
 interface HabitLog {
   id: string;
@@ -27,13 +30,24 @@ const TABS = [
   { value: "movies", label: "Movies" },
   { value: "webseries", label: "Web Series" },
   { value: "games", label: "Games" },
-] as const;
+];
+
+// What the header's primary action creates, per tab. `null` means this tab has
+// nothing to add and the header shows no button.
+const ADD_LABELS: Record<string, string | null> = {
+  habits: "Add habit",
+  journal: null,
+  movies: null,
+  webseries: null,
+  games: null,
+};
 
 export default function HabitsPage() {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
-  const [tab, setTab] = useState<(typeof TABS)[number]["value"]>("habits");
+  const [tab, setTab] = useState("habits");
+  const [adding, setAdding] = useState(false);
 
   async function load() {
     const res = await fetch("/api/habits");
@@ -55,6 +69,7 @@ export default function HabitsPage() {
       body: JSON.stringify({ name }),
     });
     setName("");
+    setAdding(false);
     load();
   }
 
@@ -74,43 +89,42 @@ export default function HabitsPage() {
 
   return (
     <div className="page-habits space-y-6">
-      <PageHeader eyebrow="THE ART OF SHOWING UP" title="BUILD YOUR RITUAL." description="Build your habits, keep your journal, and make space for the things you love." />
+      <PageHeader
+        eyebrow="THE ART OF SHOWING UP"
+        title="BUILD YOUR RITUAL."
+        description="Build your habits, keep your journal, and make space for the things you love."
+        action={ADD_LABELS[tab] && <AddButton open={adding} onToggle={() => setAdding(!adding)} label={ADD_LABELS[tab]!} />}
+      />
 
-      <div className="chapter-tabs">
-        {TABS.map((t) => (
-          <button
-            key={t.value}
-            data-camera-tab
-            aria-pressed={tab === t.value}
-            onClick={() => setTab(t.value)}
-            className={`comic-btn px-3 py-1.5 text-sm ${tab === t.value ? "text-paper" : ""}`}
-            style={{ backgroundColor: tab === t.value ? "var(--ink)" : "var(--panel)" }}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <Tabs items={TABS} value={tab} onChange={(next) => { setTab(next); setAdding(false); }} ariaLabel="Habits sections" />
 
+      <TabPanel value={tab}>
       {tab === "habits" && (
         <>
+          <Composer open={adding} title="Add a habit">
+            <form onSubmit={handleAdd} className="flex gap-2">
+              <input
+                className="comic-input flex-1 px-3 py-2 text-sm"
+                placeholder="New habit (e.g. Read, Exercise)"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+              <button type="submit" className="comic-btn px-4 py-2 text-sm text-ink">
+                Add habit
+              </button>
+            </form>
+          </Composer>
+
           <div className="chapter-tally"><span><strong>{habits.length}</strong>Personal rituals</span><span><strong>{habits.filter(h => h.logs.some(l => l.date.slice(0, 10) === todayKey())).length}</strong>Done today</span><span><strong>{Math.max(0, ...habits.map(h => computeLongestStreak(h.logs)))}</strong>Best streak / days</span></div>
-          <details className="chapter-composer"><summary>Build a new ritual</summary>
-          <form onSubmit={handleAdd} className="comic-panel flex gap-2 p-4">
-            <input
-              className="comic-input flex-1 px-3 py-2 text-sm"
-              placeholder="New habit (e.g. Read, Exercise)"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-            <button type="submit" className="comic-btn px-4 py-2 text-sm text-ink">
-              Add
-            </button>
-          </form></details>
 
           {loading ? (
             <p className="text-ink/60">Loading...</p>
           ) : habits.length === 0 ? (
-            <p className="text-ink/60">No habits yet.</p>
+            <div className="empty-state">
+              <strong>Start something worth repeating.</strong>
+              <p>A few pages. A short walk. Your first ritual starts here.</p>
+              {!adding && <button type="button" onClick={() => setAdding(true)}>Add your first habit</button>}
+            </div>
           ) : (
             <ul className="habit-collection">
               {habits.map((habit) => {
@@ -137,9 +151,11 @@ export default function HabitsPage() {
                     </div>
                     <button
                       onClick={() => remove(habit.id)}
-                      className="comic-btn bg-panel px-2 py-1 text-xs"
+                      aria-label={`Delete ${habit.name}`}
+                      title={`Delete ${habit.name}`}
+                      className="row-delete"
                     >
-                      Delete
+                      <Icon name="close" size={14} />
                     </button>
                     <div className="habit-week" aria-label="Last seven days">{Array.from({ length: 7 }, (_, i) => { const date = new Date(); date.setUTCDate(date.getUTCDate() - (6 - i)); const key = date.toISOString().slice(0, 10); const done = habit.logs.some(l => l.date.slice(0, 10) === key); return <span key={key} className={done ? "done" : ""} title={`${key}: ${done ? "Completed" : "Not completed"}`} />; })}</div>
                   </li>
@@ -185,6 +201,7 @@ export default function HabitsPage() {
           watchedVerb="Played"
         />
       )}
+      </TabPanel>
     </div>
   );
 }

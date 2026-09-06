@@ -1,6 +1,7 @@
 "use client";
 
 import PageHeader from "@/components/studio/PageHeader";
+import { SegmentedControl } from "@/components/studio/Tabs";
 import { useEffect, useMemo, useState } from "react";
 
 interface HistoryEntry {
@@ -15,10 +16,10 @@ const PAGE_SIZE = 40;
 
 type Filter = "all" | "gains" | "losses";
 
-const FILTERS: { id: Filter; label: string }[] = [
-  { id: "all", label: "All" },
-  { id: "gains", label: "Gains" },
-  { id: "losses", label: "Losses" },
+const FILTERS: { value: Filter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "gains", label: "Gains" },
+  { value: "losses", label: "Losses" },
 ];
 
 function formatDate(iso: string): string {
@@ -78,26 +79,7 @@ export default function FocusPointsPage() {
         <StatTile label="Lost" value={totalLost} color="var(--comic-red)" />
       </div>
 
-      <div className="chapter-toolbar"><input className="chapter-search" aria-label="Search point history" placeholder="Find a reward, session or adjustment..." value={query} onChange={e => { setQuery(e.target.value); setShown(PAGE_SIZE); }} /><div className="chapter-tabs">
-        {FILTERS.map((f) => (
-          <button
-            key={f.id}
-            data-camera-tab
-            aria-pressed={filter === f.id}
-            onClick={() => {
-              setFilter(f.id);
-              setShown(PAGE_SIZE);
-            }}
-            className="rounded-lg px-4 py-1.5 text-sm font-bold transition-colors"
-            style={{
-              backgroundColor: filter === f.id ? "var(--ink)" : "transparent",
-              color: filter === f.id ? "var(--paper)" : "var(--ink)",
-            }}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div></div>
+      <div className="chapter-toolbar"><input className="chapter-search" aria-label="Search point history" placeholder="Find a reward, session or adjustment..." value={query} onChange={e => { setQuery(e.target.value); setShown(PAGE_SIZE); }} /><SegmentedControl ariaLabel="Filter point history" value={filter} onChange={(next) => { setFilter(next as Filter); setShown(PAGE_SIZE); }} items={FILTERS} /></div>
 
       <div className="comic-panel points-ledger divide-y-2 divide-ink/10 overflow-hidden">
         {visible.length === 0 && (

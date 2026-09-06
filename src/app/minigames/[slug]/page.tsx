@@ -135,7 +135,7 @@ export default function GameDetailPage() {
   useEffect(() => {
     (async () => {
       // Deferred a tick since this reads localStorage, an external store —
-      // see the identical pattern in NavBar.tsx.
+      // see the identical pattern in AppHeader.tsx.
       await Promise.resolve();
       setTestMode(isTestModeActive());
     })();

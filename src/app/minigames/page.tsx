@@ -1,6 +1,7 @@
 "use client";
 
 import PageHeader from "@/components/studio/PageHeader";
+import { Tabs, SegmentedControl } from "@/components/studio/Tabs";
 import GameArtwork from "@/components/studio/GameArtwork";
 import { useDeferredValue, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
@@ -51,13 +52,13 @@ const TAB_STAT_META: Record<TabStat["kind"], { label: string; color: string }> =
 
 type Tab = "minigames" | "puzzles" | "riddles" | "iq" | "qmaster" | "stats";
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: "minigames", label: "🎮 Minigames" },
-  { id: "puzzles", label: "🧩 Puzzles" },
-  { id: "riddles", label: "🔍 Riddles" },
-  { id: "iq", label: "🧠 IQ Levels" },
-  { id: "qmaster", label: "✏️ Q Mastered Games" },
-  { id: "stats", label: "📊 Stats" },
+const TABS: { value: Tab; label: string }[] = [
+  { value: "minigames", label: "Minigames" },
+  { value: "puzzles", label: "Puzzles" },
+  { value: "riddles", label: "Riddles" },
+  { value: "iq", label: "IQ Levels" },
+  { value: "qmaster", label: "Q Mastered" },
+  { value: "stats", label: "Stats" },
 ];
 
 const KIND_LABEL: Record<"puzzle" | "riddle" | "minigame" | "iq" | "qmaster", string> = {
@@ -201,7 +202,7 @@ export default function MinigamesPage() {
       .then(setTabStats);
     (async () => {
       // Deferred a tick since this reads localStorage, an external store —
-      // see the identical pattern in NavBar.tsx.
+      // see the identical pattern in AppHeader.tsx.
       await Promise.resolve();
       setTestMode(isTestModeActive());
     })();
@@ -242,7 +243,7 @@ export default function MinigamesPage() {
         <div className="arcade-feature-copy"><p className="eyebrow">THE SPOTLIGHT / {String(featuredIndex % Math.max(1, playable.length) + 1).padStart(2, "0")}</p><h2>{featured?.title ?? "YOUR NEXT CHALLENGE"}</h2><p>A different kind of focus. Pick a challenge and get into it.</p>{featured && <Link className="primary-action" href={`/minigames/${featured.id}`}>Play now <span aria-hidden="true">/</span></Link>}</div>
         <div className="arcade-feature-art"><span key={featured?.id} aria-hidden="true"><GameArtwork id={featured?.id ?? ""} kind={featured?.kind ?? "minigame"} /></span></div>
       </section>
-      <div className="chapter-toolbar"><p className="eyebrow">{limits ? `${limits.weeklyRemaining} / ${limits.weeklyCap} WEEKLY ATTEMPTS LEFT` : "LOADING YOUR PLAY BUDGET"}</p><div className="segmented-control"><button data-camera-tab aria-label="Previous featured game" disabled={!playable.length} onClick={() => setFeaturedIndex(i => (i - 1 + playable.length) % playable.length)}>Previous</button><button data-camera-tab aria-label="Next featured game" disabled={!playable.length} onClick={() => setFeaturedIndex(i => i + 1)}>Next challenge</button></div></div>
+      <div className="chapter-toolbar"><p className="eyebrow">{limits ? `${limits.weeklyRemaining} / ${limits.weeklyCap} WEEKLY ATTEMPTS LEFT` : "LOADING YOUR PLAY BUDGET"}</p><div className="week-stepper"><button type="button" aria-label="Previous featured game" disabled={!playable.length} onClick={() => setFeaturedIndex(i => (i - 1 + playable.length) % playable.length)}>‹</button><span>Featured</span><button type="button" aria-label="Next featured game" disabled={!playable.length} onClick={() => setFeaturedIndex(i => i + 1)}>›</button></div></div>
       <details className="arcade-rules"><summary>How rewards, limits and replays work</summary><p>
         Play, solve, and earn bonus focus points credited straight to your Focus stats. Each minigame lets you pick
         Easy, Medium, or Hard before you play — harder tiers pay a bonus (+10% Medium, +30% Hard) but are rarer:
@@ -280,28 +281,12 @@ export default function MinigamesPage() {
         </form>
       )}
 
-      <div className="chapter-tabs">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            data-camera-tab
-            aria-pressed={tab === t.id}
-            onClick={() => setTab(t.id)}
-            className="shrink-0 rounded-lg px-4 py-1.5 text-sm font-bold transition-colors"
-            style={{
-              backgroundColor: tab === t.id ? "var(--ink)" : "transparent",
-              color: tab === t.id ? "var(--paper)" : "var(--ink)",
-            }}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <Tabs items={TABS} value={tab} onChange={(next) => setTab(next as Tab)} ariaLabel="Game collections" />
 
       {tab !== "stats" && <div className="chapter-toolbar">
         <input className="chapter-search" aria-label="Search challenges" placeholder="Find your next challenge..." value={search} onChange={e => setSearch(e.target.value)} />
         <select className="comic-input p-3 text-xs" aria-label="Challenge difficulty" value={difficulty} onChange={e => setDifficulty(e.target.value)}><option value="all">Every difficulty</option><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select>
-        <div className="segmented-control">{["all", "playable"].map(value => <button key={value} data-camera-tab aria-pressed={availability === value} onClick={() => setAvailability(value)}>{value === "all" ? "All challenges" : "Ready to play"}</button>)}</div>
+        <SegmentedControl ariaLabel="Availability" value={availability} onChange={setAvailability} items={[{ value: "all", label: "All challenges" }, { value: "playable", label: "Ready to play" }]} />
       </div>}
       {tab === "minigames" && (
         <div className="space-y-3">

@@ -3,20 +3,22 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import Icon from "./studio/Icon";
-import BrandMark from "./studio/BrandMark";
-import ZoomControl from "./ZoomControl";
+import Icon from "./Icon";
+import BrandMark from "./BrandMark";
+import SettingsMenu from "./SettingsMenu";
 import { getAudioContext, playChime } from "@/lib/sound";
 import { MINIGAMES, PUZZLES, RIDDLES, IQ_GAMES, QMASTER_GAMES, currentContentWeek, weekUnlockDate, type GameDef } from "@/lib/games";
 
+// One name per destination. These match the demo tour's labels exactly, so a
+// page is never called two different things in two different places.
 const LINKS = [
   { href: "/", label: "Overview" },
   { href: "/focus", label: "Focus" },
   { href: "/schedule", label: "Schedule" },
   { href: "/habits", label: "Habits" },
   { href: "/goals", label: "Goals" },
-  { href: "/topics", label: "Completed Topics" },
-  { href: "/minigames", label: "Minigames" },
+  { href: "/topics", label: "Learning" },
+  { href: "/minigames", label: "Play" },
   { href: "/social", label: "Social" },
   { href: "/trophies", label: "Trophies" },
   { href: "/focus-points", label: "Focus Points" },
@@ -48,7 +50,13 @@ interface TrophyCounts {
 
 const TIER_EMOJI: Record<Tier, string> = { bronze: "🥉", silver: "🥈", gold: "🥇" };
 
-export default function NavBar() {
+function iconFor(href: string) {
+  if (href === "/") return "dashboard";
+  if (href === "/focus-points") return "points";
+  return href.slice(1);
+}
+
+export default function AppHeader() {
   const pathname = usePathname();
 
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -115,7 +123,7 @@ export default function NavBar() {
 
   // Whether this week's notice was already dismissed lives in localStorage
   // (an external system), so reading it needs an effect — shown once per
-  // week until manually dismissed with "OK".
+  // week until manually dismissed.
   useEffect(() => {
     if (pathname === "/login") return;
     (async () => {
@@ -134,54 +142,81 @@ export default function NavBar() {
 
   if (pathname === "/login") return null;
 
+  const current = pathname === "/" ? "Overview" : LINKS.find(l => l.href !== "/" && pathname.startsWith(l.href))?.label ?? "";
+
   return (
-    <nav className="studio-nav" aria-label="Main navigation">
-      <div className="nav-brand-row">
-        <Link href="/" className="studio-brand" aria-label="Overview" onClick={() => setMobileOpen(false)}><BrandMark /><span className="brand-caption">PERSONAL SPACE</span></Link>
-        <button className="mobile-menu-button" onClick={() => setMobileOpen(!mobileOpen)} aria-label={mobileOpen ? "Close navigation" : "Open navigation"} aria-expanded={mobileOpen} aria-controls="studio-navigation"><Icon name={mobileOpen ? "close" : "menu"} /></button>
-      </div>
-      <div id="studio-navigation" className={`nav-content ${mobileOpen ? "is-open" : ""}`}>
-        <div className="nav-section-label">YOUR EVERYDAY</div>
-        <div className="nav-links">
-          {LINKS.map((link, index) => {
-            const active = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href + "/"));
-            const icon = link.href === "/" ? "dashboard" : link.href === "/focus-points" ? "points" : link.href.slice(1);
-            return <div key={link.href}>
-              {index === 6 && <div className="nav-section-label nav-section-break">EXPLORE & REFLECT</div>}
-              <Link href={link.href} onClick={() => setMobileOpen(false)} className={`nav-link ${active ? "is-active" : ""}`} aria-current={active ? "page" : undefined}><Icon name={icon} size={18} /><span>{link.label}</span>{active && <span className="nav-active-dot" />}</Link>
-            </div>;
-          })}
-        </div>
-        <div className="nav-bottom">
-          <Link href="/focus" className="nav-focus-card" onClick={() => setMobileOpen(false)}><span className="eyebrow">A LITTLE PROGRESS</span><strong>{focusPoints === null ? "Your next chapter" : focusPoints.toLocaleString() + " focus points"}</strong><span>Make time for your next idea.<Icon name="arrow" size={16} /></span></Link>
-          {trophies && <Link href="/trophies" className="nav-trophies" onClick={() => setMobileOpen(false)}><Icon name="trophies" size={16} />{trophies.bronze + trophies.silver + trophies.gold} trophies collected<Icon name="arrow" size={14} /></Link>}
-          <div className="nav-settings"><ZoomControl /></div>
-          <div className="nav-profile"><BrandMark compact /><span><small>Your personal workspace</small></span></div>
+    <>
+      <header className="app-header">
+      <div className="app-bar">
+        <Link href="/" className="app-brand" aria-label="Overview" onClick={() => setMobileOpen(false)}>
+          <BrandMark compact />
+          <span>MAKE IT COUNT<small>PERSONAL SPACE</small></span>
+        </Link>
+
+        <div className="app-bar-tools">
+          <Link href="/focus-points" className="app-chip" title="Your focus points">
+            <Icon name="points" size={14} />
+            <b>{focusPoints === null ? "—" : focusPoints.toLocaleString()}</b>
+            <span>points</span>
+          </Link>
+          {trophies && (
+            <Link href="/trophies" className="app-chip" title="Trophies collected">
+              <Icon name="trophies" size={14} />
+              <b>{trophies.bronze + trophies.silver + trophies.gold}</b>
+              <span>trophies</span>
+            </Link>
+          )}
+          <SettingsMenu />
+          <button
+            type="button"
+            className="app-menu-button"
+            onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label={mobileOpen ? "Close navigation" : "Open navigation"}
+            aria-expanded={mobileOpen}
+            aria-controls="app-navigation"
+          >
+            <Icon name={mobileOpen ? "close" : "menu"} />
+          </button>
         </div>
       </div>
 
-      {toast && (
-        <div className="comic-panel fixed bottom-4 right-4 left-4 z-50 max-w-[280px] sm:left-auto p-3 text-ink">
-          <p className="font-heading text-sm tracking-wide text-comic-orange">🏆 Trophy Unlocked!</p>
-          <ul className="mt-1 space-y-0.5">
-            {toast.map((a) => (
-              <li key={a.id} className="text-xs font-bold">
-                {TIER_EMOJI[a.tier]} {a.title}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <nav id="app-navigation" className={`app-nav ${mobileOpen ? "is-open" : ""}`} aria-label="Main navigation">
+        {LINKS.map((link) => {
+          const active = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href + "/"));
+          // Closing the sheet on tap, rather than reacting to the route
+          // change in an effect, keeps the interaction immediate.
+          return (
+            <Link key={link.href} href={link.href} onClick={() => setMobileOpen(false)} className={`app-nav-link ${active ? "is-active" : ""}`} aria-current={active ? "page" : undefined}>
+              <Icon name={iconFor(link.href)} size={16} />
+              <span>{link.label}</span>
+              <i aria-hidden="true" />
+            </Link>
+          );
+        })}
+      </nav>
+      </header>
 
-      {!unlockNoticeDismissed && unlockItems.length > 0 && (
-        <aside className="studio-announcement" aria-label="Weekly updates">
-          <details>
-            <summary><Icon name="minigames" size={16} /><span>Something new to explore</span><span className="announcement-count">{unlockItems.length}</span></summary>
-            <ul>{unlockItems.map(item => <li key={item.def.id}><span>{item.label}</span><Link href={`/minigames/${item.def.id}`} onClick={dismissUnlockNotice}>{item.def.title}<Icon name="arrow" size={12} /></Link></li>)}</ul>
-          </details>
-          <button onClick={dismissUnlockNotice} aria-label="Dismiss weekly updates" className="icon-button"><Icon name="close" size={14} /></button>
-        </aside>
-      )}
-    </nav>
+      <p className="app-breadcrumb">YOUR SPACE <span>/</span> <strong>{current.toUpperCase()}</strong></p>
+
+      {/* One stack owns the corner, so a trophy toast can never land on top of
+          the weekly notice the way two independently-positioned panels did. */}
+      <div className="floating-stack">
+        {!unlockNoticeDismissed && unlockItems.length > 0 && (
+          <aside className="studio-announcement" aria-label="Weekly updates">
+            <details>
+              <summary><Icon name="minigames" size={16} /><span>Something new to explore</span><span className="announcement-count">{unlockItems.length}</span></summary>
+              <ul>{unlockItems.map(item => <li key={item.def.id}><span>{item.label}</span><Link href={`/minigames/${item.def.id}`} onClick={dismissUnlockNotice}>{item.def.title}<Icon name="arrow" size={12} /></Link></li>)}</ul>
+            </details>
+            <button onClick={dismissUnlockNotice} aria-label="Dismiss weekly updates" className="icon-button"><Icon name="close" size={14} /></button>
+          </aside>
+        )}
+        {toast && (
+          <div className="trophy-toast" role="status">
+            <p>🏆 Trophy unlocked</p>
+            <ul>{toast.map((a) => <li key={a.id}>{TIER_EMOJI[a.tier]} {a.title}</li>)}</ul>
+          </div>
+        )}
+      </div>
+    </>
   );
 }

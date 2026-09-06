@@ -17,6 +17,37 @@ function makePuzzle(solution: number[], blanks: number[]): SudokuPuzzle {
   return { solution, given: solution.map((v, i) => (blanks.includes(i) ? null : v)) };
 }
 
+// Some of the blank patterns above admit more than one valid completion
+// (verified: the "hard" blanks leave two independent 2x2 sub-Latin-squares
+// undetermined, each with 2 valid orderings = 4 solutions total). Comparing
+// the submitted grid against a single stored `solution` would wrongly
+// reject those equally-valid completions, so validate against the actual
+// Sudoku constraints (every row/column/2x2 box contains 1-4 exactly once)
+// instead of exact-matching one canonical answer.
+function isValidCompletion(grid: (number | null)[]): boolean {
+  if (grid.some((v) => v === null)) return false;
+  const size = 4;
+  const hasDuplicate = (cells: number[]) => new Set(cells).size !== cells.length;
+  for (let r = 0; r < size; r++) {
+    if (hasDuplicate(grid.slice(r * size, r * size + size) as number[])) return false;
+  }
+  for (let c = 0; c < size; c++) {
+    if (hasDuplicate(Array.from({ length: size }, (_, r) => grid[r * size + c] as number))) return false;
+  }
+  for (let br = 0; br < size; br += 2) {
+    for (let bc = 0; bc < size; bc += 2) {
+      const box = [
+        grid[br * size + bc],
+        grid[br * size + bc + 1],
+        grid[(br + 1) * size + bc],
+        grid[(br + 1) * size + bc + 1],
+      ] as number[];
+      if (hasDuplicate(box)) return false;
+    }
+  }
+  return true;
+}
+
 const PUZZLES_BY_DIFFICULTY: Record<Difficulty, SudokuPuzzle[]> = {
   easy: [makePuzzle(GRID_A, [1, 4, 11, 14]), makePuzzle(GRID_B, [2, 5, 10, 13])],
   medium: [makePuzzle(GRID_A, [0, 3, 5, 10, 12, 15]), makePuzzle(GRID_B, [1, 4, 6, 9, 11, 14])],
@@ -48,7 +79,7 @@ export default function MiniSudoku({
 
   function submit() {
     if (status !== "playing") return;
-    const correct = grid.every((v, i) => v === puzzle.solution[i]);
+    const correct = isValidCompletion(grid);
     setStatus(correct ? "won" : "lost");
     if (!reported) {
       setReported(true);

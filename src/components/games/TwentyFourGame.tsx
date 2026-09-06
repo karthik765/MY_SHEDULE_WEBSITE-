@@ -12,6 +12,12 @@ function randInt(min: number, max: number): number {
 
 // Brute-force check over every pair/operator/order combination — the number
 // pool is always just 4 numbers, so this is tiny and instant.
+//
+// Division is restricted to exact integer results (a % b === 0), mirroring
+// the restriction enforced in pick() below. Without this, canReach() would
+// treat a puzzle as solvable via a fractional intermediate step (e.g.
+// 8 * (3 - 7/4)) that the UI can never actually produce, generating
+// unbeatable boards.
 function canReach(nums: number[], target: number): boolean {
   if (nums.length === 1) return Math.abs(nums[0] - target) < 1e-6;
   for (let i = 0; i < nums.length; i++) {
@@ -21,7 +27,7 @@ function canReach(nums: number[], target: number): boolean {
       const a = nums[i];
       const b = nums[j];
       const candidates = [a + b, a - b, a * b];
-      if (b !== 0) candidates.push(a / b);
+      if (b !== 0 && a % b === 0) candidates.push(a / b);
       for (const c of candidates) {
         if (canReach([...rest, c], target)) return true;
       }

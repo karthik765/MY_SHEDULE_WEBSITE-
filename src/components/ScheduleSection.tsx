@@ -2,6 +2,8 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { eventAppliesToDate, getWeekDays, startOfWeek } from "@/lib/schedule";
+import { Composer } from "@/components/studio/Composer";
+import { SegmentedControl } from "@/components/studio/Tabs";
 
 interface ScheduleEvent {
   id: string;
@@ -16,7 +18,7 @@ interface ScheduleEvent {
 
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-export default function ScheduleSection() {
+export default function ScheduleSection({ adding = false, onAdded }: { adding?: boolean; onAdded?: () => void } = {}) {
   const [events, setEvents] = useState<ScheduleEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState("");
@@ -48,6 +50,7 @@ export default function ScheduleSection() {
       body: JSON.stringify({ title, date, startTime, endTime, recurring, weekday }),
     });
     setTitle("");
+    onAdded?.();
     load();
   }
 
@@ -62,9 +65,8 @@ export default function ScheduleSection() {
 
   return (
     <div className="schedule-studio space-y-6">
-      <details className="chapter-composer"><summary>Compose your next event</summary>
-      <form onSubmit={handleAdd} className="comic-panel schedule-composer">
-        <div className="composer-heading"><p className="eyebrow">MAKE A LITTLE TIME</p><h2>Add to your week</h2></div>
+      <Composer open={adding} title="Add an event">
+      <form onSubmit={handleAdd} className="schedule-composer">
         <div className="flex flex-col gap-1">
           <label htmlFor="event-title" className="text-xs font-bold text-ink/70">Title</label>
           <input id="event-title"
@@ -134,8 +136,25 @@ export default function ScheduleSection() {
         <button type="submit" className="primary-action">
           Add event
         </button>
-      </form></details>
-      <div className="chapter-toolbar"><div className="segmented-control"><button aria-label="Previous week" onClick={() => setWeekOffset(v => v - 1)} data-camera-tab>Previous</button><button onClick={() => setWeekOffset(0)} data-camera-tab>This week</button><button aria-label="Next week" onClick={() => setWeekOffset(v => v + 1)} data-camera-tab>Next</button></div><span className="eyebrow">{weekStart.toLocaleDateString(undefined, { month: "short", day: "numeric" })} / {weekDays[6].toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span><div className="segmented-control">{(["week", "agenda"] as const).map(value => <button key={value} data-camera-tab aria-pressed={view === value} onClick={() => setView(value)}>{value}</button>)}</div></div>
+      </form>
+      </Composer>
+
+      {/* Stepping through weeks is navigation, not filtering, so it no longer
+          borrows the filter control's shape — only the view switch does. */}
+      <div className="chapter-toolbar">
+        <div className="week-stepper">
+          <button type="button" aria-label="Previous week" onClick={() => setWeekOffset(v => v - 1)}>‹</button>
+          <span>{weekStart.toLocaleDateString(undefined, { month: "short", day: "numeric" })} – {weekDays[6].toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
+          <button type="button" aria-label="Next week" onClick={() => setWeekOffset(v => v + 1)}>›</button>
+          {weekOffset !== 0 && <button type="button" className="week-today" onClick={() => setWeekOffset(0)}>Today</button>}
+        </div>
+        <SegmentedControl
+          ariaLabel="Calendar view"
+          value={view}
+          onChange={(next) => setView(next as "week" | "agenda")}
+          items={[{ value: "week", label: "Week" }, { value: "agenda", label: "Agenda" }]}
+        />
+      </div>
 
       {loading ? (
         <p className="text-ink/60">Loading...</p>

@@ -21,6 +21,8 @@ const paths: Record<string, string> = {
   moon: "M20 14A8 8 0 0 1 10 4a8 8 0 1 0 10 10",
   logout: "M9 3H4v18h5 M9 12h12 M17 8l4 4-4 4",
   play: "m8 4 12 8-12 8z",
+  settings: "M14.5 12a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0 M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2v.2a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-3-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0-1.2-2.9h-.2a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.2-3l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 2.9-1.2v-.2a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 3 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0 1.2 2.9h.2a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z",
+  chevron: "m6 9 6 6 6-6",
 };
 
 export default function Icon({ name, size = 20, style }: { name: string; size?: number; style?: CSSProperties }) {

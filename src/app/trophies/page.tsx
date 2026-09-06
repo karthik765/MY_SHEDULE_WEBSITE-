@@ -1,6 +1,7 @@
 "use client";
 
 import PageHeader from "@/components/studio/PageHeader";
+import { SegmentedControl } from "@/components/studio/Tabs";
 import { useEffect, useState } from "react";
 import type { AchievementCategory, AchievementTier } from "@/lib/achievements";
 
@@ -104,7 +105,7 @@ export default function TrophiesPage() {
         )}
       </div>
 
-      <div className="chapter-toolbar"><input className="chapter-search" aria-label="Search trophies" placeholder="Find a milestone..." value={query} onChange={e => setQuery(e.target.value)} /><div className="segmented-control">{["all", "earned", "next"].map(value => <button key={value} data-camera-tab aria-pressed={view === value} onClick={() => setView(value)}>{value === "next" ? "Up next" : value}</button>)}</div></div>
+      <div className="chapter-toolbar"><input className="chapter-search" aria-label="Search trophies" placeholder="Find a milestone..." value={query} onChange={e => setQuery(e.target.value)} /><SegmentedControl ariaLabel="Filter trophies" value={view} onChange={setView} items={[{ value: "all", label: "All" }, { value: "earned", label: "Earned" }, { value: "next", label: "Up next" }]} /></div>
       {loading ? (
         <p className="text-ink/60">Loading...</p>
       ) : (

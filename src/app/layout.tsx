@@ -5,6 +5,8 @@ import "./globals.css";
 import "./observatory.css";
 import "./chapters.css";
 import "./demo.css";
+// Loaded last: owns the shell, the shared controls, and every interaction state.
+import "./interface.css";
 import StudioShell from "@/components/studio/StudioShell";
 
 const display = Barlow_Condensed({ weight: ["400", "500", "600", "700"], variable: "--font-display", subsets: ["latin"], display: "swap" });

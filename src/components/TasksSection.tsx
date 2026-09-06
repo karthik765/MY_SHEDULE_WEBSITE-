@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import { Composer } from "@/components/studio/Composer";
 
 interface Task {
   id: string;
@@ -23,7 +24,7 @@ const CATEGORIES = [
   { value: "monthly", label: "Monthly Tasks", color: "var(--comic-purple)" },
 ];
 
-export default function TasksSection() {
+export default function TasksSection({ adding = false, onAdded }: { adding?: boolean; onAdded?: () => void } = {}) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState("");
@@ -53,6 +54,7 @@ export default function TasksSection() {
     setTitle("");
     setDueDate("");
     setPriority("medium");
+    onAdded?.();
     load();
   }
 
@@ -75,7 +77,8 @@ export default function TasksSection() {
 
   return (
     <div className="tasks-studio space-y-6">
-      <form onSubmit={handleAdd} className="comic-panel flex flex-wrap gap-2 p-4">
+      <Composer open={adding} title="Add a task">
+      <form onSubmit={handleAdd} className="flex flex-wrap gap-2">
         <input
           className="comic-input min-w-[200px] flex-1 px-3 py-2 text-sm"
           aria-label="Task title"
@@ -116,6 +119,7 @@ export default function TasksSection() {
           Add task
         </button>
       </form>
+      </Composer>
 
       {loading ? (
         <p className="text-ink/60">Loading...</p>

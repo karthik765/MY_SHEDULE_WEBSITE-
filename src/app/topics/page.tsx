@@ -1,6 +1,7 @@
 "use client";
 
 import PageHeader from "@/components/studio/PageHeader";
+import { AddButton, Composer } from "@/components/studio/Composer";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 
 type TopicStatus = "planned" | "learning" | "completed" | "not_useful";
@@ -101,6 +102,7 @@ export default function TopicsPage() {
   const [topics, setTopics] = useState<TopicNode[]>([]);
   const [loading, setLoading] = useState(true);
   const [newRootName, setNewRootName] = useState("");
+  const [adding, setAdding] = useState(false);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [addingChildFor, setAddingChildFor] = useState<string | null>(null);
   const [childDraft, setChildDraft] = useState("");
@@ -141,6 +143,7 @@ export default function TopicsPage() {
       setPage(Math.floor(tree.length / ROOTS_PER_PAGE) + 1);
     }
     setNewRootName("");
+    setAdding(false);
     load();
   }
 
@@ -347,7 +350,7 @@ export default function TopicsPage() {
   return (
     <div className="page-topics space-y-6">
       <div>
-        <PageHeader eyebrow="STAY CURIOUS" title="NEVER STOP LEARNING." description="A living map of what you are learning, exploring, and making your own." />
+        <PageHeader eyebrow="STAY CURIOUS" title="NEVER STOP LEARNING." description="A living map of what you are learning, exploring, and making your own." action={<AddButton open={adding} onToggle={() => setAdding(!adding)} label="Add track" />} />
         <p className="mt-1 text-sm text-ink/50">
           One skill tree per track — Data Engineering, Game Dev, VFX/Unreal, AI, whatever you&apos;re learning —
           branching right into every subtopic you add. Click a dot to change its status.
@@ -355,9 +358,9 @@ export default function TopicsPage() {
       </div>
 
       <div className="chapter-tally"><span><strong>{tree.length}</strong>Learning tracks</span><span><strong>{topics.filter(t => t.status === "learning").length}</strong>In progress</span><span><strong>{topics.filter(t => t.status === "completed").length}</strong>Completed topics</span></div>
-      <div className="chapter-toolbar"><input className="chapter-search" aria-label="Search learning tracks" placeholder="Find a track or topic..." value={query} onChange={e => { setQuery(e.target.value); setPage(1); }} /><div className="segmented-control"><button data-camera-tab onClick={() => setCollapsed(new Set())}>Expand all</button><button data-camera-tab onClick={() => setCollapsed(new Set(topics.map(t => t.id)))}>Collapse all</button></div></div>
-      <details className="chapter-composer"><summary>Open a new learning track</summary>
-      <form onSubmit={addRoot} className="comic-panel flex flex-wrap gap-2 p-4">
+      <div className="chapter-toolbar"><input className="chapter-search" aria-label="Search learning tracks" placeholder="Find a track or topic..." value={query} onChange={e => { setQuery(e.target.value); setPage(1); }} /><div className="tree-controls"><button type="button" onClick={() => setCollapsed(new Set())}>Expand all</button><button type="button" onClick={() => setCollapsed(new Set(topics.map(t => t.id)))}>Collapse all</button></div></div>
+      <Composer open={adding} title="Add a learning track">
+      <form onSubmit={addRoot} className="flex flex-wrap gap-2">
         <input
           className="comic-input min-w-[200px] flex-1 px-3 py-2 text-sm"
           placeholder="New main topic (e.g. Data Engineering)"
@@ -365,9 +368,10 @@ export default function TopicsPage() {
           onChange={(e) => setNewRootName(e.target.value)}
         />
         <button type="submit" className="comic-btn px-4 py-2 text-sm text-ink">
-          Add Main Topic
+          Add track
         </button>
-      </form></details>
+      </form>
+      </Composer>
 
       <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-ink/60">
         {(Object.entries(STATUS_META) as [TopicStatus, (typeof STATUS_META)[TopicStatus]][]).map(

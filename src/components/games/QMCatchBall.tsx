@@ -83,7 +83,7 @@ export default function QMCatchBall({
 
     const tick = () => {
       t += dt;
-      state = stepBall(state, dt, obstacles, segments, { left: 0, right: W });
+      state = stepBall(state, dt, obstacles, segments, { left: 0, right: W }, false);
       setBall({ x: state.x, y: state.y });
 
       const resting = Math.abs(state.vx) < restSpeed && Math.abs(state.vy) < restSpeed && state.y < H - 20;

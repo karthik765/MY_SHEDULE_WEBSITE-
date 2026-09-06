@@ -25,7 +25,9 @@ const TEMPLATES: Template[] = [
   { p1: (a, b) => `All ${a} are ${b}.`, p2: (a, _b, c) => `Some ${c} are ${a}.`, concl: (_a, b, c) => `Some ${c} are ${b}.`, valid: true, tier: "medium" },
   { p1: (a, b) => `No ${a} are ${b}.`, p2: (_a, b, c) => `All ${c} are ${b}.`, concl: (a, _b, c) => `No ${c} are ${a}.`, valid: true, tier: "hard" },
   { p1: (a, b) => `Some ${a} are ${b}.`, p2: (_a, b, c) => `All ${c} are ${b}.`, concl: (a, _b, c) => `Some ${a} are ${c}.`, valid: false, tier: "hard" },
-  { p1: (a, b) => `Some ${a} are not ${b}.`, p2: (_a, b, c) => `All ${c} are ${b}.`, concl: (a, _b, c) => `Some ${a} are not ${c}.`, valid: false, tier: "hard" },
+  // "Some a are not b" + "All c are b" => "Some a are not c" is the classically valid
+  // syllogism Baroco (AOO-2): the a that isn't in b can't be in c either, since c ⊆ b.
+  { p1: (a, b) => `Some ${a} are not ${b}.`, p2: (_a, b, c) => `All ${c} are ${b}.`, concl: (a, _b, c) => `Some ${a} are not ${c}.`, valid: true, tier: "hard" },
 ];
 
 function tierFor(level: number): Difficulty {
