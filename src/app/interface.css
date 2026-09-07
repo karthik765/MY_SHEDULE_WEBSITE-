@@ -734,7 +734,7 @@ li:hover > .row-delete { opacity: 1; }
 
 @media (max-width: 850px) {
   :root { --mobile-nav-h: 76px; }
-  .studio-workspace { padding-bottom: calc(var(--mobile-nav-h) + env(safe-area-inset-bottom)); }
+  .studio-workspace { padding-bottom: calc(18px + env(safe-area-inset-bottom)); }
 
   .app-header { border-bottom: 0; background: color-mix(in srgb, var(--paper) 94%, transparent); }
   .app-bar { min-height: 54px; padding: 8px 16px; }
@@ -745,19 +745,17 @@ li:hover > .row-delete { opacity: 1; }
   .settings-panel { position: fixed; top: 58px; right: 12px; width: min(310px, calc(100vw - 24px)); }
 
   .app-nav {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    position: static;
     z-index: 55;
     display: flex;
     gap: 7px;
-    min-height: calc(var(--mobile-nav-h) + env(safe-area-inset-bottom));
-    padding: 7px 10px calc(7px + env(safe-area-inset-bottom));
-    border-top: 1px solid var(--line);
+    min-height: 0;
+    padding: 7px 12px 10px;
+    border-top: 0;
+    border-bottom: 1px solid var(--line);
     background: color-mix(in srgb, var(--paper) 93%, transparent);
     backdrop-filter: blur(18px) saturate(1.2);
-    box-shadow: 0 -12px 35px -28px #000;
+    box-shadow: 0 12px 35px -30px #000;
     overflow-x: auto;
     overflow-y: hidden;
     overscroll-behavior-x: contain;
@@ -785,7 +783,7 @@ li:hover > .row-delete { opacity: 1; }
   .app-nav-link.is-active { background: var(--accent-soft); color: var(--comic-orange); }
   .app-logout-tab { border: 0; background: transparent; color: var(--muted); }
   .app-logout-tab:disabled { opacity: .6; }
-  .app-logout-error { position: fixed; left: 12px; right: 12px; bottom: calc(var(--mobile-nav-h) + 10px + env(safe-area-inset-bottom)); z-index: 65; margin: 0; text-align: center; }
+  .app-logout-error { margin: 8px 12px 0; text-align: center; }
 
   .studio-main { padding: 12px 14px 22px; }
   .page-enter { animation-duration: .25s; }
@@ -798,7 +796,7 @@ li:hover > .row-delete { opacity: 1; }
   .comic-btn, .primary-action, .text-action, .icon-button { min-height: 44px; }
   .primary-action { width: 100%; padding: 13px 16px; }
   .text-action { justify-content: center; }
-  .floating-stack { bottom: calc(var(--mobile-nav-h) + 12px + env(safe-area-inset-bottom)); }
+  .floating-stack { bottom: calc(12px + env(safe-area-inset-bottom)); }
   .studio-break, .studio-footer { display: none; }
 
   html[data-android-shell="true"] {
