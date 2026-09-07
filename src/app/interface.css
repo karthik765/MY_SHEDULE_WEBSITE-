@@ -753,7 +753,7 @@ li:hover > .row-delete { opacity: 1; }
     align-items: stretch;
     gap: 7px;
     min-height: 0;
-    padding: 7px 12px 10px;
+    padding: 7px max(12px, calc(50vw - 37px)) 10px;
     border-top: 0;
     border-bottom: 1px solid var(--line);
     background: color-mix(in srgb, var(--paper) 93%, transparent);
@@ -819,7 +819,7 @@ li:hover > .row-delete { opacity: 1; }
     display: none;
   }
   html[data-android-shell="true"] .app-nav {
-    padding: 4px 8px 7px;
+    padding: 4px max(8px, calc(50vw - 34px)) 7px;
     flex-direction: row;
     align-items: stretch;
     gap: 5px;

@@ -140,7 +140,8 @@ export default function AppHeader() {
   }, [pathname, weekDate]);
 
   useEffect(() => {
-    navRef.current?.scrollTo({ left: 0 });
+    const activeLink = navRef.current?.querySelector<HTMLElement>('[aria-current="page"]');
+    activeLink?.scrollIntoView({ block: "nearest", inline: "center" });
   }, [pathname]);
 
   function dismissUnlockNotice() {
