@@ -161,9 +161,6 @@ export default function AppHeader() {
   if (pathname === "/login") return null;
 
   const current = pathname === "/" ? "Overview" : LINKS.find(l => l.href !== "/" && pathname.startsWith(l.href))?.label ?? "";
-  const moreLinks = LINKS.filter((link) => !link.mobile);
-  const moreActive = moreLinks.some((link) => pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href + "/")));
-
   return (
     <>
       <header className="app-header">
@@ -211,30 +208,13 @@ export default function AppHeader() {
             </Link>
           );
         })}
-        <button type="button" className={`app-nav-link app-more-tab ${moreActive || mobileOpen ? "is-active" : ""}`} onClick={() => setMobileOpen(!mobileOpen)} aria-expanded={mobileOpen} aria-controls="app-more-sheet">
-          <Icon name={mobileOpen ? "close" : "menu"} size={16} />
-          <span>More</span>
+        <button type="button" className="app-nav-link app-logout-tab" onClick={logout} disabled={loggingOut}>
+          <Icon name="logout" size={16} />
+          <span>{loggingOut ? "Out..." : "Log out"}</span>
           <i aria-hidden="true" />
         </button>
       </nav>
-      {mobileOpen && (
-        <div id="app-more-sheet" className="app-more-sheet">
-          <div className="app-more-panel" role="dialog" aria-label="More sections">
-            <div className="app-more-head"><span>More</span><button type="button" onClick={() => setMobileOpen(false)} aria-label="Close more menu"><Icon name="close" size={16} /></button></div>
-            <div className="app-more-grid">
-              {moreLinks.map((link) => {
-                const active = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href + "/"));
-                return <Link key={link.href} href={link.href} onClick={() => setMobileOpen(false)} className={`app-more-link ${active ? "is-active" : ""}`} aria-current={active ? "page" : undefined}><Icon name={iconFor(link.href)} size={17} /><span>{link.label}</span></Link>;
-              })}
-            </div>
-            <button type="button" className="app-more-logout" onClick={logout} disabled={loggingOut}>
-              <Icon name="logout" size={17} />
-              <span>{loggingOut ? "Signing out..." : "Log out"}</span>
-            </button>
-            {logoutError && <p className="app-more-error" role="alert">Could not log out. Please try again.</p>}
-          </div>
-        </div>
-      )}
+      {logoutError && <p className="app-logout-error" role="alert">Could not log out. Please try again.</p>}
       </header>
 
       <p className="app-breadcrumb">YOUR SPACE <span>/</span> <strong>{current.toUpperCase()}</strong></p>
