@@ -389,7 +389,7 @@
   .app-bar { padding-left: 20px; padding-right: 20px; min-height: 56px; }
   .app-breadcrumb { padding: 14px 20px 0; }
   .app-menu-button {
-    display: grid; place-items: center;
+    display: none; place-items: center;
     width: 36px; height: 36px;
     border: 1px solid var(--line); border-radius: 3px;
     color: var(--ink); background: var(--panel);
@@ -397,17 +397,18 @@
   }
   .app-menu-button:active { transform: scale(.92); }
   .app-nav {
-    display: none;
-    flex-direction: column;
+    display: flex;
+    flex-direction: row;
     align-items: stretch;
     padding: 8px 12px 14px;
     border-top: 1px solid var(--line);
-    overflow: visible;
+    overflow-x: auto;
+    overflow-y: hidden;
   }
-  .app-nav.is-open { display: flex; animation: sheet-open .3s var(--ease-out) both; }
+  .app-nav.is-open { display: flex; animation: none; }
   .app-nav-link { padding: 13px 14px; font-size: 13px; border-radius: 3px; }
-  .app-nav-link > i { left: 0; right: auto; top: 8px; bottom: 8px; width: 2px; height: auto; transform: scaleY(0); transform-origin: 50% 50%; }
-  .app-nav-link:hover > i, .app-nav-link.is-active > i { transform: scaleY(1); }
+  .app-nav-link > i { left: 10px; right: 10px; top: auto; bottom: 0; width: auto; height: 2px; transform: scaleX(0); transform-origin: 50% 50%; }
+  .app-nav-link:hover > i, .app-nav-link.is-active > i { transform: scaleX(1); }
   .app-nav-link.is-active { background: var(--accent-soft); }
   .page-heading .section-scene { display: none; }
   .page-heading { align-items: flex-start; }
