@@ -3,7 +3,7 @@ import { getIronSession } from "iron-session";
 import { sessionOptions, type SessionData } from "@/lib/session";
 import { DEMO_SECTIONS } from "@/lib/demo";
 
-const PUBLIC_PATHS = ["/login", "/api/login", "/cinematic/k-obsidian.png"];
+const PUBLIC_PATHS = ["/login", "/api/login", "/api/login/google", "/api/login/google/callback", "/cinematic/k-obsidian.png"];
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
