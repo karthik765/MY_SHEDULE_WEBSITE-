@@ -824,6 +824,34 @@ li:hover > .row-delete { opacity: 1; }
 
   html[data-android-shell="true"] {
     --mobile-nav-h: 82px;
+    --android-nav-w: 78px;
+  }
+  html[data-android-shell="true"] .app-header {
+    margin-left: var(--android-nav-w);
+  }
+  html[data-android-shell="true"] .studio-main,
+  html[data-android-shell="true"] .app-breadcrumb {
+    margin-left: var(--android-nav-w);
+  }
+  html[data-android-shell="true"] .app-nav {
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: auto;
+    width: var(--android-nav-w);
+    min-height: 100dvh;
+    height: 100dvh;
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(5, minmax(0, 1fr));
+    padding: calc(8px + env(safe-area-inset-top)) 7px calc(8px + env(safe-area-inset-bottom));
+    border-top: 0;
+    border-right: 1px solid var(--line);
+    box-shadow: 12px 0 35px -28px #000;
+  }
+  html[data-android-shell="true"] .app-nav .app-nav-link.is-mobile-main,
+  html[data-android-shell="true"] .app-nav .app-more-tab {
+    min-height: 0;
+    width: 100%;
   }
   html[data-android-shell="true"] .app-bar {
     min-height: 50px;
@@ -836,13 +864,13 @@ li:hover > .row-delete { opacity: 1; }
   }
   html[data-android-shell="true"] .app-more-sheet {
     z-index: 120;
-    inset: 0;
-    align-items: flex-end;
-    padding: 12px 12px calc(var(--mobile-nav-h) + 12px + env(safe-area-inset-bottom));
+    inset: 0 0 0 var(--android-nav-w);
+    align-items: flex-start;
+    padding: calc(12px + env(safe-area-inset-top)) 12px 12px;
     pointer-events: none;
   }
   html[data-android-shell="true"] .app-more-panel {
-    align-self: flex-end;
+    align-self: flex-start;
     max-height: min(78vh, 620px);
     border-radius: 18px;
     pointer-events: auto;
