@@ -70,6 +70,7 @@ export default function AppHeader() {
   const [logoutError, setLogoutError] = useState(false);
   const seenIdsRef = useRef<Set<string> | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const navRef = useRef<HTMLElement | null>(null);
 
   function playTrophySound() {
     playSoundCue(audioCtxRef, "achievement");
@@ -138,6 +139,10 @@ export default function AppHeader() {
     })();
   }, [pathname, weekDate]);
 
+  useEffect(() => {
+    navRef.current?.scrollTo({ left: 0 });
+  }, [pathname]);
+
   function dismissUnlockNotice() {
     localStorage.setItem(UNLOCK_NOTICE_KEY, weekDate);
     setUnlockNoticeDismissed(true);
@@ -161,6 +166,7 @@ export default function AppHeader() {
   if (pathname === "/login") return null;
 
   const current = pathname === "/" ? "Overview" : LINKS.find(l => l.href !== "/" && pathname.startsWith(l.href))?.label ?? "";
+
   return (
     <>
       <header className="app-header">
@@ -197,7 +203,7 @@ export default function AppHeader() {
         </div>
       </div>
 
-      <nav id="app-navigation" className="app-nav" aria-label="Main navigation">
+      <nav ref={navRef} id="app-navigation" className="app-nav" aria-label="Main navigation">
         {LINKS.map((link) => {
           const active = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href + "/"));
           return (
