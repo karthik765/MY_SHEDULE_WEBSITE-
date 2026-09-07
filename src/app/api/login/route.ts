@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { getSession } from "@/lib/session";
+import { getSession, normalizeEmail } from "@/lib/session";
 
 export async function POST(request: NextRequest) {
   const { email, password } = await request.json();
@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
 
   const session = await getSession();
   session.loggedIn = true;
+  session.email = normalizeEmail(expectedEmail);
   await session.save();
 
   return NextResponse.json({ ok: true });

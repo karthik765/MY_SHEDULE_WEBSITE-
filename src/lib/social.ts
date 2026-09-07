@@ -53,9 +53,9 @@ export interface SocialState {
   active: { id: string; platform: Platform; url: string; openedAt: string } | null;
 }
 
-export async function getSocialState(now = new Date()): Promise<SocialState> {
+export async function getSocialState(ownerEmail: string, now = new Date()): Promise<SocialState> {
   const sessions = await prisma.socialSession.findMany({
-    where: { openedAt: { gte: startOfToday(now) } },
+    where: { ownerEmail, openedAt: { gte: startOfToday(now) } },
     orderBy: { openedAt: "asc" },
   });
 
@@ -89,11 +89,11 @@ export async function getSocialState(now = new Date()): Promise<SocialState> {
 
 // Persist the accrued cost of every still-open session and mark it ended
 // when `end` is set or the daily budget is already spent.
-export async function syncOpenSessions(end: boolean, now = new Date()): Promise<void> {
-  const open = await prisma.socialSession.findMany({ where: { endedAt: null } });
+export async function syncOpenSessions(ownerEmail: string, end: boolean, now = new Date()): Promise<void> {
+  const open = await prisma.socialSession.findMany({ where: { ownerEmail, endedAt: null } });
   if (open.length === 0) return;
 
-  const state = await getSocialState(now);
+  const state = await getSocialState(ownerEmail, now);
   const budgetSpent = state.remainingSeconds <= 0;
 
   for (const s of open) {

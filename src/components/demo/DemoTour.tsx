@@ -42,7 +42,7 @@ export default function DemoTour({ section, games }: { section: DemoSection; gam
   return <div className="demo-shell">
     <Atmosphere />
     <a className="skip-link" href="#demo-content">Skip to demo content</a>
-    <header className="demo-topbar"><Link href="/demo" aria-label="Demo overview"><BrandMark compact /></Link><strong className="beta-badge">BETA</strong><span>READ-ONLY DEMO</span><div><ThemeToggle /><Link href="/login" className="demo-exit">Exit demo</Link></div></header>
+    <header className="demo-topbar"><Link href="/demo" aria-label="Demo overview"><BrandMark compact /></Link><span>READ-ONLY DEMO</span><div><ThemeToggle /><Link href="/login" className="demo-exit">Exit demo</Link></div></header>
     <aside className="demo-notice"><strong>A look inside. Nothing to save.</strong><span>All data starts at zero. No personal account data is loaded. Browse pages and animations; features are disabled.</span></aside>
     <nav className="demo-nav" aria-label="Demo sections">{DEMO_SECTIONS.map(item => <Link key={item.id} href={item.id === "overview" ? "/demo" : `/demo/${item.id}`} aria-current={item.id === section.id ? "page" : undefined}>{item.label}</Link>)}</nav>
     <main id="demo-content" tabIndex={-1} className="demo-main"><div className="page-enter">

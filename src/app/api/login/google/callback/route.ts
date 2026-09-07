@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/session";
+import { getSession, normalizeEmail } from "@/lib/session";
 
 const STATE_COOKIE = "google_oauth_state";
 
@@ -48,6 +48,7 @@ export async function GET(request: NextRequest) {
 
   const session = await getSession();
   session.loggedIn = true;
+  session.email = normalizeEmail(profile.email);
   await session.save();
 
   const response = NextResponse.redirect(new URL("/", request.url));

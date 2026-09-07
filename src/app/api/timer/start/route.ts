@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireUserEmail } from "@/lib/session";
 
 // Guards "at most one running session" across concurrent requests. Two Start
 // clicks landing at the same moment both used to pass the "is one already
@@ -11,15 +12,16 @@ import { prisma } from "@/lib/prisma";
 const START_LOCK_KEY = 724100;
 
 export async function POST(request: NextRequest) {
+  const ownerEmail = await requireUserEmail();
   const body = await request.json();
   const subject = body.subject || "Study";
 
   const result = await prisma.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(${START_LOCK_KEY}::bigint)`;
-    const existing = await tx.studySession.findFirst({ where: { endTime: null } });
+    const existing = await tx.studySession.findFirst({ where: { ownerEmail, endTime: null } });
     if (existing) return { session: existing, created: false };
     const session = await tx.studySession.create({
-      data: { subject, startTime: new Date() },
+      data: { ownerEmail, subject, startTime: new Date() },
     });
     return { session, created: true };
   });

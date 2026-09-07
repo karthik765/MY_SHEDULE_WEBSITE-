@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSocialState, isPlatform, socialRoute, syncOpenSessions, PLATFORMS } from "@/lib/social";
+import { requireUserEmail } from "@/lib/session";
 
 export async function POST(request: NextRequest) {
+  const ownerEmail = await requireUserEmail();
   const body = await request.json().catch(() => ({}));
   const platform = body?.platform;
 
@@ -12,8 +14,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Close out anything left open, then re-check the budget.
-    await syncOpenSessions(false);
-    const state = await getSocialState();
+    await syncOpenSessions(ownerEmail, false);
+    const state = await getSocialState(ownerEmail);
 
     if (state.remainingSeconds <= 0) {
       return NextResponse.json(
@@ -25,10 +27,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "A session is already open.", state }, { status: 409 });
     }
 
-    await prisma.socialSession.create({ data: { platform } });
+    await prisma.socialSession.create({ data: { ownerEmail, platform } });
 
     return NextResponse.json({
-      state: await getSocialState(),
+      state: await getSocialState(ownerEmail),
       url: PLATFORMS[platform].url,
     });
   });

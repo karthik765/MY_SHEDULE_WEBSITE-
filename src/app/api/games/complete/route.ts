@@ -12,6 +12,7 @@ import {
   type Difficulty,
 } from "@/lib/games";
 import { getUnlockStats, isUnlocked } from "@/lib/unlocks";
+import { requireUserEmail } from "@/lib/session";
 
 const MINIGAME_IDS = MINIGAMES.map((g) => g.id);
 
@@ -24,6 +25,7 @@ function isDifficulty(v: unknown): v is Difficulty {
 }
 
 export async function POST(request: NextRequest) {
+  const ownerEmail = await requireUserEmail();
   const body = await request.json();
   const gameId = body.game as string | undefined;
   const score = typeof body.score === "number" ? Math.round(body.score) : null;
@@ -39,7 +41,7 @@ export async function POST(request: NextRequest) {
   // only bypasses the weekly caps, never locked content — so this check
   // always runs first, testMode or not.
   if (def.unlock) {
-    const stats = await getUnlockStats();
+    const stats = await getUnlockStats(ownerEmail);
     if (!isUnlocked(def, stats)) {
       return NextResponse.json({ error: "Game is locked" }, { status: 403 });
     }
@@ -51,7 +53,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ awardedMinutes: 0, bonusPoints: 0, limitReason: null });
   }
 
-  const existing = await prisma.gameRecord.findUnique({ where: { game: def.id } });
+  const existing = await prisma.gameRecord.findUnique({ where: { ownerEmail_game: { ownerEmail, game: def.id } } });
   const today = todayKey();
   const now = new Date();
 
@@ -66,7 +68,7 @@ export async function POST(request: NextRequest) {
   // first), so by the time we get here the current attempt is already
   // counted — this row IS the Nth attempt this week.
   const weeklyCount = await prisma.gameAttempt.count({
-    where: { playedAt: { gte: startOfWeek(now) } },
+      where: { ownerEmail, playedAt: { gte: startOfWeek(now) } },
   });
   const weeklyCapHit = weeklyCount > MINIGAME_WEEKLY_CAP;
 
@@ -77,12 +79,12 @@ export async function POST(request: NextRequest) {
     // Sub-cap within the shared 25: minigames alone can't use more than 10
     // attempts a week, even if the shared pool still has room.
     const minigameWeeklyCount = await prisma.gameAttempt.count({
-      where: { playedAt: { gte: startOfWeek(now) }, game: { in: MINIGAME_IDS } },
+      where: { ownerEmail, playedAt: { gte: startOfWeek(now) }, game: { in: MINIGAME_IDS } },
     });
     const minigameCapHit = minigameWeeklyCount > MINIGAME_ONLY_WEEKLY_CAP;
 
     const dailyCount = await prisma.gamePlay.count({
-      where: { game: def.id, difficulty, playedAt: { gte: dayStart } },
+      where: { ownerEmail, game: def.id, difficulty, playedAt: { gte: dayStart } },
     });
 
     const dailyLimit = MINIGAME_DAILY_LIMIT_BY_DIFFICULTY[difficulty];
@@ -100,8 +102,9 @@ export async function POST(request: NextRequest) {
       score != null ? Math.max(score, existing?.bestScore ?? -Infinity) : (existing?.bestScore ?? null);
 
     await prisma.gameRecord.upsert({
-      where: { game: def.id },
+      where: { ownerEmail_game: { ownerEmail, game: def.id } },
       create: {
+        ownerEmail,
         game: def.id,
         kind: def.kind,
         timesCompleted: 1,
@@ -116,11 +119,12 @@ export async function POST(request: NextRequest) {
 
     if (rewarded) {
       await prisma.gamePlay.create({
-        data: { game: def.id, difficulty, awardedMinutes, bonusPoints, playedAt: now },
+        data: { ownerEmail, game: def.id, difficulty, awardedMinutes, bonusPoints, playedAt: now },
       });
       await prisma.focusPointAdjustment.create({
         data: {
           amount: awardedMinutes + bonusPoints,
+          ownerEmail,
           reason: `minigame:${def.id}:${difficulty}`,
         },
       });
@@ -137,8 +141,9 @@ export async function POST(request: NextRequest) {
     awardedMinutes = rewarded ? potentialAward : 0;
 
     await prisma.gameRecord.upsert({
-      where: { game: def.id },
+      where: { ownerEmail_game: { ownerEmail, game: def.id } },
       create: {
+        ownerEmail,
         game: def.id,
         kind: def.kind,
         timesCompleted: 1,
@@ -152,10 +157,10 @@ export async function POST(request: NextRequest) {
 
     if (rewarded) {
       await prisma.gamePlay.create({
-        data: { game: def.id, difficulty: def.difficulty, awardedMinutes, bonusPoints: 0, playedAt: now },
+        data: { ownerEmail, game: def.id, difficulty: def.difficulty, awardedMinutes, bonusPoints: 0, playedAt: now },
       });
       await prisma.focusPointAdjustment.create({
-        data: { amount: awardedMinutes, reason: `${def.kind}${alreadySolved ? "-replay" : ""}:${def.id}` },
+        data: { ownerEmail, amount: awardedMinutes, reason: `${def.kind}${alreadySolved ? "-replay" : ""}:${def.id}` },
       });
     }
   }

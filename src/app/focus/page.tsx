@@ -403,6 +403,8 @@ export default function FocusPage() {
       setTimerError("Couldn't start the timer. Check your connection and try again.");
       return;
     }
+    const ctx = getAudioContext(audioCtxRef);
+    if (ctx) playChime(ctx, [523.25, 659.25], 100);
     const lengthMs = durationMs ?? CLASSIC_PLAN[blockIndex].focusSeconds * 1000;
     const next: PlanState = {
       blockIndex,
@@ -602,6 +604,8 @@ export default function FocusPage() {
         return;
       }
       setActive(session);
+      const ctx = getAudioContext(audioCtxRef);
+      if (ctx) playChime(ctx, [523.25, 659.25], 100);
       setNow(Date.now());
       load();
     } catch {
@@ -634,6 +638,8 @@ export default function FocusPage() {
     setTimerError(null);
     try {
       await stopActiveSession();
+      const ctx = getAudioContext(audioCtxRef);
+      if (ctx) playChime(ctx, [659.25, 523.25], 100);
       setActive(null);
       await load();
     } catch {

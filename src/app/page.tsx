@@ -5,25 +5,27 @@ import Icon from "@/components/studio/Icon";
 import { prisma } from "@/lib/prisma";
 import { eventAppliesToDate, startOfWeek } from "@/lib/schedule";
 import { computeStreak } from "@/lib/habits";
+import { requireUserEmail } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
+  const ownerEmail = await requireUserEmail();
   const now = new Date();
   const weekStart = startOfWeek(now);
 
   const [events, tasks, sessions, habits, activeSession, goals] = await Promise.all([
-    prisma.scheduleEvent.findMany({ orderBy: { startTime: "asc" } }),
+    prisma.scheduleEvent.findMany({ where: { ownerEmail }, orderBy: { startTime: "asc" } }),
     prisma.task.findMany({
-      where: { completed: false },
+      where: { ownerEmail, completed: false },
       orderBy: { dueDate: "asc" },
     }),
     prisma.studySession.findMany({
-      where: { startTime: { gte: weekStart } },
+      where: { ownerEmail, startTime: { gte: weekStart } },
     }),
-    prisma.habit.findMany({ include: { logs: { orderBy: { date: "desc" }, take: 60 } } }),
-    prisma.studySession.findFirst({ where: { endTime: null } }),
-    prisma.goal.findMany({ include: { milestones: true }, orderBy: { createdAt: "desc" }, take: 20 }),
+    prisma.habit.findMany({ where: { ownerEmail }, include: { logs: { orderBy: { date: "desc" }, take: 60 } } }),
+    prisma.studySession.findFirst({ where: { ownerEmail, endTime: null } }),
+    prisma.goal.findMany({ where: { ownerEmail }, include: { milestones: true }, orderBy: { createdAt: "desc" }, take: 20 }),
   ]);
 
   const todayEvents = events

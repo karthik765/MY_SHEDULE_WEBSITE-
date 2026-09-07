@@ -8,13 +8,15 @@ import QuoteWidget from "@/components/rails/QuoteWidget";
 import JokeWidget from "@/components/rails/JokeWidget";
 import PuzzleWidget from "@/components/rails/PuzzleWidget";
 import Atmosphere from "./Atmosphere";
+import StartupSplash from "./StartupSplash";
 
 export default function StudioShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const shell = <StartupSplash />;
   if (pathname === "/demo" || pathname.startsWith("/demo/")) return <>{children}</>;
-  if (pathname === "/login") return <><Atmosphere /><div className="login-theme"><ThemeToggle /></div><main className="login-shell">{children}</main></>;
+  if (pathname === "/login") return <><StartupSplash /><Atmosphere /><div className="login-theme"><ThemeToggle /></div><main className="login-shell">{children}</main></>;
   return (
-    <div className="studio-shell">
+    <div className="studio-shell">{shell}
       <Atmosphere />
       <a href="#main-content" className="skip-link">Skip to content</a>
       <div className="studio-workspace">

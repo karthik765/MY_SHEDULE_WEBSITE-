@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { MINIGAMES, PUZZLES, RIDDLES, IQ_GAMES, QMASTER_GAMES, type GameDef, type GameKind } from "@/lib/games";
 import { getUnlockStats, isUnlocked } from "@/lib/unlocks";
+import { requireUserEmail } from "@/lib/session";
 
 const DEFS_BY_KIND: Record<GameKind, GameDef[]> = {
   minigame: MINIGAMES,
@@ -19,11 +20,12 @@ const KINDS: GameKind[] = ["minigame", "puzzle", "riddle", "iq", "qmaster"];
 // solve + Completed-tab replay rewards, minus loss penalties — the "-fail:"
 // and "-replay:" reason prefixes from /api/games/attempt and /complete).
 export async function GET() {
+  const ownerEmail = await requireUserEmail();
   const [gameRecords, attempts, adjustments, stats] = await Promise.all([
-    prisma.gameRecord.findMany(),
-    prisma.gameAttempt.findMany({ select: { game: true, result: true } }),
-    prisma.focusPointAdjustment.findMany({ select: { reason: true, amount: true } }),
-    getUnlockStats(),
+    prisma.gameRecord.findMany({ where: { ownerEmail } }),
+    prisma.gameAttempt.findMany({ where: { ownerEmail }, select: { game: true, result: true } }),
+    prisma.focusPointAdjustment.findMany({ where: { ownerEmail }, select: { reason: true, amount: true } }),
+    getUnlockStats(ownerEmail),
   ]);
 
   // GameAttempt only stores the game id, not its kind — build a lookup once.

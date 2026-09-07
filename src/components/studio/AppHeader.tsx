@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Icon from "./Icon";
 import BrandMark from "./BrandMark";
 import SettingsMenu from "./SettingsMenu";
@@ -58,12 +59,15 @@ function iconFor(href: string) {
 
 export default function AppHeader() {
   const pathname = usePathname();
+  const router = useRouter();
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [focusPoints, setFocusPoints] = useState<number | null>(null);
   const [trophies, setTrophies] = useState<TrophyCounts | null>(null);
   const [toast, setToast] = useState<AchievementRow[] | null>(null);
   const [unlockNoticeDismissed, setUnlockNoticeDismissed] = useState(true);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState(false);
   const seenIdsRef = useRef<Set<string> | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
 
@@ -140,6 +144,21 @@ export default function AppHeader() {
     setUnlockNoticeDismissed(true);
   }
 
+  async function logout() {
+    setLoggingOut(true);
+    setLogoutError(false);
+    try {
+      const response = await fetch("/api/logout", { method: "POST" });
+      if (!response.ok) throw new Error("Logout failed");
+      router.replace("/login");
+      router.refresh();
+    } catch {
+      setLogoutError(true);
+    } finally {
+      setLoggingOut(false);
+    }
+  }
+
   if (pathname === "/login") return null;
 
   const current = pathname === "/" ? "Overview" : LINKS.find(l => l.href !== "/" && pathname.startsWith(l.href))?.label ?? "";
@@ -186,7 +205,7 @@ export default function AppHeader() {
         {LINKS.map((link) => {
           const active = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href + "/"));
           return (
-            <Link key={link.href} href={link.href} onClick={() => setMobileOpen(false)} className={`app-nav-link ${link.mobile ? "is-mobile-main" : ""} ${active ? "is-active" : ""}`} aria-current={active ? "page" : undefined}>
+            <Link key={link.href} href={link.href} onClick={() => { setMobileOpen(false); const ctx = getAudioContext(audioCtxRef); if (ctx) playChime(ctx, [659.25], 70); }} className={`app-nav-link ${link.mobile ? "is-mobile-main" : ""} ${active ? "is-active" : ""}`} aria-current={active ? "page" : undefined}>
               <Icon name={iconFor(link.href)} size={16} />
               <span>{link.label}</span>
               <i aria-hidden="true" />
@@ -209,6 +228,11 @@ export default function AppHeader() {
                 return <Link key={link.href} href={link.href} onClick={() => setMobileOpen(false)} className={`app-more-link ${active ? "is-active" : ""}`} aria-current={active ? "page" : undefined}><Icon name={iconFor(link.href)} size={17} /><span>{link.label}</span></Link>;
               })}
             </div>
+            <button type="button" className="app-more-logout" onClick={logout} disabled={loggingOut}>
+              <Icon name="logout" size={17} />
+              <span>{loggingOut ? "Signing out..." : "Log out"}</span>
+            </button>
+            {logoutError && <p className="app-more-error" role="alert">Could not log out. Please try again.</p>}
           </div>
         </div>
       )}

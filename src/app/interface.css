@@ -623,7 +623,7 @@ li:hover > .row-delete { opacity: 1; }
 
 /* No panel, no border, no card — the demo lets the timer sit directly on the
    page, and that openness is most of why it reads as calm. */
-.focus-stage { display: flex; justify-content: center; padding: 30px 0 56px; border-top: 1px solid var(--line); }
+.focus-stage { display: flex; justify-content: center; padding: 8px 0 34px; border-top: 1px solid var(--line); }
 .page-focus .focus-console {
   position: relative;
   isolation: isolate;
@@ -633,7 +633,7 @@ li:hover > .row-delete { opacity: 1; }
   text-align: center;
   width: min(680px, 100%);
   margin: 0;
-  padding: 34px 20px 8px;
+  padding: 16px 20px 8px;
   border: 0;
   background: none;
   backdrop-filter: none;
@@ -669,12 +669,19 @@ li:hover > .row-delete { opacity: 1; }
 .brand-object .sculptural-brand img { filter: drop-shadow(0 6px 22px #e88c2255); }
 
 @media (max-width: 700px) {
-  .focus-stage { padding: 4px 0 26px; }
-  .page-focus .focus-console { padding: 38px 20px 32px; }
+  .page-focus .page-heading .section-scene { width: 120px; top: auto; bottom: -86px; right: 4px; opacity: .16; }
+  .focus-stage { padding: 0 0 20px; }
+  .page-focus .focus-console { padding: 10px 20px 20px; }
   .focus-orbit { top: 18px; width: 260px; }
   .page-focus .console-actions .comic-input { max-width: none; }
   .brand-object .sculptural-brand { width: 52px; height: 64px; }
 }
+
+.startup-splash { position: fixed; inset: 0; z-index: 1000; display: grid; place-content: center; justify-items: center; gap: 8px; background: var(--paper); color: var(--ink); animation: startup-fade .35s ease 2.05s forwards; }
+.startup-mark { display: grid; place-items: center; width: 88px; height: 104px; border: 1px solid var(--comic-orange); color: var(--comic-orange); font: 600 76px var(--font-display), sans-serif; line-height: 1; box-shadow: 0 0 40px #f7932c22; }
+.startup-splash p { margin: 12px 0 0; color: var(--comic-orange); font: 500 12px var(--font-comic-mono), monospace; letter-spacing: .18em; }
+.startup-splash span { color: var(--muted); font: 500 10px var(--font-comic-mono), monospace; letter-spacing: .16em; }
+@keyframes startup-fade { to { opacity: 0; visibility: hidden; } }
 
 /* The two-line headline treatment now lives on the shared page header, since
    Focus moved onto it (chapters.css only ever styled .focus-hero-copy h1 em). */
@@ -794,6 +801,9 @@ li:hover > .row-delete { opacity: 1; }
   .app-more-link { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); font-size: 12px; }
   .app-more-link svg { color: var(--comic-orange); }
   .app-more-link.is-active { background: var(--accent-soft); border-color: var(--comic-orange); color: var(--comic-orange); }
+  .app-more-logout { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; min-height: 44px; margin-top: 12px; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); background: rgba(255,255,255,.04); font-size: 12px; }
+  .app-more-logout:disabled { opacity: .65; }
+  .app-more-error { margin-top: 8px; color: var(--comic-orange); font-size: 11px; }
 
   .studio-main { padding: 12px 14px 22px; }
   .page-enter { animation-duration: .25s; }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { describeFocusReason, iconForReason } from "@/lib/focusHistory";
+import { requireUserEmail } from "@/lib/session";
 
 const HISTORY_LIMIT = 1000;
 
@@ -17,13 +18,15 @@ interface HistoryEntry {
 // penalties, task/goal/habit penalties). Capped at the most recent 1000
 // entries combined — cheap enough to fetch in one shot for a single-user app.
 export async function GET() {
+  const ownerEmail = await requireUserEmail();
   const [sessions, adjustments] = await Promise.all([
     prisma.studySession.findMany({
-      where: { durationMinutes: { not: null } },
+      where: { ownerEmail, durationMinutes: { not: null } },
       orderBy: { endTime: "desc" },
       take: HISTORY_LIMIT,
     }),
     prisma.focusPointAdjustment.findMany({
+      where: { ownerEmail },
       orderBy: { createdAt: "desc" },
       take: HISTORY_LIMIT,
     }),

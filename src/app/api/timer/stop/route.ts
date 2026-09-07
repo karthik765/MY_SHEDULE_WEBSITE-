@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { SLOW_RATE, isSlowSubject, nonFocusedMakeUpReason } from "@/lib/focusSessions";
+import { requireUserEmail } from "@/lib/session";
 
 // Accepts an optional `endTime` (epoch ms): callers that know a session's
 // intended cutoff (a Classic Mode block reaching its scheduled end while the
@@ -13,8 +14,9 @@ import { SLOW_RATE, isSlowSubject, nonFocusedMakeUpReason } from "@/lib/focusSes
 // so it holds however the session gets stopped — the Stop button, a stale
 // session cleared on the next start, or anything else.
 export async function POST(request: NextRequest) {
+  const ownerEmail = await requireUserEmail();
   const active = await prisma.studySession.findFirst({
-    where: { endTime: null },
+    where: { ownerEmail, endTime: null },
     orderBy: { startTime: "desc" },
   });
   if (!active) {
@@ -50,7 +52,7 @@ export async function POST(request: NextRequest) {
     const makeUp = realMinutes - durationMinutes;
     if (makeUp > 0) {
       await prisma.focusPointAdjustment.create({
-        data: { amount: makeUp, reason: nonFocusedMakeUpReason(active.id) },
+        data: { ownerEmail, amount: makeUp, reason: nonFocusedMakeUpReason(active.id) },
       });
     }
   }

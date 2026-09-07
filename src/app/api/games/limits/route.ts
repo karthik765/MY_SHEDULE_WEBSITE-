@@ -9,6 +9,7 @@ import {
   difficultyBonus,
   type Difficulty,
 } from "@/lib/games";
+import { requireUserEmail } from "@/lib/session";
 
 const DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard"];
 const MINIGAME_IDS = new Set(MINIGAMES.map((g) => g.id));
@@ -17,15 +18,16 @@ const MINIGAME_IDS = new Set(MINIGAMES.map((g) => g.id));
 // plays are left today per game/difficulty, how much of the combined weekly
 // cap is used, and a best-case projection of points still earnable this week.
 export async function GET() {
+  const ownerEmail = await requireUserEmail();
   const now = new Date();
   const dayStart = new Date(now);
   dayStart.setHours(0, 0, 0, 0);
   const weekStart = startOfWeek(now);
 
   const [todayPlays, weekPlays, weekAttempts] = await Promise.all([
-    prisma.gamePlay.findMany({ where: { playedAt: { gte: dayStart } } }),
-    prisma.gamePlay.findMany({ where: { playedAt: { gte: weekStart } } }),
-    prisma.gameAttempt.findMany({ where: { playedAt: { gte: weekStart } } }),
+    prisma.gamePlay.findMany({ where: { ownerEmail, playedAt: { gte: dayStart } } }),
+    prisma.gamePlay.findMany({ where: { ownerEmail, playedAt: { gte: weekStart } } }),
+    prisma.gameAttempt.findMany({ where: { ownerEmail, playedAt: { gte: weekStart } } }),
   ]);
 
   // The weekly cap counts every attempt (win or lose), not just rewarded

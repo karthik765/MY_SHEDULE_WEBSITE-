@@ -3,6 +3,7 @@ import { getIronSession, type SessionOptions } from "iron-session";
 
 export interface SessionData {
   loggedIn: boolean;
+  email?: string;
 }
 
 const secret = process.env.SESSION_SECRET;
@@ -26,4 +27,14 @@ export const sessionOptions: SessionOptions = {
 export async function getSession() {
   const cookieStore = await cookies();
   return getIronSession<SessionData>(cookieStore, sessionOptions);
+}
+
+export function normalizeEmail(email: string) {
+  return email.trim().toLowerCase();
+}
+
+export async function requireUserEmail() {
+  const session = await getSession();
+  const email = session.email ?? process.env.ADMIN_EMAIL ?? "karthiksai1245@gmail.com";
+  return normalizeEmail(email);
 }

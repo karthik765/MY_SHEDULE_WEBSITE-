@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireUserEmail } from "@/lib/session";
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const ownerEmail = await requireUserEmail();
   const body = await request.json();
   const data: Record<string, unknown> = {};
   if (body.title !== undefined) data.title = body.title;
@@ -16,7 +18,7 @@ export async function PATCH(
   if (body.weekday !== undefined) data.weekday = body.weekday;
   if (body.notes !== undefined) data.notes = body.notes || null;
 
-  const event = await prisma.scheduleEvent.update({ where: { id }, data });
+  const event = await prisma.scheduleEvent.update({ where: { id, ownerEmail }, data });
   return NextResponse.json(event);
 }
 
@@ -25,6 +27,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  await prisma.scheduleEvent.delete({ where: { id } });
+  const ownerEmail = await requireUserEmail();
+  await prisma.scheduleEvent.delete({ where: { id, ownerEmail } });
   return NextResponse.json({ ok: true });
 }

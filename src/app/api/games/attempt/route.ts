@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { findGameDef, difficultyBonus, failurePenalty, type Difficulty } from "@/lib/games";
 import { getUnlockStats, isUnlocked } from "@/lib/unlocks";
+import { requireUserEmail } from "@/lib/session";
 
 function isDifficulty(v: unknown): v is Difficulty {
   return v === "easy" || v === "medium" || v === "hard";
@@ -18,6 +19,7 @@ function isDifficulty(v: unknown): v is Difficulty {
 // GameRecord isn't solved yet — replaying something already solved via the
 // Completed tab never rewards or penalizes.
 export async function POST(request: NextRequest) {
+  const ownerEmail = await requireUserEmail();
   const body = await request.json();
   const game = body.game as string | undefined;
   const result = body.result as string | undefined;
@@ -37,7 +39,7 @@ export async function POST(request: NextRequest) {
   // only bypasses the weekly caps, never locked content — so this check
   // always runs first, testMode or not.
   if (def.unlock) {
-    const stats = await getUnlockStats();
+    const stats = await getUnlockStats(ownerEmail);
     if (!isUnlocked(def, stats)) {
       return NextResponse.json({ error: "Game is locked" }, { status: 403 });
     }
@@ -48,11 +50,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true, penalty: 0 });
   }
 
-  await prisma.gameAttempt.create({ data: { game, result } });
+  await prisma.gameAttempt.create({ data: { ownerEmail, game, result } });
 
   let penalty = 0;
   if (result !== "won") {
-    const existing = await prisma.gameRecord.findUnique({ where: { game: def.id } });
+    const existing = await prisma.gameRecord.findUnique({ where: { ownerEmail_game: { ownerEmail, game: def.id } } });
     const fresh = def.kind === "minigame" || !(existing?.solved ?? false);
     if (fresh) {
       const effectiveDifficulty = def.kind === "minigame" ? difficulty : def.difficulty;
@@ -62,6 +64,7 @@ export async function POST(request: NextRequest) {
       if (penalty > 0) {
         await prisma.focusPointAdjustment.create({
           data: {
+            ownerEmail,
             amount: -penalty,
             reason: `${def.kind}-fail:${def.id}${def.kind === "minigame" ? `:${difficulty}` : ""}`,
           },

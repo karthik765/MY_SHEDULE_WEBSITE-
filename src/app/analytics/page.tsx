@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { startOfWeek } from "@/lib/schedule";
 import SimpleBarChart from "@/components/charts/SimpleBarChart";
 import FocusHistoryCard from "@/components/FocusHistoryCard";
+import { requireUserEmail } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,7 @@ function weekLabel(d: Date): string {
 }
 
 export default async function AnalyticsPage() {
+  const ownerEmail = await requireUserEmail();
   const now = new Date();
   const currentWeekStart = startOfWeek(now);
   const earliestWeekStart = new Date(currentWeekStart);
@@ -20,12 +22,13 @@ export default async function AnalyticsPage() {
 
   const [sessions, tasks, habits] = await Promise.all([
     prisma.studySession.findMany({
-      where: { startTime: { gte: earliestWeekStart }, durationMinutes: { not: null } },
+      where: { ownerEmail, startTime: { gte: earliestWeekStart }, durationMinutes: { not: null } },
     }),
     prisma.task.findMany({
-      where: { completed: true, updatedAt: { gte: earliestWeekStart } },
+      where: { ownerEmail, completed: true, updatedAt: { gte: earliestWeekStart } },
     }),
     prisma.habit.findMany({
+      where: { ownerEmail },
       include: {
         logs: {
           where: { date: { gte: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) } },

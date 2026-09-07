@@ -3,17 +3,19 @@ import { prisma } from "@/lib/prisma";
 import { computeStreak } from "@/lib/habits";
 import { computeStudyStreak } from "@/lib/streaks";
 import { computeUnlocked, trophyCounts, type AchievementStats } from "@/lib/achievements";
+import { requireUserEmail } from "@/lib/session";
 
 export async function GET() {
+  const ownerEmail = await requireUserEmail();
   const [sessions, habits, tasksCompleted, goals, milestonesCompleted, media, games, hardWins] = await Promise.all([
-    prisma.studySession.findMany({ orderBy: { startTime: "desc" } }),
-    prisma.habit.findMany({ include: { logs: true } }),
-    prisma.task.count({ where: { completed: true } }),
-    prisma.goal.findMany({ select: { status: true } }),
-    prisma.milestone.count({ where: { completed: true } }),
-    prisma.mediaItem.findMany({ where: { status: "completed" }, select: { category: true } }),
-    prisma.gameRecord.findMany(),
-    prisma.gamePlay.count({ where: { difficulty: "hard" } }),
+    prisma.studySession.findMany({ where: { ownerEmail }, orderBy: { startTime: "desc" } }),
+    prisma.habit.findMany({ where: { ownerEmail }, include: { logs: true } }),
+    prisma.task.count({ where: { ownerEmail, completed: true } }),
+    prisma.goal.findMany({ where: { ownerEmail }, select: { status: true } }),
+    prisma.milestone.count({ where: { completed: true, goal: { ownerEmail } } }),
+    prisma.mediaItem.findMany({ where: { ownerEmail, status: "completed" }, select: { category: true } }),
+    prisma.gameRecord.findMany({ where: { ownerEmail } }),
+    prisma.gamePlay.count({ where: { ownerEmail, difficulty: "hard" } }),
   ]);
 
   const totalStudyMinutes = sessions.reduce((sum, s) => sum + (s.durationMinutes ?? 0), 0);
@@ -51,7 +53,7 @@ export async function GET() {
 
   const computed = computeUnlocked(stats);
 
-  const existingRows = await prisma.unlockedAchievement.findMany({ select: { id: true } });
+  const existingRows = await prisma.unlockedAchievement.findMany({ where: { ownerEmail }, select: { id: true } });
   const unlockedIds = new Set(existingRows.map((r) => r.id));
 
   // SQLite's Prisma connector doesn't support createMany's skipDuplicates,
@@ -59,7 +61,7 @@ export async function GET() {
   const newlyEligible = computed.filter((a) => a.unlocked && !unlockedIds.has(a.id)).map((a) => a.id);
   if (newlyEligible.length > 0) {
     await prisma.unlockedAchievement.createMany({
-      data: newlyEligible.map((id) => ({ id })),
+      data: newlyEligible.map((id) => ({ ownerEmail, id })),
     });
     newlyEligible.forEach((id) => unlockedIds.add(id));
   }

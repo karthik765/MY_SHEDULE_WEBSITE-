@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireUserEmail } from "@/lib/session";
 
 const VALID_STATUSES = new Set(["planned", "learning", "completed", "not_useful"]);
 
@@ -8,9 +9,10 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const ownerEmail = await requireUserEmail();
   const body = await request.json();
 
-  const current = await prisma.topicNode.findUnique({ where: { id } });
+  const current = await prisma.topicNode.findFirst({ where: { id, ownerEmail } });
   if (!current) {
     return NextResponse.json({ error: "Topic not found" }, { status: 404 });
   }
@@ -27,7 +29,7 @@ export async function PATCH(
   }
   if (body.status !== undefined) data.status = body.status;
 
-  const topic = await prisma.topicNode.update({ where: { id }, data });
+  const topic = await prisma.topicNode.update({ where: { id, ownerEmail }, data });
   return NextResponse.json(topic);
 }
 
@@ -38,10 +40,11 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const current = await prisma.topicNode.findUnique({ where: { id } });
+  const ownerEmail = await requireUserEmail();
+  const current = await prisma.topicNode.findFirst({ where: { id, ownerEmail } });
   if (!current) {
     return NextResponse.json({ error: "Topic not found" }, { status: 404 });
   }
-  await prisma.topicNode.delete({ where: { id } });
+  await prisma.topicNode.delete({ where: { id, ownerEmail } });
   return NextResponse.json({ ok: true });
 }

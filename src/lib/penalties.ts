@@ -12,37 +12,37 @@ export const HABIT_MISS_PENALTY = 50;
 // cheap even if the app hasn't been opened in a while.
 const HABIT_LOOKBACK_DAYS = 60;
 
-async function penalizeOverdueTasks(now: Date) {
+async function penalizeOverdueTasks(ownerEmail: string, now: Date) {
   const overdue = await prisma.task.findMany({
-    where: { completed: false, failedAt: null, dueDate: { lt: now } },
+    where: { ownerEmail, completed: false, failedAt: null, dueDate: { lt: now } },
   });
   for (const task of overdue) {
     await prisma.$transaction([
       prisma.task.update({ where: { id: task.id }, data: { failedAt: now } }),
       prisma.focusPointAdjustment.create({
-        data: { amount: -TASK_FAILURE_PENALTY, reason: `task-failed:${task.id}` },
+        data: { ownerEmail, amount: -TASK_FAILURE_PENALTY, reason: `task-failed:${task.id}` },
       }),
     ]);
   }
 }
 
-async function penalizeOverdueGoals(now: Date) {
+async function penalizeOverdueGoals(ownerEmail: string, now: Date) {
   const overdue = await prisma.goal.findMany({
-    where: { status: "active", failedAt: null, targetDate: { lt: now } },
+    where: { ownerEmail, status: "active", failedAt: null, targetDate: { lt: now } },
   });
   for (const goal of overdue) {
     await prisma.$transaction([
       prisma.goal.update({ where: { id: goal.id }, data: { failedAt: now, status: "abandoned" } }),
       prisma.focusPointAdjustment.create({
-        data: { amount: -GOAL_FAILURE_PENALTY, reason: `goal-failed:${goal.id}` },
+        data: { ownerEmail, amount: -GOAL_FAILURE_PENALTY, reason: `goal-failed:${goal.id}` },
       }),
     ]);
   }
 }
 
-async function penalizeMissedHabitDays(now: Date) {
+async function penalizeMissedHabitDays(ownerEmail: string, now: Date) {
   const habits = await prisma.habit.findMany({
-    where: { frequency: "daily" },
+    where: { ownerEmail, frequency: "daily" },
     include: { logs: true },
   });
 
@@ -61,11 +61,11 @@ async function penalizeMissedHabitDays(now: Date) {
       if (loggedDays.has(dayKey)) continue;
 
       const reason = `habit-missed:${habit.id}:${dayKey}`;
-      const already = await prisma.focusPointAdjustment.findFirst({ where: { reason } });
+      const already = await prisma.focusPointAdjustment.findFirst({ where: { ownerEmail, reason } });
       if (already) continue;
 
       await prisma.focusPointAdjustment.create({
-        data: { amount: -HABIT_MISS_PENALTY, reason },
+        data: { ownerEmail, amount: -HABIT_MISS_PENALTY, reason },
       });
     }
   }
@@ -76,8 +76,8 @@ async function penalizeMissedHabitDays(now: Date) {
 // request — every deduction is gated by a persisted guard (Task.failedAt,
 // Goal.failedAt, or a FocusPointAdjustment row already existing for that
 // reason), so re-running never double-penalizes.
-export async function applyAutoPenalties(now: Date = new Date()): Promise<void> {
-  await penalizeOverdueTasks(now);
-  await penalizeOverdueGoals(now);
-  await penalizeMissedHabitDays(now);
+export async function applyAutoPenalties(ownerEmail: string, now: Date = new Date()): Promise<void> {
+  await penalizeOverdueTasks(ownerEmail, now);
+  await penalizeOverdueGoals(ownerEmail, now);
+  await penalizeMissedHabitDays(ownerEmail, now);
 }

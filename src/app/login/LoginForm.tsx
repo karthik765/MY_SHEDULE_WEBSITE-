@@ -10,8 +10,38 @@ import Link from "next/link";
 const GOOGLE_MESSAGES: Record<string, string> = {
   setup: "Google login needs the Google client id and secret before it can open.",
   failed: "Google login did not finish. Try again.",
+  native_cancelled: "Google sign-in was cancelled or blocked on this phone.",
+  native_token: "Google signed in, but did not return a login token.",
+  native_server: "Google signed in, but the app could not finish the website session.",
   denied: "That Google account is not allowed for this space.",
 };
+
+type NativeGoogleLoginResult = {
+  result?: {
+    idToken?: string;
+    id_token?: string;
+    authentication?: {
+      idToken?: string;
+      id_token?: string;
+    };
+  };
+};
+
+type NativeGooglePlugin = {
+  initialize: (options: { google: { webClientId: string } }) => Promise<void>;
+  login: (options: { provider: "google"; options: Record<string, never> }) => Promise<NativeGoogleLoginResult | null>;
+};
+
+declare global {
+  interface Window {
+    Capacitor?: {
+      isNativePlatform?: () => boolean;
+      Plugins?: {
+        SocialLogin?: NativeGooglePlugin;
+      };
+    };
+  }
+}
 
 export default function LoginForm({ emailOnly = false, initialEmail = "" }: { emailOnly?: boolean; initialEmail?: string }) {
   const router = useRouter();
@@ -22,6 +52,62 @@ export default function LoginForm({ emailOnly = false, initialEmail = "" }: { em
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPasswordLogin, setShowPasswordLogin] = useState(emailOnly);
+
+  async function handleGoogleLogin() {
+    setError(null);
+    const plugin = window.Capacitor?.Plugins?.SocialLogin;
+    const isNative = window.Capacitor?.isNativePlatform?.() === true;
+    if (!isNative || !plugin) {
+      window.location.href = "/api/login/google";
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const config = await fetch("/api/login/google/native/config").then((res) => res.json());
+      if (!config.webClientId) {
+        router.push("/login?google=setup");
+        return;
+      }
+
+      await plugin.initialize({ google: { webClientId: config.webClientId } });
+      let nativeResult: NativeGoogleLoginResult | null;
+      try {
+        nativeResult = await plugin.login({ provider: "google", options: {} });
+      } catch {
+        router.push("/login?google=native_cancelled");
+        return;
+      }
+      const idToken =
+        nativeResult?.result?.idToken ??
+        nativeResult?.result?.id_token ??
+        nativeResult?.result?.authentication?.idToken ??
+        nativeResult?.result?.authentication?.id_token;
+
+      if (!idToken) {
+        router.push("/login?google=native_token");
+        return;
+      }
+
+      const res = await fetch("/api/login/google/native", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken }),
+      });
+
+      if (!res.ok) {
+        router.push("/login?google=native_server");
+        return;
+      }
+
+      router.push("/");
+      router.refresh();
+    } catch {
+      router.push("/login?google=failed");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -56,9 +142,9 @@ export default function LoginForm({ emailOnly = false, initialEmail = "" }: { em
         <p>Your attention is your most valuable asset.</p>
       </section>
       <section className="login-form" aria-label="Sign in">
-        <header><p className="eyebrow"><span />YOUR PERSONAL SPACE <strong className="beta-badge">BETA</strong></p><h1>WELCOME BACK.</h1><p>Settle in. Your next chapter is waiting.</p><p className="beta-note">Currently in beta. Features are still being built and refined.</p></header>
+        <header><p className="eyebrow"><span />YOUR PERSONAL SPACE</p><h1>WELCOME BACK.</h1><p>Settle in. Your next chapter is waiting.</p></header>
 
-        <a href="/api/login/google" className="google-action"><span aria-hidden="true">G</span>Continue with Google<Icon name="arrow" size={16} /></a>
+        <button type="button" className="google-action" onClick={handleGoogleLogin} disabled={loading}><span aria-hidden="true">G</span>Continue with Google<Icon name="arrow" size={16} /></button>
         {googleMessage && <p role="alert" className="login-message">{googleMessage}</p>}
 
         <div className="login-demo"><Link href="/demo" className="demo-entry">Explore Demo <Icon name="arrow" size={16} /></Link><p>No login needed. Browse an empty, read-only preview. Nothing can be added, played, or saved.</p></div>

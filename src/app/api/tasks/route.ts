@@ -1,17 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireUserEmail } from "@/lib/session";
 
 export async function GET() {
+  const ownerEmail = await requireUserEmail();
   const tasks = await prisma.task.findMany({
+    where: { ownerEmail },
     orderBy: [{ completed: "asc" }, { dueDate: "asc" }, { createdAt: "desc" }],
   });
   return NextResponse.json(tasks);
 }
 
 export async function POST(request: NextRequest) {
+  const ownerEmail = await requireUserEmail();
   const body = await request.json();
   const task = await prisma.task.create({
     data: {
+      ownerEmail,
       title: body.title,
       notes: body.notes || null,
       dueDate: body.dueDate ? new Date(body.dueDate) : null,

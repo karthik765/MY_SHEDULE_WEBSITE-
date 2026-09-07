@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isGoalLocked } from "@/lib/goals";
+import { requireUserEmail } from "@/lib/session";
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const ownerEmail = await requireUserEmail();
   const body = await request.json();
 
-  const current = await prisma.goal.findUnique({ where: { id } });
+  const current = await prisma.goal.findFirst({ where: { id, ownerEmail } });
   if (!current) {
     return NextResponse.json({ error: "Goal not found" }, { status: 404 });
   }
@@ -54,8 +56,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const ownerEmail = await requireUserEmail();
 
-  const current = await prisma.goal.findUnique({ where: { id } });
+  const current = await prisma.goal.findFirst({ where: { id, ownerEmail } });
   if (!current) {
     return NextResponse.json({ error: "Goal not found" }, { status: 404 });
   }

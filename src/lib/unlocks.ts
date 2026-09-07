@@ -14,15 +14,15 @@ export interface UnlockStats {
 }
 
 // Everything needed to evaluate every UnlockCondition, gathered in one pass.
-export async function getUnlockStats(): Promise<UnlockStats> {
+export async function getUnlockStats(ownerEmail: string): Promise<UnlockStats> {
   const [studyTotal, habitCheckIns, tasksCompleted, goalsCompleted, unlockedRows, gameRecords] =
     await Promise.all([
-      prisma.studySession.aggregate({ _sum: { durationMinutes: true } }),
-      prisma.habitLog.count(),
-      prisma.task.count({ where: { completed: true } }),
-      prisma.goal.count({ where: { status: "completed" } }),
-      prisma.unlockedAchievement.findMany({ select: { id: true } }),
-      prisma.gameRecord.findMany(),
+      prisma.studySession.aggregate({ where: { ownerEmail }, _sum: { durationMinutes: true } }),
+      prisma.habitLog.count({ where: { habit: { ownerEmail } } }),
+      prisma.task.count({ where: { ownerEmail, completed: true } }),
+      prisma.goal.count({ where: { ownerEmail, status: "completed" } }),
+      prisma.unlockedAchievement.findMany({ where: { ownerEmail }, select: { id: true } }),
+      prisma.gameRecord.findMany({ where: { ownerEmail } }),
     ]);
 
   const unlockedAchievementIds = new Set(unlockedRows.map((r) => r.id));
