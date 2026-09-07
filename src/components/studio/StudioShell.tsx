@@ -9,12 +9,13 @@ import JokeWidget from "@/components/rails/JokeWidget";
 import PuzzleWidget from "@/components/rails/PuzzleWidget";
 import Atmosphere from "./Atmosphere";
 import StartupSplash from "./StartupSplash";
+import AndroidShellMarker from "./AndroidShellMarker";
 
 export default function StudioShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const shell = <StartupSplash />;
+  const shell = <><AndroidShellMarker /><StartupSplash /></>;
   if (pathname === "/demo" || pathname.startsWith("/demo/")) return <>{children}</>;
-  if (pathname === "/login") return <><StartupSplash /><Atmosphere /><div className="login-theme"><ThemeToggle /></div><main className="login-shell">{children}</main></>;
+  if (pathname === "/login") return <>{shell}<Atmosphere /><div className="login-theme"><ThemeToggle /></div><main className="login-shell">{children}</main></>;
   return (
     <div className="studio-shell">{shell}
       <Atmosphere />
