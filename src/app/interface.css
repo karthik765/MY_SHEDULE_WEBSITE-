@@ -748,6 +748,8 @@ li:hover > .row-delete { opacity: 1; }
     position: static;
     z-index: 55;
     display: flex;
+    flex-direction: row;
+    align-items: stretch;
     gap: 7px;
     min-height: 0;
     padding: 7px 12px 10px;
@@ -802,18 +804,32 @@ li:hover > .row-delete { opacity: 1; }
   html[data-android-shell="true"] {
     --mobile-nav-h: 84px;
   }
-  html[data-android-shell="true"] .app-bar {
-    min-height: 50px;
-    padding-top: calc(8px + env(safe-area-inset-top));
+  html[data-android-shell="true"] .app-header {
+    position: static;
   }
+  html[data-android-shell="true"] .app-bar {
+    min-height: 42px;
+    padding: 6px 12px 4px;
+  }
+  html[data-android-shell="true"] .app-brand > span { font-size: 12px; }
   html[data-android-shell="true"] .app-brand small,
   html[data-android-shell="true"] .app-bar-tools .app-chip,
   html[data-android-shell="true"] .settings-trigger {
     display: none;
   }
+  html[data-android-shell="true"] .app-nav {
+    padding: 4px 8px 7px;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 5px;
+  }
   html[data-android-shell="true"] .app-nav .app-nav-link,
   html[data-android-shell="true"] .app-nav .app-logout-tab {
-    flex-basis: 78px;
+    flex-basis: 68px;
+    min-height: 48px;
+    padding: 5px 4px;
+    border-radius: 8px;
+    font-size: 9px;
   }
 }
 
