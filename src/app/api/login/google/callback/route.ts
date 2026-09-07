@@ -9,12 +9,6 @@ function loginUrl(request: NextRequest, error?: string) {
   return url;
 }
 
-function allowedEmails() {
-  return [process.env.ADMIN_EMAIL, ...(process.env.GOOGLE_ALLOWED_EMAILS ?? "").split(",")]
-    .map((email) => email?.trim().toLowerCase())
-    .filter(Boolean) as string[];
-}
-
 export async function GET(request: NextRequest) {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
@@ -48,8 +42,7 @@ export async function GET(request: NextRequest) {
   if (!profileResponse.ok) return NextResponse.redirect(loginUrl(request, "failed"));
 
   const profile = (await profileResponse.json()) as { email?: string; email_verified?: boolean };
-  const email = profile.email?.trim().toLowerCase();
-  if (!profile.email_verified || !email || !allowedEmails().includes(email)) {
+  if (!profile.email_verified || !profile.email?.trim()) {
     return NextResponse.redirect(loginUrl(request, "denied"));
   }
 
@@ -61,3 +54,4 @@ export async function GET(request: NextRequest) {
   response.cookies.delete(STATE_COOKIE);
   return response;
 }
+
