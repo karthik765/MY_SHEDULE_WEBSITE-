@@ -19,9 +19,9 @@ const LINKS = [
   { href: "/topics", label: "Learning", mobile: true },
   { href: "/habits", label: "Habits" },
   { href: "/goals", label: "Goals" },
-  { href: "/minigames", label: "Play" },
+  { href: "/minigames", label: "Mini Games" },
   { href: "/social", label: "Social" },
-  { href: "/trophies", label: "Trophies" },
+  { href: "/trophies", label: "Achievements" },
   { href: "/focus-points", label: "Focus Points" },
   { href: "/analytics", label: "Analytics" },
 ];
