@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import Icon from "./Icon";
 import BrandMark from "./BrandMark";
 import SettingsMenu from "./SettingsMenu";
-import { getAudioContext, playChime } from "@/lib/sound";
+import { playSoundCue } from "@/lib/sound";
 import { MINIGAMES, PUZZLES, RIDDLES, IQ_GAMES, QMASTER_GAMES, currentContentWeek, weekUnlockDate, type GameDef } from "@/lib/games";
 
 // One name per destination. These match the demo tour's labels exactly, so a
@@ -72,8 +72,7 @@ export default function AppHeader() {
   const audioCtxRef = useRef<AudioContext | null>(null);
 
   function playTrophySound() {
-    const ctx = getAudioContext(audioCtxRef);
-    if (ctx) playChime(ctx, [523.25, 659.25, 783.99, 1046.5], 140); // triumphant rising arpeggio
+    playSoundCue(audioCtxRef, "achievement");
   }
 
   useEffect(() => {
@@ -205,7 +204,7 @@ export default function AppHeader() {
         {LINKS.map((link) => {
           const active = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href + "/"));
           return (
-            <Link key={link.href} href={link.href} onClick={() => { setMobileOpen(false); const ctx = getAudioContext(audioCtxRef); if (ctx) playChime(ctx, [659.25], 70); }} className={`app-nav-link ${link.mobile ? "is-mobile-main" : ""} ${active ? "is-active" : ""}`} aria-current={active ? "page" : undefined}>
+            <Link key={link.href} href={link.href} onClick={() => { setMobileOpen(false); playSoundCue(audioCtxRef, "tab"); }} className={`app-nav-link ${link.mobile ? "is-mobile-main" : ""} ${active ? "is-active" : ""}`} aria-current={active ? "page" : undefined}>
               <Icon name={iconFor(link.href)} size={16} />
               <span>{link.label}</span>
               <i aria-hidden="true" />

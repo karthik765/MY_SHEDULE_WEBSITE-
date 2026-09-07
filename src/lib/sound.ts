@@ -33,3 +33,41 @@ export function playChime(ctx: AudioContext, frequencies: number[], noteMs: numb
     t += noteMs / 1000 + 0.05;
   }
 }
+
+export type SoundCue =
+  | "intro"
+  | "tab"
+  | "start"
+  | "stop"
+  | "complete"
+  | "breakDone"
+  | "achievement";
+
+export function playSoundCue(ref: { current: AudioContext | null }, cue: SoundCue) {
+  const ctx = getAudioContext(ref);
+  if (!ctx) return;
+
+  switch (cue) {
+    case "intro":
+      playChime(ctx, [261.63, 329.63, 392, 523.25], 150);
+      break;
+    case "tab":
+      playChime(ctx, [659.25], 70);
+      break;
+    case "start":
+      playChime(ctx, [523.25, 659.25], 100);
+      break;
+    case "stop":
+      playChime(ctx, [659.25, 523.25], 100);
+      break;
+    case "complete":
+      playChime(ctx, [783.99, 987.77, 1174.66], 150);
+      break;
+    case "breakDone":
+      playChime(ctx, [659.25, 523.25, 659.25], 150);
+      break;
+    case "achievement":
+      playChime(ctx, [523.25, 659.25, 783.99, 1046.5], 140);
+      break;
+  }
+}

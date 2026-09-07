@@ -5,7 +5,7 @@ import Icon from "@/components/studio/Icon";
 import PageHeader from "@/components/studio/PageHeader";
 import { SegmentedControl } from "@/components/studio/Tabs";
 import { startOfWeek } from "@/lib/schedule";
-import { getAudioContext, playChime } from "@/lib/sound";
+import { playSoundCue } from "@/lib/sound";
 import { SLOW_TAG, SLOW_RATE, isSlowSubject } from "@/lib/focusSessions";
 
 interface StudySession {
@@ -282,13 +282,11 @@ export default function FocusPage() {
   const effectiveResumeIndex = resumeIndex ?? completedPlanIndexFromHistory(sessions);
 
   function playFocusEndSound() {
-    const ctx = getAudioContext(audioCtxRef);
-    if (ctx) playChime(ctx, [880, 1174.66], 220); // rising two-note "well done, rest now"
+    playSoundCue(audioCtxRef, "complete");
   }
 
   function playBreakEndSound() {
-    const ctx = getAudioContext(audioCtxRef);
-    if (ctx) playChime(ctx, [659.25, 523.25, 659.25], 150); // brisker three-note "back to it"
+    playSoundCue(audioCtxRef, "breakDone");
   }
 
   async function load() {
@@ -403,8 +401,7 @@ export default function FocusPage() {
       setTimerError("Couldn't start the timer. Check your connection and try again.");
       return;
     }
-    const ctx = getAudioContext(audioCtxRef);
-    if (ctx) playChime(ctx, [523.25, 659.25], 100);
+    playSoundCue(audioCtxRef, "start");
     const lengthMs = durationMs ?? CLASSIC_PLAN[blockIndex].focusSeconds * 1000;
     const next: PlanState = {
       blockIndex,
@@ -604,8 +601,7 @@ export default function FocusPage() {
         return;
       }
       setActive(session);
-      const ctx = getAudioContext(audioCtxRef);
-      if (ctx) playChime(ctx, [523.25, 659.25], 100);
+      playSoundCue(audioCtxRef, "start");
       setNow(Date.now());
       load();
     } catch {
@@ -638,8 +634,7 @@ export default function FocusPage() {
     setTimerError(null);
     try {
       await stopActiveSession();
-      const ctx = getAudioContext(audioCtxRef);
-      if (ctx) playChime(ctx, [659.25, 523.25], 100);
+      playSoundCue(audioCtxRef, "stop");
       setActive(null);
       await load();
     } catch {
