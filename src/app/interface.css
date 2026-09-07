@@ -796,7 +796,7 @@ li:hover > .row-delete { opacity: 1; }
     border-radius: 16px 16px 10px 10px;
     background: var(--panel);
     box-shadow: 0 -18px 60px -30px #000;
-    animation: sheet-open .25s var(--ease-out) both;
+    animation: sheet-open-bottom .25s var(--ease-out) both;
   }
   .app-more-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .12em; }
   .app-more-head button { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 8px; }
@@ -837,13 +837,15 @@ li:hover > .row-delete { opacity: 1; }
   html[data-android-shell="true"] .app-more-sheet {
     z-index: 120;
     inset: 0;
-    align-items: stretch;
-    padding: calc(12px + env(safe-area-inset-top)) 12px calc(var(--mobile-nav-h) + 16px + env(safe-area-inset-bottom));
+    align-items: flex-end;
+    padding: 12px 12px calc(var(--mobile-nav-h) + 12px + env(safe-area-inset-bottom));
+    pointer-events: none;
   }
   html[data-android-shell="true"] .app-more-panel {
-    align-self: end;
+    align-self: flex-end;
     max-height: min(78vh, 620px);
     border-radius: 18px;
+    pointer-events: auto;
   }
   html[data-android-shell="true"] .app-more-grid {
     grid-template-columns: 1fr;
@@ -853,6 +855,11 @@ li:hover > .row-delete { opacity: 1; }
     min-height: 52px;
     font-size: 13px;
   }
+}
+
+@keyframes sheet-open-bottom {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @media (max-width: 600px) {
