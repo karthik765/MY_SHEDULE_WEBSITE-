@@ -781,7 +781,7 @@ li:hover > .row-delete { opacity: 1; }
     scroll-snap-align: center;
   }
   .app-nav-link svg { opacity: .9; }
-  .app-nav-link > i { left: 50%; right: auto; top: 7px; bottom: auto; width: 28px; height: 3px; border-radius: 999px; transform: translateX(-50%) scaleX(0); transform-origin: center; }
+  .app-nav-link > i { left: 50%; right: auto; top: 5px; bottom: auto; width: 18px; height: 2px; transform: translateX(-50%) scaleX(0); }
   .app-nav-link:hover > i, .app-nav-link.is-active > i { transform: translateX(-50%) scaleX(1); }
   .app-nav-link.is-active { background: var(--accent-soft); color: var(--comic-orange); }
   .app-logout-tab { border: 0; background: transparent; color: var(--muted); }
