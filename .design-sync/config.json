@@ -1,0 +1,8 @@
+{
+  "projectId": "a1fab113-4c3d-49b8-8043-6751a71617b2",
+  "shape": "package",
+  "pkg": "my_project",
+  "tsconfig": "tsconfig.json",
+  "srcDir": "src/components",
+  "cssEntry": ".design-sync/compiled-globals.css"
+}

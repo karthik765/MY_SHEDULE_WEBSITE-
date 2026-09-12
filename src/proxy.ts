@@ -5,6 +5,7 @@ import { DEMO_SECTIONS } from "@/lib/demo";
 
 const PUBLIC_PATHS = [
   "/login",
+  "/privacy-policy",
   "/api/login",
   "/api/login/google",
   "/api/login/google/callback",

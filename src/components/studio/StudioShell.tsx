@@ -16,6 +16,7 @@ export default function StudioShell({ children }: { children: ReactNode }) {
   const shell = <><AndroidShellMarker /><StartupSplash /></>;
   if (pathname === "/demo" || pathname.startsWith("/demo/")) return <>{children}</>;
   if (pathname === "/login") return <>{shell}<Atmosphere /><div className="login-theme"><ThemeToggle /></div><main className="login-shell">{children}</main></>;
+  if (pathname === "/privacy-policy") return <>{children}</>;
   return (
     <div className="studio-shell">{shell}
       <Atmosphere />
